@@ -1,0 +1,9 @@
+@import "./variables.css";
+@import "./desktop.css";
+@import "./window.css";
+@import "./taskbar.css";
+@import "./pages/home.css";
+@import "./pages/blog.css";
+@import "./pages/gallery.css";
+@import "./pages/admin.css";
+@import "./responsive.css";
