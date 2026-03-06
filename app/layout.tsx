@@ -1,9 +1,9 @@
+import "@/app/globals.css";
 import type { Metadata } from "next";
-import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Portfolio - Windows 98",
-  description: "Personal portfolio with Windows 98 style",
+  title: "La Ngọc Hưng - Portfolio",
+  description: "Software Engineer Portfolio",
 };
 
 export default function RootLayout({
@@ -11,9 +11,5 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="vi">
-      <body>{children}</body>
-    </html>
-  );
+  return children;
 }

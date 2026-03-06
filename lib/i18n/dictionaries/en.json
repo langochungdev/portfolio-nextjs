@@ -1,76 +1,15 @@
 {
-  "common": {
-    "start": "Start",
-    "home": "Home",
-    "blog": "Blog",
-    "gallery": "Gallery",
-    "admin": "Admin",
-    "search": "Search",
-    "close": "Close",
-    "minimize": "Minimize",
-    "maximize": "Maximize",
-    "language": "Language",
-    "back": "Back",
-    "save": "Save",
-    "cancel": "Cancel",
-    "edit": "Edit",
-    "delete": "Delete",
-    "add": "Add",
-    "loading": "Loading..."
-  },
   "home": {
-    "profileTitle": "About Me",
-    "projectsTitle": "My Projects",
-    "name": "Nguyen Van A",
-    "role": "Frontend Developer",
-    "bio": "Hello! I'm a passionate web developer. I love creating beautiful interfaces and great user experiences.",
-    "location": "Ho Chi Minh City, Vietnam",
-    "email": "contact@example.com",
-    "viewProject": "View Project",
-    "viewSource": "Source Code",
-    "skills": "Skills",
-    "contact": "Contact"
-  },
-  "blog": {
-    "title": "Blog Posts",
-    "categories": "Categories",
-    "readMore": "Read More",
-    "reblog": "Reblog",
-    "permalink": "Permalink",
-    "allPosts": "All",
-    "tech": "Technology",
-    "life": "Lifestyle",
-    "code": "Coding",
-    "design": "Design",
-    "tutorial": "Tutorial",
-    "recentPosts": "Recent Posts",
-    "searchPlaceholder": "Search posts..."
-  },
-  "gallery": {
-    "title": "Achievements & Certificates",
-    "certificates": "Certificates",
-    "awards": "Awards",
-    "viewFull": "View Full",
-    "issuedBy": "Issued by",
-    "date": "Date",
-    "description": "My collection of achievements, certificates and credits."
-  },
-  "admin": {
-    "dashboard": "Dashboard",
-    "totalVisits": "Total Visits",
-    "todayVisits": "Today",
-    "weeklyVisits": "This Week",
-    "monthlyVisits": "This Month",
-    "contentManager": "Content Manager",
-    "editContent": "Edit Content",
-    "pageContent": "Page Content",
-    "blogPosts": "Blog Posts",
-    "galleryItems": "Gallery Items",
-    "settings": "Settings",
-    "topPages": "Top Pages",
-    "visitors": "Visitors",
-    "save": "Save Changes",
-    "published": "Published",
-    "draft": "Draft"
+    "subtitle": "- software engineer -",
+    "articles": "articles",
+    "socialMedia": "social media",
+    "githubContribution": "github contribution",
+    "projects": "projects",
+    "projectDescription": "Short project description",
+    "nav": {
+      "home": "Home",
+      "blog": "Blog",
+      "certificates": "Cer"
+    }
   }
 }

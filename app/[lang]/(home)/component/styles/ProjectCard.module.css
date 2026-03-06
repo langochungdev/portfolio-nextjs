@@ -1,0 +1,64 @@
+.projectCard {
+    width: 100%;
+    height: 11rem;
+    border: 2px solid var(--color-border);
+    border-radius: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-card-bg);
+    padding: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-align: center;
+}
+
+.projectCard:hover {
+    border-color: var(--color-border-hover);
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+}
+
+.projectTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    transition: color 0.2s ease;
+}
+
+.projectCard:hover .projectTitle {
+    color: var(--color-text);
+}
+
+.projectDesc {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.projectCard:hover .projectDesc {
+    opacity: 1;
+}
+
+.projectTech {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.projectCard:hover .projectTech {
+    opacity: 1;
+}
+
+.techBadge {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.5rem;
+    background: #f1f5f9;
+    border-radius: 1rem;
+    color: var(--color-text-muted);
+}

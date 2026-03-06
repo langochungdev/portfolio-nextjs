@@ -1,0 +1,27 @@
+.langSwitcher {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.langLink {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 0.5rem;
+    border: 1.5px solid var(--color-border);
+    color: var(--color-text-muted);
+    transition: all 0.2s ease;
+    background: transparent;
+}
+
+.langLink:hover {
+    border-color: var(--color-border-hover);
+    color: var(--color-text);
+}
+
+.langActive {
+    border-color: var(--color-text);
+    background: var(--color-text);
+    color: white;
+}

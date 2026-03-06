@@ -1,0 +1,53 @@
+.sectionTitle {
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.githubBox {
+    width: 100%;
+    height: 8rem;
+    border: 2px solid var(--color-border);
+    border-radius: 1rem;
+    padding: 0.5rem;
+    background: rgba(248, 250, 252, 0.5);
+}
+
+.githubInner {
+    width: 100%;
+    height: 100%;
+    background: #f1f5f9;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.githubGrid {
+    display: grid;
+    grid-template-columns: repeat(26, 1fr);
+    gap: 2px;
+    width: 90%;
+    height: 70%;
+}
+
+.githubCell {
+    border-radius: 2px;
+    background: var(--color-border);
+}
+
+.githubCellActive1 {
+    background: #86efac;
+}
+
+.githubCellActive2 {
+    background: #4ade80;
+}
+
+.githubCellActive3 {
+    background: #22c55e;
+}

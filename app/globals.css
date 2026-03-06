@@ -1,0 +1,46 @@
+:root {
+    --color-bg: #f8f9fa;
+    --color-text: #0f172a;
+    --color-text-muted: #64748b;
+    --color-accent: #ef4444;
+    --color-border: #e2e8f0;
+    --color-border-hover: #1e293b;
+    --color-nav-border: #38bdf8;
+    --color-nav-text: #0284c7;
+    --color-nav-hover: #f0f9ff;
+    --color-card-bg: #ffffff;
+    --color-skeleton: #e2e8f0;
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}

@@ -1,0 +1,98 @@
+.techStackOverlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.techIcon {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: white;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+}
+
+.techIcon1 {
+    top: 2.5rem;
+    left: 1rem;
+    width: 3rem;
+    height: 3rem;
+    transform: rotate(12deg);
+}
+
+.techIcon2 {
+    top: 10rem;
+    left: -1rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    transform: rotate(-12deg);
+}
+
+.techIcon3 {
+    top: 5rem;
+    right: 2rem;
+    width: 4rem;
+    height: 4rem;
+    transform: rotate(6deg);
+}
+
+.techIcon4 {
+    top: 14rem;
+    right: 1rem;
+    width: 3rem;
+    height: 3rem;
+    transform: rotate(-6deg);
+}
+
+.techIcon5 {
+    top: 0;
+    left: 40%;
+    width: 2.75rem;
+    height: 2.75rem;
+    transform: rotate(-8deg);
+}
+
+.techIcon6 {
+    bottom: 6rem;
+    left: 0;
+    width: 3rem;
+    height: 3rem;
+    transform: rotate(4deg);
+}
+
+.portraitWrapper {
+    position: relative;
+    z-index: 1;
+    width: 18rem;
+    height: 24rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.portraitPlaceholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px 9999px 0 0;
+    background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 50%, #64748b 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%);
+}
+
+.portraitInitial {
+    font-size: 6rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.3);
+    user-select: none;
+}
