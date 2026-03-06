@@ -2,7 +2,7 @@
 
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { profileData } from "@/lib/mock/home";
-import styles from "./styles/SocialSection.module.css";
+import styles from "@/app/style/SocialSection.module.css";
 
 export function SocialSection() {
   const { dictionary: dict } = useDictionary();

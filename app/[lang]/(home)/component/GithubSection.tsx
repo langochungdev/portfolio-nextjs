@@ -1,7 +1,7 @@
 "use client";
 
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
-import styles from "./styles/GithubSection.module.css";
+import styles from "@/app/style/GithubSection.module.css";
 
 const CELL_PATTERN = [
   0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 3, 0, 0, 1, 0, 2, 0, 0, 1, 0, 0, 3, 1, 0,

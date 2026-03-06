@@ -8,7 +8,7 @@ import { GithubSection } from "./component/GithubSection";
 import { PortraitSection } from "./component/PortraitSection";
 import { NavBar } from "./component/NavBar";
 import { ProjectsSection } from "./component/ProjectsSection";
-import styles from "./styles/page.module.css";
+import styles from "@/app/style/page.module.css";
 
 export default function HomePage() {
   const { dictionary: dict } = useDictionary();

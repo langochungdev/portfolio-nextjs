@@ -3,7 +3,7 @@
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { projectsData } from "@/lib/mock/home";
 import { ProjectCard } from "./ProjectCard";
-import styles from "./styles/ProjectsSection.module.css";
+import styles from "@/app/style/ProjectsSection.module.css";
 
 export function ProjectsSection() {
   const { dictionary: dict, locale } = useDictionary();

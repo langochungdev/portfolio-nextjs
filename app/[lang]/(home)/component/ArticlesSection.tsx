@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { blogPosts } from "@/lib/mock/blog";
-import styles from "./styles/ArticlesSection.module.css";
+import styles from "@/app/style/ArticlesSection.module.css";
 
 export function ArticlesSection() {
   const { dictionary: dict, locale } = useDictionary();

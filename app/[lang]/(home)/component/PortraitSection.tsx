@@ -1,7 +1,7 @@
 "use client";
 
 import { profileData } from "@/lib/mock/home";
-import styles from "./styles/PortraitSection.module.css";
+import styles from "@/app/style/PortraitSection.module.css";
 
 const ICON_POSITIONS = [
   styles.techIcon1,

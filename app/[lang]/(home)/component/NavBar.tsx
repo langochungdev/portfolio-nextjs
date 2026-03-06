@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
-import styles from "./styles/NavBar.module.css";
+import styles from "@/app/style/NavBar.module.css";
 
 const NAV_ITEMS = [
   { key: "home" as const, path: "" },
