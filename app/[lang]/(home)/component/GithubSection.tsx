@@ -1,7 +1,7 @@
 "use client";
 
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
-import styles from "@/app/style/GithubSection.module.css";
+import styles from "@/app/style/home/GithubSection.module.css";
 
 const CELL_PATTERN = [
   0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 3, 0, 0, 1, 0, 2, 0, 0, 1, 0, 0, 3, 1, 0,
@@ -23,7 +23,6 @@ export function GithubSection() {
 
   return (
     <section>
-      <h3 className={styles.sectionTitle}>{"// "}{dict.home.githubContribution}</h3>
       <div className={styles.githubBox}>
         <div className={styles.githubInner}>
           <div className={styles.githubGrid}>

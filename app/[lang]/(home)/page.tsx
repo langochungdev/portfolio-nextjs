@@ -8,7 +8,7 @@ import { GithubSection } from "./component/GithubSection";
 import { PortraitSection } from "./component/PortraitSection";
 import { NavBar } from "./component/NavBar";
 import { ProjectsSection } from "./component/ProjectsSection";
-import styles from "@/app/style/page.module.css";
+import styles from "@/app/style/home/page.module.css";
 
 export default function HomePage() {
   const { dictionary: dict } = useDictionary();
@@ -19,7 +19,7 @@ export default function HomePage() {
         <div className={styles.headerTop}>
           <LanguageSwitcher />
         </div>
-        <h1 className={styles.title}>La Ngọc Hưng</h1>
+        <h1 className={styles.title}>La Ngọc Hùng</h1>
         <p className={styles.subtitle}>{dict.home.subtitle}</p>
       </header>
 
@@ -37,7 +37,9 @@ export default function HomePage() {
           <NavBar />
         </main>
 
-        <ProjectsSection />
+        <section className={styles.rightColumn}>
+          <ProjectsSection />
+        </section>
       </div>
     </div>
   );

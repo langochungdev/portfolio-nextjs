@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
-import styles from "@/app/style/LanguageSwitcher.module.css";
+import styles from "@/app/style/shared/LanguageSwitcher.module.css";
 
 export function LanguageSwitcher() {
   const pathname = usePathname();

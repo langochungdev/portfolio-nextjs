@@ -1,7 +1,9 @@
 .projectsSection {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: clamp(0.5rem, 1vh, 1.25rem);
+    height: 100%;
+    overflow: hidden;
 }
 
 .sectionTitle {
@@ -11,4 +13,5 @@
     letter-spacing: 0.1em;
     color: var(--color-accent);
     opacity: 0.7;
+    flex-shrink: 0;
 }

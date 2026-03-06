@@ -9,6 +9,7 @@ export const profileData = {
     "Vue.js",
     "Firebase",
     "Git",
+    "Spring",
   ],
   social: {
     github: "https://github.com/example",

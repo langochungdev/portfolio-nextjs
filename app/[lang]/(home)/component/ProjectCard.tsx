@@ -1,5 +1,5 @@
 import type { Locale } from "@/lib/i18n/config";
-import styles from "@/app/style/ProjectCard.module.css";
+import styles from "@/app/style/home/ProjectCard.module.css";
 
 interface ProjectCardProps {
   title: string;

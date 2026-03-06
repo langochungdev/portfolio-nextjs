@@ -2,7 +2,7 @@ import "@/app/style/globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "La Ngọc Hưng - Portfolio",
+  title: "La Ngọc Hùng - Portfolio",
   description: "Software Engineer Portfolio",
 };
 

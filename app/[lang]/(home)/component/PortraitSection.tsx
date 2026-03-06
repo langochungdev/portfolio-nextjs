@@ -1,7 +1,7 @@
 "use client";
 
 import { profileData } from "@/lib/mock/home";
-import styles from "@/app/style/PortraitSection.module.css";
+import styles from "@/app/style/home/PortraitSection.module.css";
 
 const ICON_POSITIONS = [
   styles.techIcon1,
@@ -10,6 +10,8 @@ const ICON_POSITIONS = [
   styles.techIcon4,
   styles.techIcon5,
   styles.techIcon6,
+  styles.techIcon7,
+  styles.techIcon8,
 ];
 
 export function PortraitSection() {
@@ -29,9 +31,11 @@ export function PortraitSection() {
       </div>
 
       <div className={styles.portraitWrapper}>
-        <div className={styles.portraitPlaceholder}>
-          <span className={styles.portraitInitial}>{profileData.avatar}</span>
-        </div>
+        <img
+          src="/img/portrait.png"
+          alt="portrait"
+          className={styles.portraitImage}
+        />
       </div>
     </>
   );
