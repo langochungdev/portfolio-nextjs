@@ -19,8 +19,10 @@ export default function HomePage() {
         <div className={styles.headerTop}>
           <LanguageSwitcher />
         </div>
-        <h1 className={styles.title}>La Ngọc Hùng</h1>
-        <p className={styles.subtitle}>{dict.home.subtitle}</p>
+        <div className={styles.headerCenter}>
+          <h1 className={styles.title}>La Ngọc Hùng</h1>
+          <p className={styles.subtitle}>{dict.home.subtitle}</p>
+        </div>
       </header>
 
       <div className={styles.grid}>

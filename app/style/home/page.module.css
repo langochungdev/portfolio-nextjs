@@ -9,15 +9,26 @@
 }
 
 .header {
-    text-align: center;
-    flex-shrink: 0;
-    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 22vh;
+    min-height: 0;
 }
 
 .headerTop {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 0.75rem;
+    flex-shrink: 0;
+}
+
+.headerCenter {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding-bottom: 2.5rem;
 }
 
 .title {

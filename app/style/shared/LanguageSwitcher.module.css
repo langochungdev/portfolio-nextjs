@@ -1,4 +1,8 @@
 .langSwitcher {
+    position: fixed;
+    top: 1.5rem;
+    right: 2rem;
+    z-index: 100;
     display: flex;
     gap: 0.25rem;
 }

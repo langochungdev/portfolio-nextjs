@@ -1,41 +1,53 @@
-.sectionTitle {
-    font-size: 0.875rem;
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.heading {
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--color-accent);
-    margin-bottom: 0.75rem;
-    opacity: 0.7;
-    flex-shrink: 0;
+    margin: 0.75rem 0 0.1rem 0;
+    opacity: 0.8;
 }
 
-.articleList {
+.heading:first-child {
+    margin-top: 0;
+}
+
+.paragraph {
+    font-size: 0.825rem;
+    color: var(--color-text-muted);
+    line-height: 1.65;
+    margin: 0;
+}
+
+.list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    list-style: none;
-    overflow: hidden;
+    gap: 0.2rem;
 }
 
-.articleLink {
-    display: block;
-    font-size: 0.875rem;
+.listItem {
+    font-size: 0.8rem;
     color: var(--color-text-muted);
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--color-border);
-    transition: color 0.2s ease;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.5;
+    padding-left: 0.9rem;
+    position: relative;
 }
 
-.articleLink:hover {
-    color: var(--color-text);
-}
-
-.articleDate {
+.listItem::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--color-accent);
+    opacity: 0.5;
     font-size: 0.7rem;
-    color: var(--color-text-muted);
-    opacity: 0.6;
-    margin-left: 0.5rem;
+    top: 0.15em;
 }

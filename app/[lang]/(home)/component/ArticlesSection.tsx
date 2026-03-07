@@ -1,26 +1,28 @@
 "use client";
 
-import Link from "next/link";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
-import { blogPosts } from "@/lib/mock/blog";
+import { bio, type BioBlock } from "@/lib/content/bio";
 import styles from "@/app/style/home/ArticlesSection.module.css";
 
 export function ArticlesSection() {
-  const { dictionary: dict, locale } = useDictionary();
-  const recentPosts = blogPosts.slice(0, 5);
+  const { locale } = useDictionary();
+  const content: BioBlock[] = bio[locale];
 
   return (
-    <section>
-      <ul className={styles.articleList}>
-        {recentPosts.map((post) => (
-          <li key={post.id}>
-            <Link href={`/${locale}/blog`} className={styles.articleLink}>
-              {post.title[locale]}
-              <span className={styles.articleDate}>{post.date}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <section className={styles.section}>
+      {content.map((block: BioBlock, i: number) =>
+        block.type === "heading" ? (
+          <h2 key={i} className={styles.heading}>{block.text}</h2>
+        ) : block.type === "paragraph" ? (
+          <p key={i} className={styles.paragraph}>{block.text}</p>
+        ) : block.type === "list" ? (
+          <ul key={i} className={styles.list}>
+            {block.items.map((item: string, j: number) => (
+              <li key={j} className={styles.listItem}>{item}</li>
+            ))}
+          </ul>
+        ) : null
+      )}
     </section>
   );
 }
