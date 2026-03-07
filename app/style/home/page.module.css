@@ -84,4 +84,6 @@
     justify-content: center;
     min-height: 0;
     overflow: hidden;
+    position: relative;
+    top: -4rem;
 }
