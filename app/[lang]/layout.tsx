@@ -27,8 +27,10 @@ export default async function LocaleLayout({
       <body>
         <DictionaryProvider dictionary={dictionary} locale={locale}>
           {children}
-          <NavBar />
-          <EyesCat />
+          <div className="bottom-bar">
+            <NavBar />
+            <EyesCat />
+          </div>
         </DictionaryProvider>
       </body>
     </html>

@@ -113,4 +113,24 @@
         width: 1.25rem;
         height: 1.25rem;
     }
+
+    :global(.bottom-bar) .navBar {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        padding: 0.75rem;
+        border-radius: 1.75rem;
+    }
+
+    :global(.bottom-bar) .dockItem {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 1rem;
+    }
+
+    :global(.bottom-bar) .dockIcon {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
 }

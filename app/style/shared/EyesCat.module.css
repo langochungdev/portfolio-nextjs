@@ -1,6 +1,6 @@
 .cat {
     position: fixed;
-    bottom: 5.5rem;
+    bottom: 1.5rem;
     right: 1.5rem;
     z-index: 150;
     cursor: pointer;
@@ -86,9 +86,41 @@
         left: 34px;
     }
 
+    .eyesOverlay {
+        top: 7px;
+    }
+
     .pupil {
         width: 6px;
         height: 6px;
+    }
+
+    :global(.bottom-bar) .cat {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        width: 5rem;
+        height: 5rem;
+    }
+
+    :global(.bottom-bar) .eye {
+        width: 18px;
+        height: 18px;
+    }
+
+    :global(.bottom-bar) .leftEye {
+        top: 21px;
+        left: 22px;
+    }
+
+    :global(.bottom-bar) .rightEye {
+        top: 21px;
+        left: 47px;
+    }
+
+    :global(.bottom-bar) .pupil {
+        width: 9px;
+        height: 9px;
     }
 }
 

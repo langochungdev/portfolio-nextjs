@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import styles from "@/app/style/shared/EyesCat.module.css";
 
@@ -108,54 +109,56 @@ export function EyesCat() {
         </div>
       </div>
 
-      {open && (
-        <div className={styles.overlay}>
-          <div className={styles.backdrop} onClick={() => setOpen(false)} />
-          <form className={styles.form} onSubmit={handleSubmit}>
-            <div className={styles.formHeader}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/img/cat-icon.png"
-                alt="cat"
-                className={styles.formCatThumb}
-                draggable={false}
-              />
-              <span className={styles.formTitle}>{dict.eyesCat.formTitle}</span>
-              <button
-                type="button"
-                className={styles.closeBtn}
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            {sent ? (
-              <p className={styles.successMsg}>{dict.eyesCat.successMsg}</p>
-            ) : (
-              <>
-                <textarea
-                  className={styles.textarea}
-                  placeholder={dict.eyesCat.placeholder}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
-                  maxLength={500}
-                  autoFocus
+      {open &&
+        createPortal(
+          <div className={styles.overlay}>
+            <div className={styles.backdrop} onClick={() => setOpen(false)} />
+            <form className={styles.form} onSubmit={handleSubmit}>
+              <div className={styles.formHeader}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/img/cat-icon.png"
+                  alt="cat"
+                  className={styles.formCatThumb}
+                  draggable={false}
                 />
+                <span className={styles.formTitle}>{dict.eyesCat.formTitle}</span>
                 <button
-                  type="submit"
-                  className={styles.submitBtn}
-                  disabled={!message.trim()}
+                  type="button"
+                  className={styles.closeBtn}
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
                 >
-                  {dict.eyesCat.send}
+                  ✕
                 </button>
-              </>
-            )}
-          </form>
-        </div>
-      )}
+              </div>
+
+              {sent ? (
+                <p className={styles.successMsg}>{dict.eyesCat.successMsg}</p>
+              ) : (
+                <>
+                  <textarea
+                    className={styles.textarea}
+                    placeholder={dict.eyesCat.placeholder}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={4}
+                    maxLength={500}
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    className={styles.submitBtn}
+                    disabled={!message.trim()}
+                  >
+                    {dict.eyesCat.send}
+                  </button>
+                </>
+              )}
+            </form>
+          </div>,
+          document.body
+        )}
     </>
   );
 }
