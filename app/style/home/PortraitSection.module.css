@@ -132,3 +132,40 @@
     /* mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 75%, rgba(0, 0, 0, 0) 100%);
     -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 75%, rgba(0, 0, 0, 0) 100%); */
 }
+
+@media (max-width: 640px) {
+    .techIcon {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 0.5rem;
+        border-radius: 0.5rem;
+    }
+
+    .techIcon1,
+    .techIcon3,
+    .techIcon4,
+    .techIcon6 {
+        left: auto;
+        right: auto;
+    }
+
+    .techIcon1 {
+        left: 0;
+    }
+
+    .techIcon3 {
+        left: 0;
+    }
+
+    .techIcon4 {
+        right: 0;
+    }
+
+    .techIcon6 {
+        right: 0;
+    }
+
+    .portraitWrapper {
+        max-height: 50vh;
+    }
+}

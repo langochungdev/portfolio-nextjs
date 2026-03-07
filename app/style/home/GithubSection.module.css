@@ -51,3 +51,9 @@
 .githubCellActive3 {
     background: #22c55e;
 }
+
+@media (max-width: 640px) {
+    .githubBox {
+        height: 6rem;
+    }
+}

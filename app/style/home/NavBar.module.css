@@ -93,3 +93,22 @@
     background: var(--color-text);
     opacity: 0.7;
 }
+
+@media (max-width: 640px) {
+    .navBar {
+        bottom: 0.75rem;
+        padding: 0.5rem;
+        border-radius: 1.25rem;
+    }
+
+    .dockItem {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+    }
+
+    .dockIcon {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+}
