@@ -1,0 +1,262 @@
+.cat {
+    position: fixed;
+    bottom: 5.5rem;
+    right: 1.5rem;
+    z-index: 150;
+    cursor: pointer;
+    width: 72px;
+    height: 72px;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (hover: hover) {
+    .cat:hover {
+        transform: scale(1.12);
+    }
+}
+
+.catImage {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 50%;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.eyesOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.eye {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leftEye {
+    top: 27px;
+    left: 20px;
+}
+
+.rightEye {
+    top: 27px;
+    left: 42px;
+}
+
+.pupil {
+    width: 8px;
+    height: 8px;
+    background: #111;
+    border-radius: 50%;
+    transition: transform 0.08s ease-out;
+}
+
+@media (max-width: 640px) {
+    .cat {
+        bottom: 5rem;
+        right: 1rem;
+        width: 58px;
+        height: 58px;
+    }
+
+    .eye {
+        width: 13px;
+        height: 13px;
+    }
+
+    .leftEye {
+        top: 22px;
+        left: 16px;
+    }
+
+    .rightEye {
+        top: 22px;
+        left: 34px;
+    }
+
+    .pupil {
+        width: 6px;
+        height: 6px;
+    }
+}
+
+/* ── Form overlay ── */
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    animation: fadeIn 0.15s ease;
+}
+
+.backdrop {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+}
+
+.form {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 22rem;
+    background: var(--color-card-bg);
+    border: 1.5px solid var(--color-border);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    animation: slideUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.formHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.formCatThumb {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    object-fit: cover;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.formTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text);
+    flex: 1;
+}
+
+.closeBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    transition: background 0.15s, color 0.15s;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .closeBtn:hover {
+        background: var(--color-border);
+        color: var(--color-text);
+    }
+}
+
+.textarea {
+    width: 100%;
+    min-height: 7rem;
+    resize: vertical;
+    border: 1.5px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    background: var(--color-bg);
+    transition: border-color 0.2s;
+    outline: none;
+}
+
+.textarea:focus {
+    border-color: var(--color-border-hover);
+}
+
+.textarea::placeholder {
+    color: var(--color-text-muted);
+    opacity: 0.6;
+}
+
+.submitBtn {
+    align-self: flex-end;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 0.75rem;
+    border: none;
+    background: var(--color-text);
+    color: var(--color-bg);
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.submitBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+@media (hover: hover) {
+    .submitBtn:hover:not(:disabled) {
+        opacity: 0.8;
+    }
+}
+
+.successMsg {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: 0.5rem 0;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 640px) {
+    .overlay {
+        padding: 1rem;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.4);
+    }
+
+    .form {
+        max-width: 100%;
+    }
+}

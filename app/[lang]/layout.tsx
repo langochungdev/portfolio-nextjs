@@ -1,6 +1,7 @@
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { DictionaryProvider } from "./_shared/DictionaryProvider";
 import { NavBar } from "./_shared/NavBar";
+import { EyesCat } from "./_shared/EyesCat";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 
@@ -27,6 +28,7 @@ export default async function LocaleLayout({
         <DictionaryProvider dictionary={dictionary} locale={locale}>
           {children}
           <NavBar />
+          <EyesCat />
         </DictionaryProvider>
       </body>
     </html>

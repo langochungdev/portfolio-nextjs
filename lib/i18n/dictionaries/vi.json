@@ -38,5 +38,12 @@
       "design": "Thiết kế",
       "backend": "Backend"
     }
+  },
+  "eyesCat": {
+    "title": "Hỏi tôi bất cứ điều gì",
+    "formTitle": "Hỏi tôi bất cứ điều gì!",
+    "placeholder": "Nhập câu hỏi của bạn...",
+    "send": "Gửi",
+    "successMsg": "Cảm ơn! Tôi sẽ trả lời sớm 🐱"
   }
 }

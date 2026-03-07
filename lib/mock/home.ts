@@ -14,7 +14,11 @@ export const profileData = {
   social: {
     github: "https://github.com/example",
     linkedin: "https://linkedin.com/in/example",
-    twitter: "https://twitter.com/example",
+    tiktok: "https://tiktok.com/@example",
+    instagram: "https://instagram.com/example",
+    facebook: "https://facebook.com/example",
+    zalo: "https://zalo.me/example",
+    pinterest: "https://pinterest.com/example",
   },
 };
 

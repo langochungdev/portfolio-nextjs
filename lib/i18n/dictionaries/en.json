@@ -38,5 +38,12 @@
       "design": "Design",
       "backend": "Backend"
     }
+  },
+  "eyesCat": {
+    "title": "Ask me anything",
+    "formTitle": "Ask me anything!",
+    "placeholder": "Type your question here...",
+    "send": "Send",
+    "successMsg": "Thanks! I'll get back to you soon 🐱"
   }
 }
