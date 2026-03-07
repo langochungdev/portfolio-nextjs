@@ -2,6 +2,8 @@
 
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { LanguageSwitcher } from "@/app/[lang]/_shared/LanguageSwitcher";
+import { DarkModeToggle } from "@/app/[lang]/_shared/DarkModeToggle";
+import topStyles from "@/app/style/shared/TopActions.module.css";
 import { ArticlesSection } from "./component/ArticlesSection";
 import { SocialSection } from "./component/SocialSection";
 import { GithubSection } from "./component/GithubSection";
@@ -16,8 +18,9 @@ export default function HomePage() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <div className={styles.headerTop}>
+        <div className={topStyles.topActions}>
           <LanguageSwitcher />
+          <DarkModeToggle />
         </div>
         <div className={styles.headerCenter}>
           <h1 className={styles.title}>La Ngọc Hùng</h1>

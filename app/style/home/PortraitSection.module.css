@@ -1,3 +1,15 @@
+@keyframes float {
+
+    0%,
+    100% {
+        translate: 0 0;
+    }
+
+    50% {
+        translate: 0 -7px;
+    }
+}
+
 .techStackOverlay {
     position: absolute;
     inset: 0;
@@ -19,6 +31,7 @@
     font-weight: 600;
     color: var(--color-text-muted);
     box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+    animation: float 3.5s ease-in-out infinite;
 }
 
 .techIcon1 {
@@ -27,6 +40,8 @@
     width: 3rem;
     height: 3rem;
     transform: rotate(12deg);
+    animation-delay: 0s;
+    animation-duration: 3.2s;
 }
 
 .techIcon2 {
@@ -35,6 +50,8 @@
     width: 3.5rem;
     height: 3.5rem;
     transform: rotate(-10deg);
+    animation-delay: -0.8s;
+    animation-duration: 4s;
 }
 
 .techIcon3 {
@@ -43,6 +60,8 @@
     width: 3rem;
     height: 3rem;
     transform: rotate(8deg);
+    animation-delay: -1.6s;
+    animation-duration: 3.6s;
 }
 
 .techIcon4 {
@@ -51,6 +70,8 @@
     width: 3rem;
     height: 3rem;
     transform: rotate(-12deg);
+    animation-delay: -0.4s;
+    animation-duration: 3.8s;
 }
 
 .techIcon5 {
@@ -59,6 +80,8 @@
     width: 3.5rem;
     height: 3.5rem;
     transform: rotate(10deg);
+    animation-delay: -1.2s;
+    animation-duration: 4.2s;
 }
 
 .techIcon6 {
@@ -67,6 +90,8 @@
     width: 3rem;
     height: 3rem;
     transform: rotate(-8deg);
+    animation-delay: -2s;
+    animation-duration: 3.4s;
 }
 
 .techIcon7 {
@@ -75,6 +100,8 @@
     width: 2.75rem;
     height: 2.75rem;
     transform: rotate(-6deg);
+    animation-delay: -0.6s;
+    animation-duration: 3.9s;
 }
 
 .techIcon8 {
@@ -83,6 +110,8 @@
     width: 2.75rem;
     height: 2.75rem;
     transform: rotate(6deg);
+    animation-delay: -1.8s;
+    animation-duration: 3.3s;
 }
 
 .portraitWrapper {

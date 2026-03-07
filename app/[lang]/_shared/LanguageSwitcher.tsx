@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
-import styles from "@/app/style/shared/LanguageSwitcher.module.css";
+import styles from "@/app/style/shared/TopActions.module.css";
 
 export function LanguageSwitcher() {
   const pathname = usePathname();
+  const currentLocale = pathname.split("/")[1] as Locale;
+  const nextLocale = i18nConfig.locales.find((l) => l !== currentLocale) ?? i18nConfig.defaultLocale;
 
   function getLocalePath(locale: Locale) {
     const segments = pathname.split("/");
@@ -15,19 +17,9 @@ export function LanguageSwitcher() {
     return segments.join("/");
   }
 
-  const currentLocale = pathname.split("/")[1] as Locale;
-
   return (
-    <div className={styles.langSwitcher}>
-      {i18nConfig.locales.map((locale) => (
-        <Link
-          key={locale}
-          href={getLocalePath(locale)}
-          className={`${styles.langLink} ${currentLocale === locale ? styles.langActive : ""}`}
-        >
-          {locale.toUpperCase()}
-        </Link>
-      ))}
-    </div>
+    <Link href={getLocalePath(nextLocale)} className={styles.actionBtn}>
+      {nextLocale.toUpperCase()}
+    </Link>
   );
 }
