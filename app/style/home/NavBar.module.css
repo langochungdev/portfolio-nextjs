@@ -33,15 +33,17 @@
     background: rgba(255, 255, 255, 0.08);
 }
 
-.dockItem:hover {
-    transform: translateY(-6px) scale(1.18);
-    background: rgba(255, 255, 255, 0.2);
-}
+@media (hover: hover) {
+    .dockItem:hover {
+        transform: translateY(-6px) scale(1.18);
+        background: rgba(255, 255, 255, 0.2);
+    }
 
-.dockItem:hover .dockLabel {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: none;
+    .dockItem:hover .dockLabel {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: none;
+    }
 }
 
 .dockItemActive {

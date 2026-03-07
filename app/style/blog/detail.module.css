@@ -14,8 +14,10 @@
     transition: color 0.2s;
 }
 
-.backLink:hover {
-    color: var(--color-text);
+@media (hover: hover) {
+    .backLink:hover {
+        color: var(--color-text);
+    }
 }
 
 .notFound {

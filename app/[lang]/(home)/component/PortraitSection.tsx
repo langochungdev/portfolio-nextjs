@@ -32,10 +32,9 @@ export function PortraitSection() {
 
       <div className={styles.portraitWrapper}>
         <img
-          src="/img/portrait.png"
+          src="/img/portrait.webp"
           alt="portrait"
-          className={styles.portraitImage}
-        />
+          className={styles.portraitImage}          draggable={false}        />
       </div>
     </>
   );

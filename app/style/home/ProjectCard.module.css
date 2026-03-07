@@ -15,21 +15,12 @@
     text-align: center;
 }
 
-.projectCard:hover {
-    border-color: var(--color-border-hover);
-    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
-}
-
 .projectTitle {
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--color-text-muted);
     text-transform: uppercase;
     transition: color 0.2s ease;
-}
-
-.projectCard:hover .projectTitle {
-    color: var(--color-text);
 }
 
 .projectDesc {
@@ -40,10 +31,6 @@
     transition: opacity 0.2s ease;
 }
 
-.projectCard:hover .projectDesc {
-    opacity: 1;
-}
-
 .projectTech {
     display: flex;
     gap: 0.5rem;
@@ -52,8 +39,23 @@
     transition: opacity 0.2s ease;
 }
 
-.projectCard:hover .projectTech {
-    opacity: 1;
+@media (hover: hover) {
+    .projectCard:hover {
+        border-color: var(--color-border-hover);
+        box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+    }
+
+    .projectCard:hover .projectTitle {
+        color: var(--color-text);
+    }
+
+    .projectCard:hover .projectDesc {
+        opacity: 1;
+    }
+
+    .projectCard:hover .projectTech {
+        opacity: 1;
+    }
 }
 
 .techBadge {

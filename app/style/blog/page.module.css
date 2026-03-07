@@ -18,8 +18,10 @@
     transition: color 0.2s;
 }
 
-.backLink:hover {
-    color: var(--color-text);
+@media (hover: hover) {
+    .backLink:hover {
+        color: var(--color-text);
+    }
 }
 
 .title {
@@ -53,9 +55,11 @@
     transition: all 0.2s;
 }
 
-.catBtn:hover {
-    border-color: var(--color-border-hover);
-    color: var(--color-text);
+@media (hover: hover) {
+    .catBtn:hover {
+        border-color: var(--color-border-hover);
+        color: var(--color-text);
+    }
 }
 
 .catActive {
@@ -80,9 +84,11 @@
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.card:hover {
-    border-color: var(--color-border-hover);
-    box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+@media (hover: hover) {
+    .card:hover {
+        border-color: var(--color-border-hover);
+        box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+    }
 }
 
 .cardAccent {
