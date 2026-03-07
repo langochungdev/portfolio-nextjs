@@ -1,9 +1,9 @@
 .projectsSection {
     display: flex;
     flex-direction: column;
-    gap: clamp(0.5rem, 1vh, 1.25rem);
-    height: 100%;
-    overflow: hidden;
+    gap: 0.375rem;
+    overflow: visible;
+    padding: 0.5rem;
 }
 
 .sectionTitle {

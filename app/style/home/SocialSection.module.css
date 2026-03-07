@@ -30,7 +30,7 @@
 @media (hover: hover) {
     .socialLink:hover {
         border-color: var(--color-border-hover);
-        background-color: #f8fafc;
+        background-color: var(--color-card-bg);
         color: var(--color-text);
     }
 }

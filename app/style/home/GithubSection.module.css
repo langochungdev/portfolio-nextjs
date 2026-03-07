@@ -10,50 +10,117 @@
 
 .githubBox {
     width: 100%;
-    height: 8rem;
     border: 2px solid var(--color-border);
     border-radius: 1rem;
     padding: 0.5rem;
     background: rgba(248, 250, 252, 0.5);
 }
 
+[data-theme="dark"] .githubBox {
+    background: rgba(0, 0, 0, 0.5);
+}
+
 .githubInner {
     width: 100%;
-    height: 100%;
-    background: #f1f5f9;
+    background: var(--color-card-bg);
     border-radius: 0.5rem;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 0.75rem;
+    gap: 0.5rem;
 }
 
 .githubGrid {
     display: grid;
-    grid-template-columns: repeat(26, 1fr);
-    gap: 2px;
-    width: 90%;
-    height: 70%;
+    grid-template-rows: repeat(7, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 3px;
+    width: 100%;
 }
 
 .githubCell {
+    aspect-ratio: 1;
     border-radius: 2px;
     background: var(--color-border);
 }
 
 .githubCellActive1 {
-    background: #86efac;
+    background: #9be9a8;
 }
 
 .githubCellActive2 {
-    background: #4ade80;
+    background: #40c463;
 }
 
 .githubCellActive3 {
-    background: #22c55e;
+    background: #30a14e;
+}
+
+.githubCellActive4 {
+    background: #216e39;
+}
+
+[data-theme="dark"] .githubCellActive1 {
+    background: #0e4429;
+}
+
+[data-theme="dark"] .githubCellActive2 {
+    background: #006d32;
+}
+
+[data-theme="dark"] .githubCellActive3 {
+    background: #26a641;
+}
+
+[data-theme="dark"] .githubCellActive4 {
+    background: #39d353;
+}
+
+.githubFooter {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+}
+
+.totalLabel {
+    font-weight: 500;
+}
+
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.legendLabel {
+    font-size: 0.6rem;
+    color: var(--color-text-muted);
+    padding: 0 2px;
+}
+
+.legendCell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--color-border);
 }
 
 @media (max-width: 640px) {
-    .githubBox {
-        height: 6rem;
+    .githubInner {
+        padding: 0.5rem;
+    }
+
+    .githubGrid {
+        gap: 2px;
+    }
+
+    .githubFooter {
+        font-size: 0.55rem;
     }
 }

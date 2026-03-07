@@ -1,38 +1,80 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import styles from "@/app/style/home/GithubSection.module.css";
+import type { ContributionCell } from "@/lib/content/github";
 
-const CELL_PATTERN = [
-  0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 3, 0, 0, 1, 0, 2, 0, 0, 1, 0, 0, 3, 1, 0,
-  0, 2, 0, 1, 0, 3, 0, 0, 2, 0, 1, 0, 0, 1, 0, 2, 3, 0, 1, 0, 0, 0, 2, 0, 1,
-  0, 0, 3, 0, 1, 0, 0, 2, 0, 0, 1, 3, 0, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 0,
-  1, 0, 2, 0, 3, 0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 3, 0, 0, 1, 2, 0, 0, 1, 0, 3,
-  0, 0, 2, 0, 1, 0, 0, 0, 1, 3, 0, 2, 0, 1, 0, 0, 2, 3, 0, 0, 1, 0, 2, 0, 1,
-  0, 0, 3, 0, 1, 0,
-];
+interface ContributionData {
+  total: number;
+  cells: ContributionCell[];
+}
 
 const LEVEL_CLASS: Record<number, string> = {
   1: styles.githubCellActive1,
   2: styles.githubCellActive2,
   3: styles.githubCellActive3,
+  4: styles.githubCellActive4,
 };
 
 export function GithubSection() {
   const { dictionary: dict } = useDictionary();
+  const [data, setData] = useState<ContributionData | null>(null);
+
+  useEffect(() => {
+    fetch("/api/github/contributions")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.cells) setData(json);
+      })
+      .catch(() => {});
+  }, []);
+
+  const weeks = data
+    ? Array.from({ length: Math.ceil(data.cells.length / 7) }, (_, i) =>
+        data.cells.slice(i * 7, i * 7 + 7)
+      )
+    : [];
 
   return (
     <section>
       <div className={styles.githubBox}>
         <div className={styles.githubInner}>
-          <div className={styles.githubGrid}>
-            {CELL_PATTERN.map((level, i) => (
-              <div
-                key={i}
-                className={`${styles.githubCell} ${LEVEL_CLASS[level] ?? ""}`}
-              />
-            ))}
-          </div>
+          {!data ? (
+            <div className={styles.githubGrid}>
+              {Array.from({ length: 182 }).map((_, i) => (
+                <div key={i} className={styles.githubCell} />
+              ))}
+            </div>
+          ) : (
+            <div className={styles.githubGrid}>
+              {weeks.map((week, wi) =>
+                week.map((day, di) => (
+                  <div
+                    key={`${wi}-${di}`}
+                    className={`${styles.githubCell} ${LEVEL_CLASS[day.level] ?? ""}`}
+                    title={`${day.date}: ${day.count} contributions`}
+                  />
+                ))
+              )}
+            </div>
+          )}
+          {data && (
+            <div className={styles.githubFooter}>
+              <span className={styles.totalLabel}>
+                {data.total.toLocaleString()} contributions in the last year
+              </span>
+              <div className={styles.legend}>
+                <span className={styles.legendLabel}>Less</span>
+                <div className={`${styles.legendCell}`} />
+                <div className={`${styles.legendCell} ${styles.githubCellActive1}`} />
+                <div className={`${styles.legendCell} ${styles.githubCellActive2}`} />
+                <div className={`${styles.legendCell} ${styles.githubCellActive3}`} />
+                <div className={`${styles.legendCell} ${styles.githubCellActive4}`} />
+                <span className={styles.legendLabel}>More</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

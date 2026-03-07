@@ -29,6 +29,77 @@ function calcPupilOffset(
   };
 }
 
+interface EyeMove {
+  left: PupilOffset;
+  right: PupilOffset;
+  ms: number;
+  hold: number;
+  ease: "out" | "inout";
+}
+
+const P = MAX_PUPIL;
+const CENTER: PupilOffset = { x: 0, y: 0 };
+
+function rnd(min: number, max: number) {
+  return min + Math.random() * (max - min);
+}
+
+function randDir(): PupilOffset {
+  const a = Math.random() * Math.PI * 2;
+  const r = rnd(0.5, 1) * P;
+  return { x: Math.cos(a) * r, y: Math.sin(a) * r };
+}
+
+function* catBehavior(): Generator<EyeMove> {
+  while (true) {
+    const roll = Math.random();
+
+    if (roll < 0.25) {
+      const t = randDir();
+      yield { left: t, right: t, ms: 100, hold: rnd(600, 1400), ease: "out" };
+      yield { left: CENTER, right: CENTER, ms: 350, hold: rnd(200, 500), ease: "out" };
+    } else if (roll < 0.5) {
+      const yJitter = rnd(-0.5, 0.5);
+      const L: PupilOffset = { x: -P * 0.85, y: yJitter };
+      const R: PupilOffset = { x: P * 0.85, y: yJitter };
+      yield { left: L, right: L, ms: 700, hold: 200, ease: "inout" };
+      yield { left: R, right: R, ms: 1100, hold: 200, ease: "inout" };
+      yield { left: CENTER, right: CENTER, ms: 500, hold: rnd(400, 700), ease: "inout" };
+    } else if (roll < 0.7) {
+      const steps = 8;
+      for (let i = 0; i <= steps; i++) {
+        const a = (i / steps) * Math.PI * 2;
+        const pt: PupilOffset = { x: Math.cos(a) * P * 0.7, y: Math.sin(a) * P * 0.5 };
+        yield { left: pt, right: pt, ms: 220, hold: 0, ease: "inout" };
+      }
+      yield { left: CENTER, right: CENTER, ms: 300, hold: rnd(600, 1000), ease: "out" };
+    } else if (roll < 0.85) {
+      const down: PupilOffset = { x: 0, y: P * 0.6 };
+      const up: PupilOffset = { x: 0, y: -P * 0.3 };
+      yield { left: down, right: down, ms: 1400, hold: rnd(800, 1200), ease: "inout" };
+      yield { left: up, right: up, ms: 100, hold: 250, ease: "out" };
+      yield { left: CENTER, right: CENTER, ms: 400, hold: rnd(300, 600), ease: "out" };
+    } else {
+      const divergeL: PupilOffset = { x: -1.5, y: rnd(-1, 0) };
+      const divergeR: PupilOffset = { x: 1.5, y: rnd(-1, 0) };
+      yield { left: divergeL, right: divergeR, ms: 280, hold: rnd(600, 900), ease: "out" };
+      const snap = randDir();
+      yield { left: snap, right: snap, ms: 120, hold: rnd(500, 800), ease: "out" };
+      yield { left: CENTER, right: CENTER, ms: 400, hold: rnd(300, 500), ease: "out" };
+    }
+
+    yield { left: CENTER, right: CENTER, ms: 100, hold: rnd(200, 600), ease: "out" };
+  }
+}
+
+function easeOut(t: number) {
+  return 1 - (1 - t) ** 3;
+}
+
+function easeInOut(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+}
+
 export function EyesCat() {
   const { dictionary: dict } = useDictionary();
   const catRef = useRef<HTMLDivElement>(null);
@@ -61,9 +132,62 @@ export function EyesCat() {
   }, []);
 
   useEffect(() => {
+    const isMobile = window.matchMedia("(hover: none)").matches;
+    if (isMobile) return;
     window.addEventListener("mousemove", onMouseMove);
     return () => window.removeEventListener("mousemove", onMouseMove);
   }, [onMouseMove]);
+
+  useEffect(() => {
+    const isMobile = window.matchMedia("(hover: none)").matches;
+    if (!isMobile) return;
+
+    let raf: number;
+    const gen = catBehavior();
+    let curL: PupilOffset = { x: 0, y: 0 };
+    let curR: PupilOffset = { x: 0, y: 0 };
+    let startL: PupilOffset = { ...curL };
+    let startR: PupilOffset = { ...curR };
+    let move = gen.next().value!;
+    let moveStart = performance.now();
+    let phase: "move" | "hold" = "move";
+    let holdStart = 0;
+
+    function apply(t: number) {
+      const e = move.ease === "out" ? easeOut(t) : easeInOut(t);
+      curL = { x: startL.x + (move.left.x - startL.x) * e, y: startL.y + (move.left.y - startL.y) * e };
+      curR = { x: startR.x + (move.right.x - startR.x) * e, y: startR.y + (move.right.y - startR.y) * e };
+      setLeftPupil({ ...curL });
+      setRightPupil({ ...curR });
+    }
+
+    function nextMove(now: number) {
+      const next = gen.next();
+      if (next.done) return;
+      move = next.value;
+      startL = { ...curL };
+      startR = { ...curR };
+      moveStart = now;
+      phase = "move";
+    }
+
+    function tick(now: number) {
+      if (phase === "move") {
+        const raw = move.ms > 0 ? Math.min((now - moveStart) / move.ms, 1) : 1;
+        apply(raw);
+        if (raw >= 1) {
+          phase = "hold";
+          holdStart = now;
+        }
+      } else if (now - holdStart >= move.hold) {
+        nextMove(now);
+      }
+      raf = requestAnimationFrame(tick);
+    }
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
