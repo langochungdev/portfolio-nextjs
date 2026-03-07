@@ -8,7 +8,6 @@ import { ArticlesSection } from "./component/ArticlesSection";
 import { SocialSection } from "./component/SocialSection";
 import { GithubSection } from "./component/GithubSection";
 import { PortraitSection } from "./component/PortraitSection";
-import { NavBar } from "./component/NavBar";
 import { ProjectsSection } from "./component/ProjectsSection";
 import styles from "@/app/style/home/page.module.css";
 
@@ -39,7 +38,6 @@ export default function HomePage() {
 
         <main className={styles.centerColumn}>
           <PortraitSection />
-          <NavBar />
         </main>
 
         <section className={styles.rightColumn}>

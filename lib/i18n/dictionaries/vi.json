@@ -11,5 +11,32 @@
       "blog": "Blog",
       "certificates": "Chứng chỉ"
     }
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Suy nghĩ, hướng dẫn và câu chuyện",
+    "backHome": "Về trang chủ",
+    "backToBlog": "Về Blog",
+    "notFound": "Không tìm thấy bài viết",
+    "categories": {
+      "allPosts": "Tất cả",
+      "tech": "Công nghệ",
+      "design": "Thiết kế",
+      "code": "Lập trình",
+      "life": "Cuộc sống",
+      "tutorial": "Hướng dẫn"
+    }
+  },
+  "certificates": {
+    "title": "Chứng chỉ",
+    "subtitle": "Các chứng chỉ và bằng cấp chuyên nghiệp",
+    "backHome": "Về trang chủ",
+    "viewCredential": "Xem chứng chỉ",
+    "categories": {
+      "cloud": "Cloud",
+      "frontend": "Frontend",
+      "design": "Thiết kế",
+      "backend": "Backend"
+    }
   }
 }

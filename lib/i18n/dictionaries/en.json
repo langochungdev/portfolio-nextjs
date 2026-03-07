@@ -11,5 +11,32 @@
       "blog": "Blog",
       "certificates": "Cer"
     }
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Thoughts, tutorials, and stories",
+    "backHome": "Back to Home",
+    "backToBlog": "Back to Blog",
+    "notFound": "Post not found",
+    "categories": {
+      "allPosts": "All",
+      "tech": "Tech",
+      "design": "Design",
+      "code": "Code",
+      "life": "Life",
+      "tutorial": "Tutorial"
+    }
+  },
+  "certificates": {
+    "title": "Certificates",
+    "subtitle": "Professional certifications and credentials",
+    "backHome": "Back to Home",
+    "viewCredential": "View credential",
+    "categories": {
+      "cloud": "Cloud",
+      "frontend": "Frontend",
+      "design": "Design",
+      "backend": "Backend"
+    }
   }
 }

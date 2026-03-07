@@ -1,5 +1,6 @@
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { DictionaryProvider } from "./_shared/DictionaryProvider";
+import { NavBar } from "./_shared/NavBar";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 
@@ -21,10 +22,11 @@ export default async function LocaleLayout({
   const dictionary = await getDictionary(locale);
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <body>
         <DictionaryProvider dictionary={dictionary} locale={locale}>
           {children}
+          <NavBar />
         </DictionaryProvider>
       </body>
     </html>

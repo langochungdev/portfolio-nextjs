@@ -1,7 +1,9 @@
 .navBar {
-    position: absolute;
+    position: fixed;
     bottom: 1.25rem;
-    z-index: 2;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
     display: flex;
     gap: 0.5rem;
     background: rgba(255, 255, 255, 0.12);
