@@ -43,9 +43,16 @@ export function AutoScrollColumn({
     const el = scrollRef.current;
     if (!el) return;
 
+    let accumulated = 0;
+
     const animate = () => {
       if (!pausedRef.current && el) {
-        el.scrollTop += SCROLL_SPEED;
+        accumulated += SCROLL_SPEED;
+        if (accumulated >= 1) {
+          const px = Math.floor(accumulated);
+          accumulated -= px;
+          el.scrollTop += px;
+        }
         const halfScroll = el.scrollHeight / 2;
         if (el.scrollTop >= halfScroll) {
           el.scrollTop -= halfScroll;

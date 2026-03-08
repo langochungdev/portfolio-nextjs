@@ -119,7 +119,7 @@
     z-index: 1;
     flex: 1;
     min-height: 0;
-    max-height: calc(var(--stable-vh, 100svh) - 12rem);
+    width: 100%;
     overflow: hidden;
 }
 
@@ -167,6 +167,6 @@
     }
 
     .portraitWrapper {
-        max-height: 50vh;
+        max-height: calc(var(--stable-vh, 100svh) * 0.5);
     }
 }
