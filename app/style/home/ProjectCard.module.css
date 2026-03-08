@@ -103,10 +103,12 @@
 }
 
 @media (hover: none) {
+    .mobileSubtitle {
+        display: block;
+    }
+
     .techBadge {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-        transition: none;
+        display: none;
     }
 }
 
@@ -118,13 +120,5 @@
 
     .title {
         font-size: 0.75rem;
-    }
-
-    .mobileSubtitle {
-        display: block;
-    }
-
-    .techBadge {
-        display: none;
     }
 }

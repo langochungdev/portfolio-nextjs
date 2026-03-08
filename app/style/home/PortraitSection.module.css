@@ -117,10 +117,9 @@
 .portraitWrapper {
     position: relative;
     z-index: 1;
-    /* width: min(18rem, 30vw); */
     flex: 1;
     min-height: 0;
-    max-height: calc(100vh - 12rem);
+    max-height: calc(var(--stable-vh, 100svh) - 12rem);
     overflow: hidden;
 }
 

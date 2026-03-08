@@ -42,6 +42,7 @@
   "eyesCat": {
     "title": "Ask me anything",
     "formTitle": "Ask me anything!",
+    "namePlaceholder": "Your name...",
     "placeholder": "Type your question here...",
     "send": "Send",
     "successMsg": "Thanks! I'll get back to you soon 🐱"

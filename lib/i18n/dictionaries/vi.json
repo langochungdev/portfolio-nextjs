@@ -42,6 +42,7 @@
   "eyesCat": {
     "title": "Hỏi tôi bất cứ điều gì",
     "formTitle": "Hỏi tôi bất cứ điều gì!",
+    "namePlaceholder": "Tên của bạn...",
     "placeholder": "Nhập câu hỏi của bạn...",
     "send": "Gửi",
     "successMsg": "Cảm ơn! Tôi sẽ trả lời sớm 🐱"

@@ -12,6 +12,41 @@ interface PupilOffset {
 
 const MAX_PUPIL = 4;
 
+function useVirtualKeyboardOffset(active: boolean) {
+  const [vpStyle, setVpStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    if (!active || !window.visualViewport) {
+      setVpStyle({});
+      return;
+    }
+
+    const vv = window.visualViewport;
+    function update() {
+      const diff = window.innerHeight - vv!.height;
+      if (diff > 50) {
+        setVpStyle({
+          height: `${vv!.height}px`,
+          top: `${vv!.offsetTop}px`,
+          bottom: "auto",
+        });
+      } else {
+        setVpStyle({});
+      }
+    }
+
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, [active]);
+
+  return vpStyle;
+}
+
 function calcPupilOffset(
   eyeCenterX: number,
   eyeCenterY: number,
@@ -106,8 +141,10 @@ export function EyesCat() {
   const [leftPupil, setLeftPupil] = useState<PupilOffset>({ x: 0, y: 0 });
   const [rightPupil, setRightPupil] = useState<PupilOffset>({ x: 0, y: 0 });
   const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
+  const keyboardVpStyle = useVirtualKeyboardOffset(open);
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (!catRef.current) return;
@@ -191,10 +228,11 @@ export function EyesCat() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!message.trim()) return;
+    if (!name.trim() || !message.trim()) return;
     setSent(true);
     setTimeout(() => {
       setOpen(false);
+      setName("");
       setMessage("");
       setSent(false);
     }, 2000);
@@ -235,9 +273,15 @@ export function EyesCat() {
 
       {open &&
         createPortal(
-          <div className={styles.overlay}>
+          <div
+            className={`${styles.overlay} ${Object.keys(keyboardVpStyle).length > 0 ? styles.overlayKeyboard : ""}`}
+            style={keyboardVpStyle}
+          >
             <div className={styles.backdrop} onClick={() => setOpen(false)} />
-            <form className={styles.form} onSubmit={handleSubmit}>
+            <form
+              className={styles.form}
+              onSubmit={handleSubmit}
+            >
               <div className={styles.formHeader}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -261,6 +305,14 @@ export function EyesCat() {
                 <p className={styles.successMsg}>{dict.eyesCat.successMsg}</p>
               ) : (
                 <>
+                  <input
+                    className={styles.nameInput}
+                    placeholder={dict.eyesCat.namePlaceholder}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={50}
+                    autoFocus
+                  />
                   <textarea
                     className={styles.textarea}
                     placeholder={dict.eyesCat.placeholder}
@@ -268,12 +320,11 @@ export function EyesCat() {
                     onChange={(e) => setMessage(e.target.value)}
                     rows={4}
                     maxLength={500}
-                    autoFocus
                   />
                   <button
                     type="submit"
                     className={styles.submitBtn}
-                    disabled={!message.trim()}
+                    disabled={!name.trim() || !message.trim()}
                   >
                     {dict.eyesCat.send}
                   </button>
