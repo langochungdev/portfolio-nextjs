@@ -1,26 +1,35 @@
-import type { Locale } from "@/lib/i18n/config";
+import type { CSSProperties } from "react";
 import styles from "@/app/style/home/ProjectCard.module.css";
 
 const TILTS = ["-2.5deg", "1.8deg", "-1.2deg"];
 
+const BADGE_POSITIONS = [
+  { top: "24%", left: "22%" },
+  { top: "20%", left: "76%" },
+  { top: "74%", left: "18%" },
+  { top: "78%", left: "80%" },
+  { top: "8%",  left: "52%" },
+  { top: "90%", left: "50%" },
+];
+
 interface ProjectCardProps {
   title: string;
-  description: Record<Locale, string>;
   tech: string[];
   color: string;
-  locale: Locale;
   index: number;
+  link: string;
 }
 
-export function ProjectCard({ title, description, tech, color, locale, index }: ProjectCardProps) {
+export function ProjectCard({ title, tech, color, index, link }: ProjectCardProps) {
   const tilt = TILTS[index % TILTS.length];
 
   return (
-    <div
+    <a
+      href={link}
+      target="_blank"
+      rel="noopener noreferrer"
       className={styles.projectCard}
-      style={{
-        transform: `rotate(${tilt})`,
-      }}
+      style={{ transform: `rotate(${tilt})` }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -29,17 +38,28 @@ export function ProjectCard({ title, description, tech, color, locale, index }: 
         className={styles.projectImage}
         draggable={false}
       />
-      <span className={styles.titleGlass}>{title}</span>
-      <div className={styles.hoverGlass}>
-        <p className={styles.projectDesc}>{description[locale]}</p>
-        <div className={styles.projectTech}>
-          {tech.map((t) => (
-            <span key={t} className={styles.techBadge}>
+      <div className={styles.titleGlass}>
+        <span className={styles.title}>{title}</span>
+        <span className={styles.mobileSubtitle}>{tech.join(", ")}</span>
+      </div>
+      <div className={styles.projectTech}>
+        {tech.map((t, i) => {
+          const pos = BADGE_POSITIONS[i % BADGE_POSITIONS.length];
+          return (
+            <span
+              key={t}
+              className={styles.techBadge}
+              style={{
+                "--badge-top": pos.top,
+                "--badge-left": pos.left,
+                "--badge-delay": `${i * 60}ms`,
+              } as CSSProperties}
+            >
               {t}
             </span>
-          ))}
-        </div>
+          );
+        })}
       </div>
-    </div>
+    </a>
   );
 }

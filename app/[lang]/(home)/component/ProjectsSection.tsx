@@ -1,12 +1,10 @@
 "use client";
 
-import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { projectsData } from "@/lib/mock/home";
 import { ProjectCard } from "./ProjectCard";
 import styles from "@/app/style/home/ProjectsSection.module.css";
 
 export function ProjectsSection() {
-  const { dictionary: dict, locale } = useDictionary();
 
   return (
     <section className={styles.projectsSection}>
@@ -14,10 +12,9 @@ export function ProjectsSection() {
         <ProjectCard
           key={project.id}
           title={project.title}
-          description={project.description}
           tech={project.tech}
           color={project.color}
-          locale={locale}
+          link={project.link}
           index={index}
         />
       ))}

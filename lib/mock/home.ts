@@ -25,14 +25,14 @@ export const profileData = {
 export const projectsData = [
   {
     id: "1",
-    title: "E-Commerce Platform",
+    title: "Tạo Thiệp Tương Tác",
     description: {
-      vi: "Nền tảng thương mại điện tử đầy đủ tính năng với giỏ hàng và thanh toán.",
-      en: "Full-featured e-commerce platform with cart and checkout.",
+      vi: "Nền tảng tạo thiệp tương tác trực tuyến.",
+      en: "Interactive greeting card creation platform.",
     },
-    tech: ["Next.js", "TypeScript", "Stripe"],
+    tech: ["NuxtJS", "Spring Boot", "Vercel", "Firestore"],
     color: "#2d5a27",
-    link: "#",
+    link: "https://story4u.online",
     source: "#",
   },
   {

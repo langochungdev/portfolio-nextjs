@@ -29,48 +29,64 @@
     -webkit-backdrop-filter: blur(16px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+}
+
+@media (hover: hover) {
+    .titleGlass {
+        opacity: 0;
+    }
+
+    .projectCard:hover .titleGlass {
+        opacity: 1;
+    }
+}
+
+.title {
     font-size: 0.9rem;
     font-weight: 700;
     color: #ffffff;
     text-transform: uppercase;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     white-space: nowrap;
-    pointer-events: none;
 }
 
-.hoverGlass {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, 0.75rem) translateY(4px);
-    z-index: 2;
-    padding: 0.3rem 0.75rem;
-    background: rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 0.5rem;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
-    max-width: 90%;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-}
-
-.projectDesc {
+.mobileSubtitle {
+    display: none;
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.9);
-    margin: 0;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+    font-weight: 400;
 }
 
 .projectTech {
-    display: flex;
-    gap: 0.3rem;
+    display: contents;
+}
+
+.techBadge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 1rem;
+    color: #ffffff;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    position: absolute;
+    top: var(--badge-top);
+    left: var(--badge-left);
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    z-index: 3;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) var(--badge-delay, 0ms),
+        opacity 0.3s ease var(--badge-delay, 0ms);
 }
 
 @media (hover: hover) {
@@ -80,19 +96,18 @@
         z-index: 10;
     }
 
-    .projectCard:hover .hoverGlass {
+    .projectCard:hover .techBadge {
+        transform: translate(-50%, -50%) scale(1);
         opacity: 1;
-        transform: translate(-50%, 0.75rem) translateY(0);
     }
 }
 
-.techBadge {
-    font-size: 0.55rem;
-    padding: 0.1rem 0.4rem;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(4px);
-    border-radius: 1rem;
-    color: rgba(255, 255, 255, 0.9);
+@media (hover: none) {
+    .techBadge {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+        transition: none;
+    }
 }
 
 @media (max-width: 640px) {
@@ -101,21 +116,15 @@
         border-radius: 0.625rem;
     }
 
-    .titleGlass {
+    .title {
         font-size: 0.75rem;
-        padding: 0.25rem 0.7rem;
     }
 
-    .hoverGlass {
-        opacity: 1;
-        transform: translate(-50%, 0.75rem) translateY(0);
+    .mobileSubtitle {
+        display: block;
     }
 
-    .projectDesc {
-        font-size: 0.6rem;
-    }
-
-    .projectTech {
-        flex-wrap: wrap;
+    .techBadge {
+        display: none;
     }
 }
