@@ -111,12 +111,14 @@ export function AnimatedFavicon() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
+    document
+      .querySelectorAll<HTMLLinkElement>("link[rel='icon'], link[rel='shortcut icon']")
+      .forEach((el) => el.remove());
+
+    const link = document.createElement("link");
+    link.rel = "icon";
+    link.type = "image/png";
+    document.head.appendChild(link);
 
     const totalFrames = DISCO_FRAMES + LETTERS.length;
     let currentFrame = 0;
@@ -128,7 +130,7 @@ export function AnimatedFavicon() {
       } else {
         drawLetter(ctx!, LETTERS[currentFrame - DISCO_FRAMES]);
       }
-      link!.href = canvas.toDataURL("image/png");
+      link.href = canvas.toDataURL("image/png");
       const duration = currentFrame < DISCO_FRAMES ? DISCO_DURATION : LETTER_DURATION;
       currentFrame = (currentFrame + 1) % totalFrames;
       timerId = setTimeout(nextFrame, duration);
@@ -136,7 +138,10 @@ export function AnimatedFavicon() {
 
     nextFrame();
 
-    return () => clearTimeout(timerId);
+    return () => {
+      clearTimeout(timerId);
+      link.remove();
+    };
   }, []);
 
   return null;

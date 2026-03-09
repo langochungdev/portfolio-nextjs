@@ -14,9 +14,6 @@ export const metadata: Metadata = {
     template: "langochungdev | %s",
   },
   description: "Software Engineer Portfolio",
-  icons: {
-    icon: "/favicon.gif",
-  },
 };
 
 export default function RootLayout({
