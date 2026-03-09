@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
-import { LanguageSwitcher } from "@/app/[lang]/_shared/LanguageSwitcher";
-import { DarkModeToggle } from "@/app/[lang]/_shared/DarkModeToggle";
-import { blogPosts } from "@/lib/mock/blog";
-import topStyles from "@/app/style/shared/TopActions.module.css";
+import { blogPosts, collectionColors } from "@/lib/mock/blog";
 import styles from "@/app/style/blog/detail.module.css";
 
 export default function BlogDetailPage() {
@@ -16,14 +13,10 @@ export default function BlogDetailPage() {
 
   if (!post) {
     return (
-      <div className={styles.container}>
-        <div className={topStyles.topActions}>
-          <LanguageSwitcher />
-          <DarkModeToggle />
-        </div>
+      <div className={styles.shell}>
         <div className={styles.notFound}>
           <h1>{dict.blog.notFound}</h1>
-          <Link href={`/${locale}/blog`} className={styles.backLink}>
+          <Link href={`/${locale}/blog`} className={styles.backBtn}>
             ← {dict.blog.backToBlog}
           </Link>
         </div>
@@ -31,41 +24,46 @@ export default function BlogDetailPage() {
     );
   }
 
-  return (
-    <div className={styles.container}>
-      <div className={topStyles.topActions}>
-        <LanguageSwitcher />
-        <DarkModeToggle />
-      </div>
+  const catLabel =
+    dict.blog.categories[
+      post.category as keyof typeof dict.blog.categories
+    ] ?? post.category;
+  const color = collectionColors[post.category] ?? post.color;
 
-      <article className={styles.article}>
-        <Link href={`/${locale}/blog`} className={styles.backLink}>
+  return (
+    <div className={styles.shell}>
+      <main className={styles.main}>
+        <Link href={`/${locale}/blog`} className={styles.backBtn}>
           ← {dict.blog.backToBlog}
         </Link>
 
-        <div
-          className={styles.accentBar}
-          style={{ backgroundColor: post.color }}
-        />
-
-        <header className={styles.articleHeader}>
-          <span className={styles.category}>
-            {dict.blog.categories[post.category as keyof typeof dict.blog.categories] ?? post.category}
-          </span>
-          <h1 className={styles.title}>{post.title[locale]}</h1>
-          <div className={styles.meta}>
-            <span>{post.author}</span>
-            <span>·</span>
-            <time>{post.date}</time>
+        <article className={styles.article}>
+          <div className={styles.articleTop}>
+            <span className={styles.tag}>{catLabel}</span>
+            <span
+              className={styles.dot}
+              style={{ background: color }}
+            />
+            <time className={styles.date}>{post.date}</time>
+            <span className={styles.readTime}>
+              · {post.readTime} min read
+            </span>
           </div>
-        </header>
 
-        <div className={styles.content}>
-          {post.content[locale].split("\n\n").map((paragraph, i) => (
-            <p key={i}>{paragraph}</p>
-          ))}
-        </div>
-      </article>
+          <h1 className={styles.title}>{post.title[locale]}</h1>
+
+          <div className={styles.meta}>
+            <div className={styles.authorAvatar}>H</div>
+            <span className={styles.authorName}>{post.author}</span>
+          </div>
+
+          <div className={styles.content}>
+            {post.content[locale].split("\n\n").map((paragraph, i) => (
+              <p key={i}>{paragraph}</p>
+            ))}
+          </div>
+        </article>
+      </main>
     </div>
   );
 }

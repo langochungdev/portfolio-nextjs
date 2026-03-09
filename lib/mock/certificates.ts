@@ -77,3 +77,12 @@ export const certCategories = [
   "design",
   "backend",
 ] as const;
+
+export type CertCategory = (typeof certCategories)[number];
+
+export const certCollectionColors: Record<string, string> = {
+  cloud: "#3B82F6",
+  frontend: "#10B981",
+  design: "#EC4899",
+  backend: "#F59E0B",
+};
