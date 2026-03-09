@@ -12,6 +12,8 @@ const ICON_POSITIONS = [
   styles.techIcon6,
   styles.techIcon7,
   styles.techIcon8,
+  styles.techIcon9,
+  styles.techIcon10,
 ];
 
 export function PortraitSection() {
@@ -22,10 +24,14 @@ export function PortraitSection() {
       <div className={styles.techStackOverlay}>
         {visibleSkills.map((skill, i) => (
           <div
-            key={skill}
+            key={skill.name}
             className={`${styles.techIcon} ${ICON_POSITIONS[i]}`}
           >
-            {skill}
+            <img
+              src={skill.icon}
+              alt={skill.name}
+              draggable={false}
+            />
           </div>
         ))}
       </div>
