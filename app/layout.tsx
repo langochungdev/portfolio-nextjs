@@ -9,8 +9,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "La Ngọc Hùng - Portfolio",
+  title: {
+    default: "╰(*°▽°*)╯ - Hùng Xin Chào",
+    template: "langochungdev | %s",
+  },
   description: "Software Engineer Portfolio",
+  icons: {
+    icon: "/favicon.gif",
+  },
 };
 
 export default function RootLayout({

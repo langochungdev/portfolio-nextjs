@@ -3,6 +3,7 @@ import { DictionaryProvider } from "./_shared/DictionaryProvider";
 import { NavBar } from "./_shared/NavBar";
 import { EyesCat } from "./_shared/EyesCat";
 import { StableVh } from "./_shared/StableVh";
+import { AnimatedFavicon } from "./_shared/AnimatedFavicon";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 
@@ -26,6 +27,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body>
+        <AnimatedFavicon />
         <StableVh />
         <DictionaryProvider dictionary={dictionary} locale={locale}>
           {children}
