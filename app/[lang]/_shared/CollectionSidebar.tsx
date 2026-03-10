@@ -33,7 +33,7 @@ export function CollectionSidebar({
   className,
 }: CollectionSidebarProps) {
   return (
-    <div className={className}>
+    <div className={className} style={className ? undefined : { display: "contents" }}>
       <aside className={styles.sidebar}>
         <Link href={`/${locale}`} className={styles.wordmark}>
           langochung

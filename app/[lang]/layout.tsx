@@ -7,6 +7,14 @@ import { AnimatedFavicon } from "./_shared/AnimatedFavicon";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 import { cookies } from "next/headers";
+import { VT323 } from "next/font/google";
+
+const vt323 = VT323({
+  weight: "400",
+  subsets: ["latin", "vietnamese"],
+  display: "swap",
+  variable: "--font-vt323",
+});
 
 const themeScript = `(function(){try{var t=document.cookie.match(/(?:^|;)\\s*theme=(light|dark)/);if(t)document.documentElement.setAttribute("data-theme",t[1]);else{var s=localStorage.getItem("theme-preference");if(s==="dark"||s==="light"){document.documentElement.setAttribute("data-theme",s);document.cookie="theme="+s+";path=/;max-age=31536000;SameSite=Lax"}}}catch(e){}})();`;
 
@@ -35,7 +43,7 @@ export default async function LocaleLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>
+      <body className={vt323.variable}>
         <AnimatedFavicon />
         <StableVh />
         <DictionaryProvider dictionary={dictionary} locale={locale} serverTheme={serverTheme}>
