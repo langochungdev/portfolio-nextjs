@@ -18,6 +18,9 @@
     "backHome": "Back to Home",
     "backToBlog": "Back to Blog",
     "notFound": "Post not found",
+    "viewMore": "View more",
+    "topic": "Topic",
+    "pinned": "Pinned",
     "categories": {
       "allPosts": "All",
       "tech": "Tech",

@@ -1,188 +1,161 @@
 "use client";
 
-import Link from "next/link";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import {
   blogPosts,
   blogCategories,
+  blogTopics,
   collectionColors,
 } from "@/lib/mock/blog";
-import type { BlogPost } from "@/lib/mock/blog";
+import type { BlogTopic } from "@/lib/mock/blog";
 import styles from "@/app/style/blog/page.module.css";
-import { useState, useMemo } from "react";
-
-const WIDE_THRESHOLD = 4;
-
-function groupByCategory(posts: BlogPost[]) {
-  const groups: Record<string, BlogPost[]> = {};
-  for (const post of posts) {
-    if (!groups[post.category]) groups[post.category] = [];
-    groups[post.category].push(post);
-  }
-  return groups;
-}
-
-function latestDate(posts: BlogPost[]) {
-  return posts.reduce(
-    (latest, p) => (p.updatedDate > latest ? p.updatedDate : latest),
-    posts[0].updatedDate,
-  );
-}
+import { useState, useMemo, useEffect, useRef } from "react";
+import { groupByCategory, buildDisplayItems, latestDate } from "./_lib/helpers";
+import { PostCard } from "./_components/PostCard";
+import { TopicAccordion } from "./_components/TopicAccordion";
+import { BlogNav } from "./_components/BlogNav";
 
 export default function BlogPage() {
   const { locale, dictionary: dict } = useDictionary();
   const [activeCategory, setActiveCategory] = useState<string>("allPosts");
+  const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
+  const [pendingScroll, setPendingScroll] = useState<string | null>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   const categories = blogCategories.filter((c) => c !== "allPosts");
   const grouped = useMemo(() => groupByCategory(blogPosts), []);
+  const topicsByCat = useMemo(() => {
+    const m: Record<string, BlogTopic[]> = {};
+    for (const t of blogTopics) (m[t.category] ??= []).push(t);
+    return m;
+  }, []);
 
-  const visibleGroups = useMemo(() => {
-    if (activeCategory === "allPosts") {
-      return categories
-        .filter((cat) => grouped[cat]?.length)
-        .map((cat) => ({ key: cat, posts: grouped[cat] }));
-    }
-    const posts = grouped[activeCategory];
-    return posts?.length ? [{ key: activeCategory, posts }] : [];
-  }, [activeCategory, categories, grouped]);
+  useEffect(() => {
+    if (!pendingScroll || activeCategory === "allPosts") return;
+    requestAnimationFrame(() => {
+      const el = document.getElementById(pendingScroll);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        setOpenTopics((s) => new Set(s).add(pendingScroll));
+      }
+      setPendingScroll(null);
+    });
+  }, [pendingScroll, activeCategory]);
+
+  const catLabel = (k: string) =>
+    dict.blog.categories[k as keyof typeof dict.blog.categories] ?? k;
+
+  const toggleTopic = (id: string) =>
+    setOpenTopics((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
 
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar}>
-        <Link href={`/${locale}`} className={styles.wordmark}>
-          langochung
-        </Link>
+      <BlogNav
+        locale={locale}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+        categoryCounts={Object.fromEntries(categories.map((c) => [c, grouped[c]?.length ?? 0]))}
+        categoryLabels={Object.fromEntries(blogCategories.map((c) => [c, catLabel(c)]))}
+        totalPosts={blogPosts.length}
+      />
 
-        <div className={styles.sidebarSection}>
-          <div className={styles.sidebarHeading}>Collections</div>
-          <button
-            className={`${styles.collectionItem} ${activeCategory === "allPosts" ? styles.collectionItemActive : ""}`}
-            onClick={() => setActiveCategory("allPosts")}
-          >
-            <span
-              className={styles.collectionDot}
-              style={{ background: "#1C1C1A" }}
-            />
-            <span className={styles.collectionName}>
-              {dict.blog.categories.allPosts}
-            </span>
-            <span className={styles.collectionBadge}>{blogPosts.length}</span>
-          </button>
-          {categories.map((cat) => {
-            const count = grouped[cat]?.length ?? 0;
-            if (!count) return null;
-            return (
-              <button
-                key={cat}
-                className={`${styles.collectionItem} ${activeCategory === cat ? styles.collectionItemActive : ""}`}
-                onClick={() => setActiveCategory(cat)}
-              >
-                <span
-                  className={styles.collectionDot}
-                  style={{ background: collectionColors[cat] }}
-                />
-                <span className={styles.collectionName}>
-                  {dict.blog.categories[cat as keyof typeof dict.blog.categories]}
-                </span>
-                <span className={styles.collectionBadge}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className={styles.sidebarSection}>
-          <div className={styles.sidebarHeading}>Filter</div>
-          {(["recent", "oldest"] as const).map((filter) => (
-            <button key={filter} className={styles.filterItem}>
-              {filter === "recent" ? "Most Recent" : "Oldest First"}
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      <nav className={styles.pillStrip}>
-        <button
-          className={`${styles.pill} ${activeCategory === "allPosts" ? styles.pillActive : ""}`}
-          onClick={() => setActiveCategory("allPosts")}
-        >
-          <span className={styles.pillDot} style={{ background: "#1C1C1A" }} />
-          {dict.blog.categories.allPosts}
-        </button>
-        {categories.map((cat) => {
-          const count = grouped[cat]?.length ?? 0;
-          if (!count) return null;
-          return (
-            <button
-              key={cat}
-              className={`${styles.pill} ${activeCategory === cat ? styles.pillActive : ""}`}
-              onClick={() => setActiveCategory(cat)}
-            >
-              <span
-                className={styles.pillDot}
-                style={{ background: collectionColors[cat] }}
-              />
-              {dict.blog.categories[cat as keyof typeof dict.blog.categories]}
-            </button>
-          );
-        })}
-      </nav>
-
-      <main className={styles.main}>
-        {visibleGroups.map(({ key, posts }, blockIdx) => {
-          const catLabel =
-            dict.blog.categories[key as keyof typeof dict.blog.categories] ??
-            key;
-          const color = collectionColors[key] ?? "#1C1C1A";
-          const isWide = posts.length >= WIDE_THRESHOLD;
-
-          return (
-            <section
-              key={key}
-              className={styles.collectorBlock}
-              style={{ animationDelay: `${blockIdx * 0.07}s` }}
-            >
-              <div className={styles.collectorHeader}>
-                <span
-                  className={styles.collectorDot}
-                  style={{ background: color }}
-                />
-                <h2 className={styles.collectorTitle}>{catLabel}</h2>
-                <span className={styles.collectorMeta}>
-                  {posts.length} posts · Updated {latestDate(posts)}
-                </span>
-              </div>
-
-              <div
-                className={`${styles.postGrid} ${isWide ? styles.postGridWide : ""}`}
-              >
-                {posts.map((post) => (
-                    <Link
-                      key={post.id}
-                      href={`/${locale}/blog/${post.slug}`}
-                      className={styles.card}
+      <main className={styles.main} ref={mainRef}>
+        {activeCategory === "allPosts"
+          ? categories.filter((c) => grouped[c]?.length).map((cat, i) => {
+              const posts = grouped[cat];
+              const color = collectionColors[cat] ?? "#1C1C1A";
+              const items = buildDisplayItems(posts, topicsByCat[cat] ?? []).slice(0, 4);
+              return (
+                <section key={cat} className={styles.collectorBlock} style={{ animationDelay: `${i * 0.07}s` }}>
+                  <div className={styles.collectorHeader}>
+                    <span className={styles.collectorDot} style={{ background: color }} />
+                    <h2 className={styles.collectorTitle}>{catLabel(cat)}</h2>
+                    <span className={styles.collectorMeta}>
+                      {posts.length} posts · Updated {latestDate(posts)}
+                    </span>
+                  </div>
+                  <div className={styles.gridFive}>
+                    {items.map((item) =>
+                      item.type === "post" ? (
+                        <PostCard key={item.post.id} post={item.post} locale={locale} label={catLabel(cat)} />
+                      ) : (
+                        <button
+                          key={item.topic.id}
+                          className={`${styles.card} ${styles.topicWrapCard}`}
+                          onClick={() => { setActiveCategory(cat); setPendingScroll(item.topic.id); }}
+                        >
+                          <div className={styles.cardTopRow}>
+                            <span className={`${styles.cardTag} ${styles.topicTag}`}>{dict.blog.topic}</span>
+                            <span className={styles.cardDate}>{item.posts.length} posts</span>
+                          </div>
+                          <h3 className={styles.cardTitle}>{item.topic.title[locale]}</h3>
+                          <p className={styles.cardExcerpt}>{item.topic.description[locale]}</p>
+                          <div className={styles.cardFooter}>
+                            <span className={styles.cardReadTime}>{item.posts.length} posts</span>
+                            <span className={styles.cardArrow}>→</span>
+                          </div>
+                        </button>
+                      ),
+                    )}
+                    <button
+                      className={`${styles.card} ${styles.viewMoreCard}`}
+                      onClick={() => { setActiveCategory(cat); mainRef.current?.scrollTo(0, 0); }}
                     >
-                      <div className={styles.cardTopRow}>
-                        <span className={styles.cardTag}>{catLabel}</span>
-                        <span className={styles.cardDate}>{post.date}</span>
+                      <span className={styles.viewMoreLabel}>{dict.blog.viewMore}</span>
+                      <span className={styles.viewMoreCat}>{catLabel(cat)}</span>
+                      <span className={styles.viewMoreArrow}>→</span>
+                    </button>
+                  </div>
+                </section>
+              );
+            })
+          : (() => {
+              const posts = grouped[activeCategory] ?? [];
+              if (!posts.length) return null;
+              const color = collectionColors[activeCategory] ?? "#1C1C1A";
+              const topics = topicsByCat[activeCategory] ?? [];
+              const inTopic = new Set(posts.filter((p) => p.topic).map((p) => p.id));
+              const standalone = posts.filter((p) => !inTopic.has(p.id));
+              return (
+                <section className={styles.collectorBlock}>
+                  <div className={styles.collectorHeader}>
+                    <span className={styles.collectorDot} style={{ background: color }} />
+                    <h2 className={styles.collectorTitle}>{catLabel(activeCategory)}</h2>
+                    <span className={styles.collectorMeta}>
+                      {posts.length} posts · Updated {latestDate(posts)}
+                    </span>
+                  </div>
+                  {(() => {
+                    const pinnedPosts = topics
+                      .filter((t) => t.pinned)
+                      .flatMap((t) => posts.filter((p) => p.topic === t.id));
+                    const combined = [...pinnedPosts, ...standalone];
+                    return combined.length > 0 ? (
+                      <div className={styles.standaloneGrid}>
+                        {combined.map((p) => (
+                          <PostCard key={p.id} post={p} locale={locale} label={catLabel(activeCategory)} />
+                        ))}
                       </div>
-                      <h3 className={styles.cardTitle}>
-                        {post.title[locale]}
-                      </h3>
-                      <p className={styles.cardExcerpt}>
-                        {post.excerpt[locale]}
-                      </p>
-                      <div className={styles.cardFooter}>
-                        <span className={styles.cardReadTime}>
-                          {post.readTime} min read
-                        </span>
-                        <span className={styles.cardArrow}>→</span>
-                      </div>
-                    </Link>
-                ))}
-              </div>
-            </section>
-          );
-        })}
+                    ) : null;
+                  })()}
+                  {topics.filter((t) => !t.pinned).map((t) => (
+                    <TopicAccordion
+                      key={t.id}
+                      topic={t}
+                      posts={posts}
+                      isOpen={openTopics.has(t.id)}
+                      locale={locale}
+                      label={catLabel(activeCategory)}
+                      onToggle={() => toggleTopic(t.id)}
+                    />
+                  ))}
+                </section>
+              );
+            })()}
       </main>
     </div>
   );

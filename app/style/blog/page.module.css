@@ -397,6 +397,195 @@
     scrollbar-color: #6a6a62 transparent;
 }
 
+.gridFive {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+
+.topicWrapCard {
+    cursor: pointer;
+    text-align: left;
+}
+
+.topicTag {
+    background: rgba(139, 92, 246, 0.12);
+    color: #7C3AED;
+}
+
+:global([data-theme="dark"]) .topicTag {
+    background: rgba(139, 92, 246, 0.15);
+    color: #A78BFA;
+}
+
+.viewMoreCard {
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: transparent;
+    border: 1.5px dashed rgba(28, 28, 26, 0.15);
+    gap: 8px;
+}
+
+:global([data-theme="dark"]) .viewMoreCard {
+    border-color: rgba(232, 232, 227, 0.15);
+    background: transparent;
+}
+
+@media (hover: hover) {
+    .viewMoreCard:hover {
+        background: rgba(28, 28, 26, 0.03);
+        border-color: rgba(28, 28, 26, 0.25);
+        transform: translateY(-2px);
+    }
+
+    :global([data-theme="dark"]) .viewMoreCard:hover {
+        background: rgba(232, 232, 227, 0.03);
+        border-color: rgba(232, 232, 227, 0.25);
+    }
+}
+
+.viewMoreLabel {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1C1C1A;
+}
+
+:global([data-theme="dark"]) .viewMoreLabel {
+    color: #E8E8E3;
+}
+
+.viewMoreCat {
+    font-size: 0.75rem;
+    color: #7A7A72;
+}
+
+:global([data-theme="dark"]) .viewMoreCat {
+    color: #9a9a92;
+}
+
+.viewMoreArrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(28, 28, 26, 0.06);
+    color: #7A7A72;
+    font-size: 0.875rem;
+    margin-top: 4px;
+}
+
+:global([data-theme="dark"]) .viewMoreArrow {
+    background: rgba(232, 232, 227, 0.08);
+    color: #9a9a92;
+}
+
+.topicSection {
+    margin-bottom: 16px;
+    border: 1px solid rgba(28, 28, 26, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+:global([data-theme="dark"]) .topicSection {
+    border-color: rgba(232, 232, 227, 0.08);
+}
+
+.topicToggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(28, 28, 26, 0.02);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+}
+
+:global([data-theme="dark"]) .topicToggle {
+    background: rgba(232, 232, 227, 0.02);
+}
+
+@media (hover: hover) {
+    .topicToggle:hover {
+        background: rgba(28, 28, 26, 0.05);
+    }
+
+    :global([data-theme="dark"]) .topicToggle:hover {
+        background: rgba(232, 232, 227, 0.05);
+    }
+}
+
+.topicInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.topicTitle {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 400;
+    color: #1C1C1A;
+}
+
+:global([data-theme="dark"]) .topicTitle {
+    color: #E8E8E3;
+}
+
+.topicDesc {
+    font-size: 0.8125rem;
+    color: #7A7A72;
+    line-height: 1.4;
+}
+
+:global([data-theme="dark"]) .topicDesc {
+    color: #9a9a92;
+}
+
+.topicChevron {
+    font-size: 1.25rem;
+    color: #B8B8B0;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+    margin-left: 12px;
+}
+
+.topicChevronOpen {
+    transform: rotate(180deg);
+}
+
+.topicContent {
+    padding: 16px 20px 20px;
+    border-top: 1px solid rgba(28, 28, 26, 0.06);
+    animation: fadeUp 0.3s ease both;
+}
+
+:global([data-theme="dark"]) .topicContent {
+    border-top-color: rgba(232, 232, 227, 0.06);
+}
+
+.pinnedBadge {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #F59E0B;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.standaloneGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
 .pill {
     display: none;
 }
@@ -512,6 +701,22 @@
         grid-template-columns: 1fr;
     }
 
+    .gridFive {
+        grid-template-columns: 1fr;
+    }
+
+    .standaloneGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .topicToggle {
+        padding: 12px 16px;
+    }
+
+    .topicContent {
+        padding: 12px 16px 16px;
+    }
+
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
@@ -520,6 +725,14 @@
     }
 
     .postGridWide {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .gridFive {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .standaloneGrid {
         grid-template-columns: repeat(2, 1fr);
     }
 
