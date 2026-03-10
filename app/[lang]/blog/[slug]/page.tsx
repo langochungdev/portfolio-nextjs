@@ -165,9 +165,7 @@ export default function BlogDetailPage() {
                 className={`${styles.relatedItem} ${p.slug === post.slug ? styles.relatedItemActive : ""}`}
                 onClick={() => closeRelated()}
               >
-                {sidebarData.type === "topic" && (
-                  <span className={styles.relatedIndex}>{i + 1}</span>
-                )}
+                <span className={styles.relatedIndex}>{i + 1}</span>
                 <span>{p.title[locale]}</span>
               </Link>
             ))}

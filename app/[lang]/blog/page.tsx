@@ -98,7 +98,7 @@ export default function BlogPage() {
                         <button
                           key={item.topic.id}
                           className={`${styles.card} ${styles.topicWrapCard}`}
-                          onClick={() => { setActiveCategory(cat); setPendingScroll(item.topic.id); }}
+                          onClick={() => { setActiveCategory(cat); setPendingScroll(item.topic.id); router.replace(`/${locale}/blog?cat=${cat}`, { scroll: false }); }}
                         >
                           <div className={styles.cardTopRow}>
                             <span className={`${styles.cardTag} ${styles.topicTag}`}>{dict.blog.topic}</span>
@@ -115,7 +115,7 @@ export default function BlogPage() {
                     )}
                     <button
                       className={`${styles.card} ${styles.viewMoreCard}`}
-                      onClick={() => { setActiveCategory(cat); mainRef.current?.scrollTo(0, 0); }}
+                      onClick={() => { setActiveCategory(cat); mainRef.current?.scrollTo(0, 0); router.replace(`/${locale}/blog?cat=${cat}`, { scroll: false }); }}
                     >
                       <span className={styles.viewMoreLabel}>{dict.blog.viewMore}</span>
                       <span className={styles.viewMoreCat}>{catLabel(cat)}</span>
