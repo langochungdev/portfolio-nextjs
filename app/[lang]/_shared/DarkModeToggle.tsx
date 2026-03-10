@@ -1,27 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useTheme } from "@/app/[lang]/_shared/useTheme";
 import styles from "@/app/style/shared/TopActions.module.css";
 
-type Theme = "light" | "dark";
-const STORAGE_KEY = "theme-preference";
-
 export function DarkModeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "light";
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "dark" || stored === "light") return stored;
-    return "light";
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem(STORAGE_KEY, theme);
-  }, [theme]);
-
-  function toggle() {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  }
+  const { theme, toggle } = useTheme();
 
   return (
     <button

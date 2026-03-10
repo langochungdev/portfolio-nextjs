@@ -1,48 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
+import { useTheme } from "@/app/[lang]/_shared/useTheme";
+import {
+  closeRelated,
+  subscribeRelated,
+  getRelatedSnapshot,
+  getRelatedServerSnapshot,
+} from "@/app/[lang]/_shared/blogDetailStore";
 import { blogPosts, blogTopics, collectionColors } from "@/lib/mock/blog";
 import styles from "@/app/style/blog/detail.module.css";
-import navStyles from "@/app/style/home/NavBar.module.css";
-import { useMemo, useSyncExternalStore, useEffect, useCallback, useRef, useState } from "react";
-
-type Theme = "light" | "dark";
-const STORAGE_KEY = "theme-preference";
-
-const subscribeNoop = () => () => {};
-const getPortalSnapshot = () => document.querySelector(".bottom-bar");
-const getPortalServerSnapshot = () => null;
-
-function useTheme() {
-  const theme = useSyncExternalStore(
-    (cb) => {
-      window.addEventListener("storage", cb);
-      return () => window.removeEventListener("storage", cb);
-    },
-    () => {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored === "dark" ? "dark" : "light";
-    },
-    () => "light" as Theme
-  );
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
-
-  const toggle = useCallback(() => {
-    const next: Theme = theme === "light" ? "dark" : "light";
-    localStorage.setItem(STORAGE_KEY, next);
-    document.cookie = `theme=${next};path=/;max-age=31536000;SameSite=Lax`;
-    document.documentElement.setAttribute("data-theme", next);
-    window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }));
-  }, [theme]);
-
-  return { theme, toggle };
-}
+import { useMemo, useSyncExternalStore, useEffect, useRef } from "react";
 
 const SunIcon = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -60,12 +31,13 @@ const MoonIcon = (
 export default function BlogDetailPage() {
   const { locale, dictionary: dict } = useDictionary();
   const params = useParams<{ slug: string }>();
-  const router = useRouter();
   const post = blogPosts.find((p) => p.slug === params.slug);
   const { theme, toggle: toggleTheme } = useTheme();
-  const [showRelated, setShowRelated] = useState(false);
-  const portalTarget = useSyncExternalStore(subscribeNoop, getPortalSnapshot, getPortalServerSnapshot);
-  const mobileNavRef = useRef<HTMLElement>(null);
+  const showRelated = useSyncExternalStore(
+    subscribeRelated,
+    getRelatedSnapshot,
+    getRelatedServerSnapshot
+  );
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const sidebarData = useMemo(() => {
@@ -80,19 +52,16 @@ export default function BlogDetailPage() {
   }, [post]);
 
   useEffect(() => {
-    document.documentElement.classList.add("blog-detail-page");
-    return () => document.documentElement.classList.remove("blog-detail-page");
+    return () => closeRelated();
   }, []);
 
   useEffect(() => {
     if (!showRelated) return;
     function handleClick(e: MouseEvent) {
-      const target = e.target as Node;
-      if (
-        mobileNavRef.current && !mobileNavRef.current.contains(target) &&
-        (!overlayRef.current || !overlayRef.current.contains(target))
-      ) {
-        setShowRelated(false);
+      const target = e.target as Element;
+      if (target.closest(".bottom-bar")) return;
+      if (overlayRef.current && !overlayRef.current.contains(target)) {
+        closeRelated();
       }
     }
     document.addEventListener("click", handleClick);
@@ -181,51 +150,6 @@ export default function BlogDetailPage() {
         </article>
       </main>
 
-      {portalTarget &&
-        createPortal(
-          <nav
-            ref={mobileNavRef}
-            className={`${navStyles.navBar} ${styles.detailNav} ${showRelated ? styles.detailNavOpen : ""}`}
-            data-detail-nav
-            data-related-open={showRelated || undefined}
-          >
-            <div className={styles.detailNavBtns}>
-              <button
-                className={`${navStyles.dockItem} ${styles.detailNavBtn}`}
-                onClick={() => router.push(`/${locale}/blog`)}
-                aria-label={dict.blog.backToBlog}
-              >
-                <span className={navStyles.dockIcon}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                  </svg>
-                </span>
-              </button>
-              <button
-                className={`${navStyles.dockItem} ${styles.detailNavBtn} ${showRelated ? styles.detailNavBtnActive : ""}`}
-                onClick={() => setShowRelated((v) => !v)}
-                aria-label="Related articles"
-              >
-                <span className={navStyles.dockIcon}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </span>
-              </button>
-              <button
-                className={`${navStyles.dockItem} ${styles.detailNavBtn}`}
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-              >
-                <span className={navStyles.dockIcon}>
-                  {theme === "light" ? SunIcon : MoonIcon}
-                </span>
-              </button>
-            </div>
-          </nav>,
-          portalTarget
-        )}
-
       {showRelated && sidebarData &&
         createPortal(
           <div ref={overlayRef} className={styles.relatedOverlay}>
@@ -239,7 +163,7 @@ export default function BlogDetailPage() {
                 key={p.id}
                 href={`/${locale}/blog/${p.slug}`}
                 className={`${styles.relatedItem} ${p.slug === post.slug ? styles.relatedItemActive : ""}`}
-                onClick={() => setShowRelated(false)}
+                onClick={() => closeRelated()}
               >
                 {sidebarData.type === "topic" && (
                   <span className={styles.relatedIndex}>{i + 1}</span>

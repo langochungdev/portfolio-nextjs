@@ -385,10 +385,6 @@
     height: 1rem;
 }
 
-.detailNav {
-    display: none !important;
-}
-
 .relatedOverlay {
     display: none;
 }
@@ -422,39 +418,6 @@
         font-size: 1.5rem;
     }
 
-    .detailNav {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0 !important;
-        position: relative;
-        order: -1;
-    }
-
-    .detailNavBtns {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: center;
-    }
-
-    .detailNavBtn {
-        border: none;
-        padding: 0;
-        font: inherit;
-        cursor: pointer;
-    }
-
-    .detailNavBtnActive {
-        background: rgba(255, 255, 255, 0.28) !important;
-    }
-
-    .detailNavOpen {
-        background: transparent !important;
-        border-color: transparent !important;
-        box-shadow: none !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-    }
-
     .relatedOverlay {
         display: flex;
         flex-direction: column;
@@ -469,8 +432,8 @@
         scrollbar-color: rgba(28, 28, 26, 0.15) transparent;
         text-align: left;
         background: rgba(255, 255, 255, 0.12);
-        backdrop-filter: blur(24px) saturate(180%);
         -webkit-backdrop-filter: blur(24px) saturate(180%);
+        backdrop-filter: blur(24px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.25);
         border-radius: 1.25rem;
         box-shadow:
@@ -478,24 +441,6 @@
             0 2px 8px rgba(0, 0, 0, 0.15),
             inset 0 1px 0 rgba(255, 255, 255, 0.3);
         z-index: 199;
-        -webkit-mask-image:
-            linear-gradient(#000, #000),
-            linear-gradient(#000, #000);
-        -webkit-mask-size:
-            100% calc(100% - 5rem),
-            calc(50vw + 2.9375rem) 100%;
-        -webkit-mask-position: 0 0, 0 0;
-        -webkit-mask-repeat: no-repeat, no-repeat;
-        -webkit-mask-composite: source-over;
-        mask-image:
-            linear-gradient(#000, #000),
-            linear-gradient(#000, #000);
-        mask-size:
-            100% calc(100% - 5rem),
-            calc(50vw + 2.9375rem) 100%;
-        mask-position: 0 0, 0 0;
-        mask-repeat: no-repeat, no-repeat;
-        mask-composite: add;
     }
 
     .relatedHeading {

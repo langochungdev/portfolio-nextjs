@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useSyncExternalStore } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
+import { useTheme } from "@/app/[lang]/_shared/useTheme";
+import {
+  toggleRelated,
+  subscribeRelated,
+  getRelatedSnapshot,
+  getRelatedServerSnapshot,
+} from "@/app/[lang]/_shared/blogDetailStore";
 import styles from "@/app/style/home/NavBar.module.css";
 
 const NAV_ITEMS = [
@@ -39,9 +47,77 @@ const NAV_ITEMS = [
   },
 ];
 
+const BackIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 12H5M12 19l-7-7 7-7" />
+  </svg>
+);
+
+const ListIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+);
+
+const SunIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5" />
+    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+  </svg>
+);
+
+const MoonIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
+
+const BLOG_DETAIL_RE = /^\/[a-z]{2}\/blog\/.+/;
+
 export function NavBar() {
   const { dictionary: dict, locale } = useDictionary();
   const pathname = usePathname();
+  const router = useRouter();
+  const isBlogDetail = BLOG_DETAIL_RE.test(pathname);
+  const showRelated = useSyncExternalStore(
+    subscribeRelated,
+    getRelatedSnapshot,
+    getRelatedServerSnapshot
+  );
+  const { theme, toggle: toggleTheme } = useTheme();
+
+  if (isBlogDetail) {
+    return (
+      <nav
+        className={`${styles.navBar} ${showRelated ? styles.blogDetailOpen : ""}`}
+        data-detail-nav
+      >
+        <button
+          className={`${styles.dockItem} ${styles.blogDetailBtn}`}
+          onClick={() => router.push(`/${locale}/blog`)}
+          aria-label={dict.blog.backToBlog}
+        >
+          <span className={styles.dockIcon}>{BackIcon}</span>
+        </button>
+        <button
+          className={`${styles.dockItem} ${styles.blogDetailBtn} ${showRelated ? styles.blogDetailBtnActive : ""}`}
+          onClick={toggleRelated}
+          aria-label="Related articles"
+        >
+          <span className={styles.dockIcon}>{ListIcon}</span>
+        </button>
+        <button
+          className={`${styles.dockItem} ${styles.blogDetailBtn}`}
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+        >
+          <span className={styles.dockIcon}>
+            {theme === "light" ? SunIcon : MoonIcon}
+          </span>
+        </button>
+      </nav>
+    );
+  }
 
   return (
     <nav className={styles.navBar}>

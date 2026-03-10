@@ -87,12 +87,4 @@ img {
         gap: 0.625rem;
     }
 
-    html.blog-detail-page .bottom-bar {
-        align-items: flex-end;
-    }
-
-    html.blog-detail-page .bottom-bar>nav:not([data-detail-nav]) {
-        display: none;
-    }
-
 }
