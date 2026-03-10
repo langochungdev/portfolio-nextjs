@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { CollectionSidebar } from "@/app/[lang]/_shared/CollectionSidebar";
 import {
@@ -19,6 +19,88 @@ function groupByCategory(certs: Certificate[]) {
     groups[cert.category].push(cert);
   }
   return groups;
+}
+
+function CertMarquee({
+  certs,
+  locale,
+  onOpen,
+}: {
+  certs: Certificate[];
+  locale: "vi" | "en";
+  onOpen: (src: string, alt: string) => void;
+}) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const check = () => setShouldScroll(el.scrollWidth > el.parentElement!.clientWidth);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el.parentElement!);
+    return () => ro.disconnect();
+  }, [certs]);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const row = rowRef.current;
+    if (!row) return;
+    dragging.current = true;
+    startX.current = e.touches[0].clientX;
+    scrollLeft.current = row.scrollLeft;
+    row.classList.add(styles.certRowDragging);
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragging.current || !rowRef.current) return;
+    const dx = e.touches[0].clientX - startX.current;
+    rowRef.current.scrollLeft = scrollLeft.current - dx;
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    dragging.current = false;
+    rowRef.current?.classList.remove(styles.certRowDragging);
+  }, []);
+
+  const renderCard = (cert: Certificate, keyPrefix = "") => (
+    <div
+      key={`${keyPrefix}${cert.id}`}
+      className={styles.card}
+      onClick={() => onOpen(cert.image, cert.title[locale])}
+    >
+      <div className={styles.cardImage}>
+        <img src={cert.image} alt={cert.title[locale]} />
+      </div>
+      <div className={styles.cardBody}>
+        <h3 className={styles.cardTitle}>{cert.title[locale]}</h3>
+        <span className={styles.cardDate}>{cert.date}</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      ref={rowRef}
+      className={`${styles.certRow} ${shouldScroll ? styles.certRowScroll : ""}`}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      <div ref={trackRef} className={styles.marqueeTrack}>
+        {certs.map((c) => renderCard(c))}
+      </div>
+      {shouldScroll && (
+        <div className={styles.marqueeTrack} aria-hidden>
+          {certs.map((c) => renderCard(c, "dup-"))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function CertificatesPage() {
@@ -85,35 +167,7 @@ export default function CertificatesPage() {
                 </span>
               </div>
 
-              <div className={styles.certGrid}>
-                {certs.map((cert) => (
-                  <div key={cert.id} className={styles.card}>
-                    <div
-                      className={styles.cardImage}
-                      onClick={() => openLightbox(cert.image, cert.title[locale])}
-                    >
-                      <img src={cert.image} alt={cert.title[locale]} />
-                    </div>
-                    <div className={styles.cardBody}>
-                      <h3 className={styles.cardTitle}>{cert.title[locale]}</h3>
-                      <span className={styles.cardIssuer}>{cert.issuer}</span>
-                      <div className={styles.cardFooter}>
-                        <time className={styles.cardDate}>{cert.date}</time>
-                        {cert.credentialUrl && (
-                          <a
-                            href={cert.credentialUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.cardLink}
-                          >
-                            {dict.certificates.viewCredential} →
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <CertMarquee certs={certs} locale={locale} onOpen={openLightbox} />
             </section>
           );
         })}
