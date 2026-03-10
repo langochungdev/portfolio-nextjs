@@ -1,10 +1,20 @@
 .shell {
     height: 100vh;
     display: grid;
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 220px 240px 1fr;
     background: #F4F4F0;
     font-family: var(--font-body);
     color: #1C1C1A;
+}
+
+.collectionWrap {
+    display: contents;
+}
+
+@media (max-width: 768px) {
+    .collectionWrap {
+        display: block;
+    }
 }
 
 .sidebar {
@@ -389,9 +399,11 @@
     display: none;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
     .shell {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        grid-template-columns: unset;
         height: auto;
         min-height: 100vh;
     }

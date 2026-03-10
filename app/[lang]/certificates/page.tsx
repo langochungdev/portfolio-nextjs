@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useCallback, useMemo } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
+import { CollectionSidebar } from "@/app/[lang]/_shared/CollectionSidebar";
 import {
   certificates,
   certCategories,
@@ -46,66 +46,24 @@ export default function CertificatesPage() {
     setLightbox(null);
   }, []);
 
+  const collectionItems = certCategories.map((cat) => ({
+    key: cat,
+    label: dict.certificates.categories[cat as keyof typeof dict.certificates.categories],
+    color: certCollectionColors[cat] ?? "#1C1C1A",
+    count: grouped[cat]?.length ?? 0,
+  }));
+
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar}>
-        <Link href={`/${locale}`} className={styles.wordmark}>
-          langochung
-        </Link>
-
-        <div className={styles.sidebarSection}>
-          <div className={styles.sidebarHeading}>Collections</div>
-          <button
-            className={`${styles.collectionItem} ${activeCategory === "all" ? styles.collectionItemActive : ""}`}
-            onClick={() => setActiveCategory("all")}
-          >
-            <span className={styles.collectionDot} style={{ background: "#1C1C1A" }} />
-            <span className={styles.collectionName}>{dict.certificates.title}</span>
-            <span className={styles.collectionBadge}>{certificates.length}</span>
-          </button>
-          {certCategories.map((cat) => {
-            const count = grouped[cat]?.length ?? 0;
-            if (!count) return null;
-            return (
-              <button
-                key={cat}
-                className={`${styles.collectionItem} ${activeCategory === cat ? styles.collectionItemActive : ""}`}
-                onClick={() => setActiveCategory(cat)}
-              >
-                <span className={styles.collectionDot} style={{ background: certCollectionColors[cat] }} />
-                <span className={styles.collectionName}>
-                  {dict.certificates.categories[cat as keyof typeof dict.certificates.categories]}
-                </span>
-                <span className={styles.collectionBadge}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-      </aside>
-
-      <nav className={styles.pillStrip}>
-        <button
-          className={`${styles.pill} ${activeCategory === "all" ? styles.pillActive : ""}`}
-          onClick={() => setActiveCategory("all")}
-        >
-          <span className={styles.pillDot} style={{ background: "#1C1C1A" }} />
-          {dict.certificates.title}
-        </button>
-        {certCategories.map((cat) => {
-          const count = grouped[cat]?.length ?? 0;
-          if (!count) return null;
-          return (
-            <button
-              key={cat}
-              className={`${styles.pill} ${activeCategory === cat ? styles.pillActive : ""}`}
-              onClick={() => setActiveCategory(cat)}
-            >
-              <span className={styles.pillDot} style={{ background: certCollectionColors[cat] }} />
-              {dict.certificates.categories[cat as keyof typeof dict.certificates.categories]}
-            </button>
-          );
-        })}
-      </nav>
+      <CollectionSidebar
+        locale={locale}
+        activeKey={activeCategory}
+        onSelect={setActiveCategory}
+        allKey="all"
+        allLabel={dict.certificates.title}
+        allCount={certificates.length}
+        items={collectionItems}
+      />
 
       <main className={styles.main}>
         {visibleGroups.map(({ key, certs }, blockIdx) => {

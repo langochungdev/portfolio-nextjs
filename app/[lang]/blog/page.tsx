@@ -102,7 +102,7 @@ export default function BlogPage() {
                         >
                           <div className={styles.cardTopRow}>
                             <span className={`${styles.cardTag} ${styles.topicTag}`}>{dict.blog.topic}</span>
-                            <span className={styles.cardDate}>{item.posts.length} posts</span>
+                            <span className={styles.cardDate}>{latestDate(item.posts)}</span>
                           </div>
                           <h3 className={styles.cardTitle}>{item.topic.title[locale]}</h3>
                           <p className={styles.cardExcerpt}>{item.topic.description[locale]}</p>
