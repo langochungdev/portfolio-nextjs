@@ -158,6 +158,7 @@ export function EyesCat() {
   const { theme, toggle: toggleTheme } = useTheme();
   const pathname = usePathname();
   const catRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
   const [leftPupil, setLeftPupil] = useState<PupilOffset>({ x: 0, y: 0 });
   const [rightPupil, setRightPupil] = useState<PupilOffset>({ x: 0, y: 0 });
   const [open, setOpen] = useState(false);
@@ -248,7 +249,11 @@ export function EyesCat() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !message.trim()) return;
+    if (!name.trim()) {
+      nameRef.current?.focus();
+      return;
+    }
+    if (!message.trim()) return;
     setSent(true);
     setTimeout(() => {
       setOpen(false);
@@ -298,11 +303,8 @@ export function EyesCat() {
             style={keyboardVpStyle}
           >
             <div className={styles.backdrop} onClick={() => setOpen(false)} />
-            <form
-              className={styles.form}
-              onSubmit={handleSubmit}
-            >
-              <div className={styles.formHeader}>
+            <div className={styles.chatPanel}>
+              <div className={styles.chatHeader}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/img/cat-icon.png"
@@ -310,7 +312,39 @@ export function EyesCat() {
                   className={styles.formCatThumb}
                   draggable={false}
                 />
-                <span className={styles.formTitle}>{dict.eyesCat.formTitle}</span>
+                <div className={styles.chatHeaderInfo}>
+                  <input
+                    ref={nameRef}
+                    className={styles.headerNameInput}
+                    placeholder={dict.eyesCat.namePlaceholder}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={50}
+                    autoFocus
+                  />
+                  <span className={styles.chatStatus}>Online</span>
+                </div>
+                <div className={styles.settingsRow}>
+                  <button
+                    type="button"
+                    className={styles.settingBtn}
+                    onClick={toggleTheme}
+                    aria-label={theme === "light" ? "Dark mode" : "Light mode"}
+                  >
+                    {theme === "light" ? SunIcon : MoonIcon}
+                  </button>
+                  <Link
+                    href={(() => {
+                      const nextLocale = i18nConfig.locales.find((l) => l !== locale) ?? i18nConfig.defaultLocale;
+                      const segments = pathname.split("/");
+                      segments[1] = nextLocale;
+                      return segments.join("/");
+                    })()}
+                    className={styles.settingBtn}
+                  >
+                    {(i18nConfig.locales.find((l) => l !== locale) ?? i18nConfig.defaultLocale).toUpperCase()}
+                  </Link>
+                </div>
                 <button
                   type="button"
                   className={styles.closeBtn}
@@ -321,59 +355,67 @@ export function EyesCat() {
                 </button>
               </div>
 
-              {sent ? (
-                <p className={styles.successMsg}>{dict.eyesCat.successMsg}</p>
-              ) : (
-                <>
-                  <input
-                    className={styles.nameInput}
-                    placeholder={dict.eyesCat.namePlaceholder}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    maxLength={50}
-                    autoFocus
-                  />
-                  <textarea
-                    className={styles.textarea}
-                    placeholder={dict.eyesCat.placeholder}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={4}
-                    maxLength={500}
-                  />
-                  <div className={styles.formFooter}>
-                    <div className={styles.settingsRow}>
-                      <button
-                        type="button"
-                        className={styles.settingBtn}
-                        onClick={toggleTheme}
-                        aria-label={theme === "light" ? "Dark mode" : "Light mode"}
-                      >
-                        {theme === "light" ? SunIcon : MoonIcon}
-                      </button>
-                      <Link
-                        href={(() => {
-                          const nextLocale = i18nConfig.locales.find((l) => l !== locale) ?? i18nConfig.defaultLocale;
-                          const segments = pathname.split("/");
-                          segments[1] = nextLocale;
-                          return segments.join("/");
-                        })()}
-                        className={styles.settingBtn}
-                      >
-                        {(i18nConfig.locales.find((l) => l !== locale) ?? i18nConfig.defaultLocale).toUpperCase()}
-                      </Link>
+              <div className={styles.chatBody}>
+                <div className={styles.msgRow}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/img/cat-icon.png" alt="cat" className={styles.msgAvatar} draggable={false} />
+                  <div className={styles.msgBubbleReceived}>
+                    {dict.eyesCat.formTitle}
+                  </div>
+                </div>
+
+                {sent && (
+                  <div className={`${styles.msgRow} ${styles.msgRowSent}`}>
+                    <div className={styles.msgBubbleSent}>
+                      <div className={styles.msgSenderName}>{name}</div>
+                      {message}
                     </div>
+                  </div>
+                )}
+
+                {sent && (
+                  <div className={styles.msgRow}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/img/cat-icon.png" alt="cat" className={styles.msgAvatar} draggable={false} />
+                    <div className={styles.msgBubbleReceived}>
+                      {dict.eyesCat.successMsg}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {!sent && (
+                <form className={styles.chatInputBar} onSubmit={handleSubmit}>
+                  <div className={styles.chatInputRow}>
+                    <textarea
+                      className={styles.chatTextarea}
+                      placeholder={dict.eyesCat.placeholder}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      rows={1}
+                      maxLength={500}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          if (name.trim() && message.trim()) handleSubmit(e);
+                        }
+                      }}
+                    />
                     <button
                       type="submit"
-                      className={styles.submitBtn}
-                      disabled={!name.trim() || !message.trim()}
+                      className={styles.sendBtn}
+                      disabled={!message.trim()}
+                      aria-label={dict.eyesCat.send}
                     >
-                      {dict.eyesCat.send}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+                        <path d="M22 2 11 13" />
+                        <path d="M22 2 15 22 11 13 2 9z" />
+                      </svg>
                     </button>
                   </div>
-                </>
+                </form>
               )}
-            </form>
+            </div>
           </div>,
           document.body
         )}

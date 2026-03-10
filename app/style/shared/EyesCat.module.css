@@ -124,7 +124,7 @@
     }
 }
 
-/* ── Form overlay ── */
+/* ── Chat overlay ── */
 
 .overlay {
     position: fixed;
@@ -149,26 +149,33 @@
     background: transparent;
 }
 
-.form {
+/* ── Chat panel ── */
+
+.chatPanel {
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 22rem;
+    max-width: 24rem;
+    max-height: min(32rem, 80vh);
     background: var(--color-card-bg);
     border: 1.5px solid var(--color-border);
     border-radius: 1.25rem;
-    padding: 1.5rem;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
-    gap: 1rem;
     animation: slideUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    overflow: hidden;
 }
 
-.formHeader {
+/* ── Chat header ── */
+
+.chatHeader {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
 }
 
 .formCatThumb {
@@ -178,62 +185,66 @@
     object-fit: cover;
     user-select: none;
     -webkit-user-drag: none;
+    flex-shrink: 0;
 }
 
-.formTitle {
-    font-size: 0.95rem;
+.chatHeaderInfo {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.headerNameInput {
+    border: none;
+    background: inherit;
+    font-size: 0.875rem;
     font-weight: 700;
     color: var(--color-text);
-    flex: 1;
+    line-height: 1.2;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    font-family: inherit;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
-.closeBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border: none;
-    border-radius: 0.5rem;
-    background: transparent;
+.headerNameInput:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 100px var(--color-card-bg) inset;
+    -webkit-text-fill-color: var(--color-text);
+}
+
+.headerNameInput::placeholder {
     color: var(--color-text-muted);
-    font-size: 1rem;
-    transition: background 0.15s, color 0.15s;
-    cursor: pointer;
+    opacity: 0.5;
+    font-weight: 500;
 }
 
-@media (hover: hover) {
-    .closeBtn:hover {
-        background: var(--color-border);
-        color: var(--color-text);
-    }
-}
-
-/* ── Form footer ── */
-
-.formFooter {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+.chatStatus {
+    font-size: 0.7rem;
+    color: #22c55e;
+    font-weight: 500;
 }
 
 .settingsRow {
     display: flex;
-    gap: 0.375rem;
+    gap: 0.25rem;
+    flex-shrink: 0;
 }
 
 .settingBtn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    border: 1.5px solid var(--color-border);
-    border-radius: 0.5rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.375rem;
     background: var(--color-bg);
     color: var(--color-text-muted);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
     font-family: inherit;
     cursor: pointer;
@@ -242,8 +253,8 @@
 }
 
 .settingBtn svg {
-    width: 1rem;
-    height: 1rem;
+    width: 0.875rem;
+    height: 0.875rem;
 }
 
 @media (hover: hover) {
@@ -254,80 +265,156 @@
     }
 }
 
-.nameInput {
-    width: 100%;
-    border: 1.5px solid var(--color-border);
-    border-radius: 0.75rem;
-    padding: 0.6rem 0.75rem;
-    font-family: inherit;
-    font-size: 1rem;
-    color: var(--color-text);
-    background: var(--color-bg);
-    transition: border-color 0.2s;
-    outline: none;
-}
-
-.nameInput:focus {
-    border-color: var(--color-border-hover);
-}
-
-.nameInput::placeholder {
-    color: var(--color-text-muted);
-    opacity: 0.6;
-}
-
-.textarea {
-    width: 100%;
-    min-height: 7rem;
-    resize: vertical;
-    border: 1.5px solid var(--color-border);
-    border-radius: 0.75rem;
-    padding: 0.75rem;
-    font-family: inherit;
-    font-size: 1rem;
-    color: var(--color-text);
-    background: var(--color-bg);
-    transition: border-color 0.2s;
-    outline: none;
-}
-
-.textarea:focus {
-    border-color: var(--color-border-hover);
-}
-
-.textarea::placeholder {
-    color: var(--color-text-muted);
-    opacity: 0.6;
-}
-
-.submitBtn {
-    padding: 0.5rem 1.25rem;
-    font-size: 0.875rem;
-    font-weight: 700;
-    border-radius: 0.75rem;
+.closeBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
     border: none;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    transition: background 0.15s, color 0.15s;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+@media (hover: hover) {
+    .closeBtn:hover {
+        background: var(--color-border);
+        color: var(--color-text);
+    }
+}
+
+/* ── Chat body / messages ── */
+
+.chatBody {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.msgRow {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    animation: msgIn 0.25s ease;
+}
+
+.msgRowSent {
+    justify-content: flex-end;
+}
+
+.msgAvatar {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.msgBubbleReceived {
+    max-width: 80%;
+    padding: 0.625rem 0.875rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 1rem 1rem 1rem 0.25rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--color-text);
+    word-break: break-word;
+}
+
+.msgBubbleSent {
+    max-width: 80%;
+    padding: 0.625rem 0.875rem;
+    background: var(--color-text);
+    color: var(--color-bg);
+    border-radius: 1rem 1rem 0.25rem 1rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.msgSenderName {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.7;
+    margin-bottom: 0.15rem;
+}
+
+/* ── Chat input bar ── */
+
+.chatInputBar {
+    border-top: 1px solid var(--color-border);
+    padding: 0.625rem 0.75rem;
+    flex-shrink: 0;
+}
+
+.chatInputRow {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.chatTextarea {
+    flex: 1;
+    border: 1px solid var(--color-border);
+    border-radius: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--color-text);
+    background: var(--color-bg);
+    transition: border-color 0.2s;
+    outline: none;
+    resize: none;
+    min-height: 2.25rem;
+    max-height: 6rem;
+    overflow-y: auto;
+    line-height: 1.4;
+}
+
+.chatTextarea:focus {
+    border-color: var(--color-border-hover);
+}
+
+.chatTextarea::placeholder {
+    color: var(--color-text-muted);
+    opacity: 0.6;
+}
+
+.sendBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: none;
+    border-radius: 50%;
     background: var(--color-text);
     color: var(--color-bg);
     cursor: pointer;
     transition: opacity 0.2s;
+    flex-shrink: 0;
 }
 
-.submitBtn:disabled {
-    opacity: 0.4;
+.sendBtn:disabled {
+    opacity: 0.3;
     cursor: not-allowed;
 }
 
 @media (hover: hover) {
-    .submitBtn:hover:not(:disabled) {
+    .sendBtn:hover:not(:disabled) {
         opacity: 0.8;
     }
-}
-
-.successMsg {
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    text-align: center;
-    padding: 0.5rem 0;
 }
 
 @keyframes fadeIn {
@@ -352,31 +439,47 @@
     }
 }
 
+@keyframes msgIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @media (max-width: 640px) {
     .overlay {
         padding: 1rem;
-        align-items: flex-end;
+        align-items: center;
         justify-content: center;
         background: rgba(0, 0, 0, 0.4);
-        overflow-y: auto;
     }
 
-    .form {
+    .chatPanel {
         max-width: 100%;
+        max-height: 85vh;
+        border-radius: 1.25rem;
     }
 
     .settingBtn {
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 0.625rem;
+        width: 2rem;
+        height: 2rem;
     }
 
     .settingBtn svg {
-        width: 1.25rem;
-        height: 1.25rem;
+        width: 1rem;
+        height: 1rem;
     }
 
-    .settingsRow {
-        gap: 0.5rem;
+    .chatTextarea {
+        font-size: 1rem;
+    }
+
+    .headerNameInput {
+        font-size: 1rem;
     }
 }
