@@ -3,7 +3,7 @@
     display: grid;
     grid-template-columns: 220px 1fr;
     grid-template-areas: "sidebar main";
-    background: #F4F4F0;
+    background: #fff;
     overflow: hidden;
     font-family: var(--font-body);
     color: #1C1C1A;
@@ -14,7 +14,7 @@
     padding: 20px 12px;
     border-right: 1px solid rgba(28, 28, 26, 0.10);
     overflow-y: auto;
-    background: #F4F4F0;
+    background: #fff;
     display: flex;
     flex-direction: column;
     gap: 4px;

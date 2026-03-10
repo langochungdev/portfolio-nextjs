@@ -352,9 +352,44 @@
         background: rgba(232, 232, 227, 0.04);
         color: #E8E8E3;
     }
+
+    .desktopThemeBtn:hover {
+        border-color: var(--color-border-hover);
+        color: var(--color-text);
+    }
 }
 
-@media (max-width: 768px) {
+.desktopActions {
+    position: fixed;
+    top: 1.5rem;
+    right: 2rem;
+    z-index: 100;
+}
+
+.desktopThemeBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    border: 1.5px solid var(--color-border);
+    color: var(--color-text-muted);
+    background: var(--color-card-bg);
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.desktopThemeBtn svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.detailNav {
+    display: none !important;
+}
+
+@media (max-width: 640px) {
     .shell {
         grid-template-columns: 1fr;
         height: auto;
@@ -362,17 +397,17 @@
     }
 
     .sidebar {
-        height: auto;
-        overflow-y: visible;
-        border-right: none;
-        border-bottom: 1px solid rgba(28, 28, 26, 0.10);
-        padding: 16px;
+        display: none;
+    }
+
+    .desktopActions {
+        display: none;
     }
 
     .main {
         height: auto;
         overflow-y: visible;
-        padding: 20px 16px 40px;
+        padding: 20px 16px 100px;
     }
 
     .article {
@@ -383,7 +418,126 @@
         font-size: 1.5rem;
     }
 
-    :global([data-theme="dark"]) .sidebar {
-        border-bottom-color: rgba(232, 232, 227, 0.08);
+    .detailNav {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0 !important;
+        position: relative;
+        order: -1;
+    }
+
+    .detailNavBtns {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+
+    .detailNavBtn {
+        border: none;
+        padding: 0;
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .detailNavBtnActive {
+        background: rgba(255, 255, 255, 0.28) !important;
+    }
+
+    .detailNavOpen {
+        position: static;
+    }
+
+    .relatedDropdown {
+        position: fixed;
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: 5.75rem;
+        display: flex;
+        flex-direction: column;
+        padding: 0.75rem;
+        max-height: 50vh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(28, 28, 26, 0.15) transparent;
+        background: #F4F4F0;
+        border-radius: 1rem;
+        box-shadow: 0 4px 24px rgba(28, 28, 26, 0.18);
+        z-index: 200;
+        text-align: left;
+    }
+
+    .relatedHeading {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #7A7A72;
+        padding: 0.25rem 0.5rem 0.5rem;
+    }
+
+    .relatedItem {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.8125rem;
+        color: #3a3a38;
+        text-decoration: none;
+        transition: background 0.15s, color 0.15s;
+    }
+
+    .relatedItemActive {
+        color: #1C1C1A;
+        font-weight: 600;
+        background: rgba(28, 28, 26, 0.08);
+    }
+
+    .relatedIndex {
+        flex-shrink: 0;
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.625rem;
+        font-weight: 700;
+        background: rgba(28, 28, 26, 0.08);
+        color: #7A7A72;
+    }
+
+    .relatedItemActive .relatedIndex {
+        background: #1C1C1A;
+        color: #F4F4F0;
+    }
+
+    :global([data-theme="dark"]) .relatedDropdown {
+        background: #1e1e1e;
+        scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    :global([data-theme="dark"]) .relatedHeading {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    :global([data-theme="dark"]) .relatedItem {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    :global([data-theme="dark"]) .relatedItemActive {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    :global([data-theme="dark"]) .relatedIndex {
+        background: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    :global([data-theme="dark"]) .relatedItemActive .relatedIndex {
+        background: rgba(255, 255, 255, 0.9);
+        color: #1a1a1a;
     }
 }

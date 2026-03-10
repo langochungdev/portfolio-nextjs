@@ -1,5 +1,5 @@
 :root {
-    --color-bg: #f8f9fa;
+    --color-bg: #fff;
     --color-text: #0f172a;
     --color-text-muted: #64748b;
     --color-accent: #ef4444;
@@ -85,5 +85,13 @@ img {
         flex-direction: row;
         align-items: center;
         gap: 0.625rem;
+    }
+
+    html.blog-detail-page .bottom-bar {
+        align-items: flex-end;
+    }
+
+    html.blog-detail-page .bottom-bar>nav:not([data-detail-nav]) {
+        display: none;
     }
 }

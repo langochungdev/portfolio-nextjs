@@ -10,6 +10,8 @@ import {
 } from "@/lib/mock/certificates";
 import type { Certificate } from "@/lib/mock/certificates";
 import styles from "@/app/style/certificates/page.module.css";
+import { DarkModeToggle } from "@/app/[lang]/_shared/DarkModeToggle";
+import topStyles from "@/app/style/shared/TopActions.module.css";
 
 function groupByCategory(certs: Certificate[]) {
   const groups: Record<string, Certificate[]> = {};
@@ -47,6 +49,9 @@ export default function CertificatesPage() {
 
   return (
     <div className={styles.shell}>
+      <div className={topStyles.topActions}>
+        <DarkModeToggle />
+      </div>
       <aside className={styles.sidebar}>
         <Link href={`/${locale}`} className={styles.wordmark}>
           langochung
