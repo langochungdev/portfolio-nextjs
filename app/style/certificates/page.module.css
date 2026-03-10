@@ -71,6 +71,17 @@
     white-space: nowrap;
 }
 
+.certGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.certGrid .card {
+    min-width: unset;
+    max-width: unset;
+}
+
 .certRow {
     display: flex;
     overflow-x: auto;
@@ -79,18 +90,25 @@
     position: relative;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    cursor: grab;
+    user-select: none;
 }
 
 .certRow::-webkit-scrollbar {
     display: none;
 }
 
-.certRowScroll .marqueeTrack {
-    animation: marquee 20s linear infinite;
+.certRowDragging {
+    cursor: grabbing;
 }
 
 .certRowDragging .marqueeTrack {
     animation-play-state: paused !important;
+    pointer-events: none;
+}
+
+.certRowScroll .marqueeTrack {
+    animation: marquee 20s linear infinite;
 }
 
 @media (hover: hover) {
@@ -314,5 +332,15 @@
     .card {
         min-width: 160px;
         max-width: 190px;
+    }
+
+    .certGrid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+
+    .certGrid .card {
+        min-width: unset;
+        max-width: unset;
     }
 }

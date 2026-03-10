@@ -34,6 +34,7 @@ function CertMarquee({
   const trackRef = useRef<HTMLDivElement>(null);
   const [shouldScroll, setShouldScroll] = useState(false);
   const dragging = useRef(false);
+  const didDrag = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
 
@@ -47,22 +48,25 @@ function CertMarquee({
     return () => ro.disconnect();
   }, [certs]);
 
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
     const row = rowRef.current;
     if (!row) return;
     dragging.current = true;
-    startX.current = e.touches[0].clientX;
+    didDrag.current = false;
+    startX.current = e.clientX;
     scrollLeft.current = row.scrollLeft;
     row.classList.add(styles.certRowDragging);
+    row.setPointerCapture(e.pointerId);
   }, []);
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current || !rowRef.current) return;
-    const dx = e.touches[0].clientX - startX.current;
+    const dx = e.clientX - startX.current;
+    if (Math.abs(dx) > 3) didDrag.current = true;
     rowRef.current.scrollLeft = scrollLeft.current - dx;
   }, []);
 
-  const onTouchEnd = useCallback(() => {
+  const onPointerUp = useCallback(() => {
     dragging.current = false;
     rowRef.current?.classList.remove(styles.certRowDragging);
   }, []);
@@ -71,7 +75,7 @@ function CertMarquee({
     <div
       key={`${keyPrefix}${cert.id}`}
       className={styles.card}
-      onClick={() => onOpen(cert.image, cert.title[locale])}
+      onClick={() => { if (!didDrag.current) onOpen(cert.image, cert.title[locale]); }}
     >
       <div className={styles.cardImage}>
         <img src={cert.image} alt={cert.title[locale]} />
@@ -87,9 +91,9 @@ function CertMarquee({
     <div
       ref={rowRef}
       className={`${styles.certRow} ${shouldScroll ? styles.certRowScroll : ""}`}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
     >
       <div ref={trackRef} className={styles.marqueeTrack}>
         {certs.map((c) => renderCard(c))}
@@ -99,6 +103,36 @@ function CertMarquee({
           {certs.map((c) => renderCard(c, "dup-"))}
         </div>
       )}
+    </div>
+  );
+}
+
+function CertGrid({
+  certs,
+  locale,
+  onOpen,
+}: {
+  certs: Certificate[];
+  locale: "vi" | "en";
+  onOpen: (src: string, alt: string) => void;
+}) {
+  return (
+    <div className={styles.certGrid}>
+      {certs.map((cert) => (
+        <div
+          key={cert.id}
+          className={styles.card}
+          onClick={() => onOpen(cert.image, cert.title[locale])}
+        >
+          <div className={styles.cardImage}>
+            <img src={cert.image} alt={cert.title[locale]} />
+          </div>
+          <div className={styles.cardBody}>
+            <h3 className={styles.cardTitle}>{cert.title[locale]}</h3>
+            <span className={styles.cardDate}>{cert.date}</span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -167,7 +201,11 @@ export default function CertificatesPage() {
                 </span>
               </div>
 
-              <CertMarquee certs={certs} locale={locale} onOpen={openLightbox} />
+              {activeCategory === "all" ? (
+                <CertMarquee certs={certs} locale={locale} onOpen={openLightbox} />
+              ) : (
+                <CertGrid certs={certs} locale={locale} onOpen={openLightbox} />
+              )}
             </section>
           );
         })}

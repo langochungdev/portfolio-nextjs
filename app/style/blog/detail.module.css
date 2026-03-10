@@ -248,6 +248,38 @@
     color: #3a3a38;
 }
 
+.skeleton {
+    background: rgba(28, 28, 26, 0.06);
+    color: transparent;
+}
+
+.skeletonLine {
+    height: 16px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(28, 28, 26, 0.06) 25%, rgba(28, 28, 26, 0.10) 50%, rgba(28, 28, 26, 0.06) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+:global([data-theme="dark"]) .skeleton {
+    background: rgba(232, 232, 227, 0.06);
+}
+
+:global([data-theme="dark"]) .skeletonLine {
+    background: linear-gradient(90deg, rgba(232, 232, 227, 0.06) 25%, rgba(232, 232, 227, 0.10) 50%, rgba(232, 232, 227, 0.06) 75%);
+    background-size: 200% 100%;
+}
+
 @keyframes fadeUp {
     from {
         opacity: 0;
