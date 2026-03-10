@@ -7,7 +7,7 @@ import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { blogPosts, blogTopics, collectionColors } from "@/lib/mock/blog";
 import styles from "@/app/style/blog/detail.module.css";
 import navStyles from "@/app/style/home/NavBar.module.css";
-import { useMemo, useState, useSyncExternalStore, useEffect, useCallback, useRef } from "react";
+import { useMemo, useSyncExternalStore, useEffect, useCallback, useRef, useState } from "react";
 
 type Theme = "light" | "dark";
 const STORAGE_KEY = "theme-preference";
@@ -17,20 +17,29 @@ const getPortalSnapshot = () => document.querySelector(".bottom-bar");
 const getPortalServerSnapshot = () => null;
 
 function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "light";
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === "dark" || stored === "light" ? stored : "light";
-  });
+  const theme = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener("storage", cb);
+      return () => window.removeEventListener("storage", cb);
+    },
+    () => {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored === "dark" ? "dark" : "light";
+    },
+    () => "light" as Theme
+  );
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
   const toggle = useCallback(() => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  }, []);
+    const next: Theme = theme === "light" ? "dark" : "light";
+    localStorage.setItem(STORAGE_KEY, next);
+    document.cookie = `theme=${next};path=/;max-age=31536000;SameSite=Lax`;
+    document.documentElement.setAttribute("data-theme", next);
+    window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }));
+  }, [theme]);
 
   return { theme, toggle };
 }
@@ -57,6 +66,7 @@ export default function BlogDetailPage() {
   const [showRelated, setShowRelated] = useState(false);
   const portalTarget = useSyncExternalStore(subscribeNoop, getPortalSnapshot, getPortalServerSnapshot);
   const mobileNavRef = useRef<HTMLElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const sidebarData = useMemo(() => {
     if (!post) return null;
@@ -77,7 +87,11 @@ export default function BlogDetailPage() {
   useEffect(() => {
     if (!showRelated) return;
     function handleClick(e: MouseEvent) {
-      if (mobileNavRef.current && !mobileNavRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        mobileNavRef.current && !mobileNavRef.current.contains(target) &&
+        (!overlayRef.current || !overlayRef.current.contains(target))
+      ) {
         setShowRelated(false);
       }
     }
@@ -173,29 +187,8 @@ export default function BlogDetailPage() {
             ref={mobileNavRef}
             className={`${navStyles.navBar} ${styles.detailNav} ${showRelated ? styles.detailNavOpen : ""}`}
             data-detail-nav
+            data-related-open={showRelated || undefined}
           >
-            {showRelated && sidebarData && (
-              <div className={styles.relatedDropdown}>
-                {sidebarData.type === "topic" && (
-                  <div className={styles.relatedHeading}>
-                    {sidebarData.topic.title[locale]}
-                  </div>
-                )}
-                {sidebarData.posts.map((p, i) => (
-                  <Link
-                    key={p.id}
-                    href={`/${locale}/blog/${p.slug}`}
-                    className={`${styles.relatedItem} ${p.slug === post.slug ? styles.relatedItemActive : ""}`}
-                    onClick={() => setShowRelated(false)}
-                  >
-                    {sidebarData.type === "topic" && (
-                      <span className={styles.relatedIndex}>{i + 1}</span>
-                    )}
-                    <span>{p.title[locale]}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
             <div className={styles.detailNavBtns}>
               <button
                 className={`${navStyles.dockItem} ${styles.detailNavBtn}`}
@@ -231,6 +224,31 @@ export default function BlogDetailPage() {
             </div>
           </nav>,
           portalTarget
+        )}
+
+      {showRelated && sidebarData &&
+        createPortal(
+          <div ref={overlayRef} className={styles.relatedOverlay}>
+            {sidebarData.type === "topic" && (
+              <div className={styles.relatedHeading}>
+                {sidebarData.topic.title[locale]}
+              </div>
+            )}
+            {sidebarData.posts.map((p, i) => (
+              <Link
+                key={p.id}
+                href={`/${locale}/blog/${p.slug}`}
+                className={`${styles.relatedItem} ${p.slug === post.slug ? styles.relatedItemActive : ""}`}
+                onClick={() => setShowRelated(false)}
+              >
+                {sidebarData.type === "topic" && (
+                  <span className={styles.relatedIndex}>{i + 1}</span>
+                )}
+                <span>{p.title[locale]}</span>
+              </Link>
+            ))}
+          </div>,
+          document.body
         )}
     </div>
   );

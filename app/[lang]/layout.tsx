@@ -6,6 +6,9 @@ import { StableVh } from "./_shared/StableVh";
 import { AnimatedFavicon } from "./_shared/AnimatedFavicon";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
+import { cookies } from "next/headers";
+
+const themeScript = `(function(){try{var t=document.cookie.match(/(?:^|;)\\s*theme=(light|dark)/);if(t)document.documentElement.setAttribute("data-theme",t[1]);else{var s=localStorage.getItem("theme-preference");if(s==="dark"||s==="light"){document.documentElement.setAttribute("data-theme",s);document.cookie="theme="+s+";path=/;max-age=31536000;SameSite=Lax"}}}catch(e){}})();`;
 
 export function generateStaticParams() {
   return i18nConfig.locales.map((lang) => ({ lang }));
@@ -23,9 +26,15 @@ export default async function LocaleLayout({
     ? (lang as Locale)
     : i18nConfig.defaultLocale;
   const dictionary = await getDictionary(locale);
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("theme")?.value;
+  const serverTheme = themeCookie === "dark" ? "dark" : "light";
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={locale} data-theme={serverTheme} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <AnimatedFavicon />
         <StableVh />

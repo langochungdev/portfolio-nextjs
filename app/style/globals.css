@@ -94,4 +94,5 @@ img {
     html.blog-detail-page .bottom-bar>nav:not([data-detail-nav]) {
         display: none;
     }
+
 }
