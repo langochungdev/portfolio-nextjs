@@ -38,7 +38,7 @@ export default async function LocaleLayout({
       <body>
         <AnimatedFavicon />
         <StableVh />
-        <DictionaryProvider dictionary={dictionary} locale={locale}>
+        <DictionaryProvider dictionary={dictionary} locale={locale} serverTheme={serverTheme}>
           {children}
           <div className="bottom-bar">
             <NavBar />

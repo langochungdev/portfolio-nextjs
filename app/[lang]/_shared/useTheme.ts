@@ -1,21 +1,26 @@
 "use client";
 
 import { useSyncExternalStore, useEffect, useCallback } from "react";
+import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 
 type Theme = "light" | "dark";
 const STORAGE_KEY = "theme-preference";
 
 export function useTheme() {
+  const { serverTheme } = useDictionary();
+
   const theme = useSyncExternalStore(
     (cb) => {
       window.addEventListener("storage", cb);
       return () => window.removeEventListener("storage", cb);
     },
     () => {
+      const attr = document.documentElement.getAttribute("data-theme");
+      if (attr === "dark" || attr === "light") return attr;
       const stored = localStorage.getItem(STORAGE_KEY);
       return stored === "dark" ? "dark" : "light";
     },
-    () => "light" as Theme,
+    () => serverTheme,
   );
 
   useEffect(() => {

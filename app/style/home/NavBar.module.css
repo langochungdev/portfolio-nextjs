@@ -96,7 +96,21 @@
     opacity: 0.7;
 }
 
+/* ── Blog detail: desktop shows default nav, mobile shows detail nav ── */
+
+.detailNav {
+    display: none;
+}
+
 @media (max-width: 640px) {
+    .defaultNavDetail {
+        display: none;
+    }
+
+    .detailNav {
+        display: flex;
+    }
+
     .navBar {
         bottom: 0.75rem;
         padding: 0.5rem;

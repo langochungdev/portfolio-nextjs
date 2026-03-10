@@ -2,8 +2,26 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
+import { useTheme } from "@/app/[lang]/_shared/useTheme";
+import { i18nConfig } from "@/lib/i18n/config";
+import type { Locale } from "@/lib/i18n/config";
 import styles from "@/app/style/shared/EyesCat.module.css";
+
+const SunIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+    <circle cx="12" cy="12" r="5" />
+    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+  </svg>
+);
+
+const MoonIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
 
 interface PupilOffset {
   x: number;
@@ -136,7 +154,9 @@ function easeInOut(t: number) {
 }
 
 export function EyesCat() {
-  const { dictionary: dict } = useDictionary();
+  const { dictionary: dict, locale } = useDictionary();
+  const { theme, toggle: toggleTheme } = useTheme();
+  const pathname = usePathname();
   const catRef = useRef<HTMLDivElement>(null);
   const [leftPupil, setLeftPupil] = useState<PupilOffset>({ x: 0, y: 0 });
   const [rightPupil, setRightPupil] = useState<PupilOffset>({ x: 0, y: 0 });
@@ -321,13 +341,36 @@ export function EyesCat() {
                     rows={4}
                     maxLength={500}
                   />
-                  <button
-                    type="submit"
-                    className={styles.submitBtn}
-                    disabled={!name.trim() || !message.trim()}
-                  >
-                    {dict.eyesCat.send}
-                  </button>
+                  <div className={styles.formFooter}>
+                    <div className={styles.settingsRow}>
+                      <button
+                        type="button"
+                        className={styles.settingBtn}
+                        onClick={toggleTheme}
+                        aria-label={theme === "light" ? "Dark mode" : "Light mode"}
+                      >
+                        {theme === "light" ? SunIcon : MoonIcon}
+                      </button>
+                      <Link
+                        href={(() => {
+                          const nextLocale = i18nConfig.locales.find((l) => l !== locale) ?? i18nConfig.defaultLocale;
+                          const segments = pathname.split("/");
+                          segments[1] = nextLocale;
+                          return segments.join("/");
+                        })()}
+                        className={styles.settingBtn}
+                      >
+                        {(i18nConfig.locales.find((l) => l !== locale) ?? i18nConfig.defaultLocale).toUpperCase()}
+                      </Link>
+                    </div>
+                    <button
+                      type="submit"
+                      className={styles.submitBtn}
+                      disabled={!name.trim() || !message.trim()}
+                    >
+                      {dict.eyesCat.send}
+                    </button>
+                  </div>
                 </>
               )}
             </form>

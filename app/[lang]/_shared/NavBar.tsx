@@ -86,41 +86,8 @@ export function NavBar() {
   );
   const { theme, toggle: toggleTheme } = useTheme();
 
-  if (isBlogDetail) {
-    return (
-      <nav
-        className={`${styles.navBar} ${showRelated ? styles.blogDetailOpen : ""}`}
-        data-detail-nav
-      >
-        <button
-          className={`${styles.dockItem} ${styles.blogDetailBtn}`}
-          onClick={() => router.back()}
-          aria-label={dict.blog.backToBlog}
-        >
-          <span className={styles.dockIcon}>{BackIcon}</span>
-        </button>
-        <button
-          className={`${styles.dockItem} ${styles.blogDetailBtn} ${showRelated ? styles.blogDetailBtnActive : ""}`}
-          onClick={toggleRelated}
-          aria-label="Related articles"
-        >
-          <span className={styles.dockIcon}>{ListIcon}</span>
-        </button>
-        <button
-          className={`${styles.dockItem} ${styles.blogDetailBtn}`}
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-        >
-          <span className={styles.dockIcon}>
-            {theme === "light" ? SunIcon : MoonIcon}
-          </span>
-        </button>
-      </nav>
-    );
-  }
-
-  return (
-    <nav className={styles.navBar}>
+  const defaultNav = (
+    <nav className={`${styles.navBar} ${isBlogDetail ? styles.defaultNavDetail : ""}`}>
       {NAV_ITEMS.map((item) => {
         const href = `/${locale}${item.path}`;
         const isActive =
@@ -143,4 +110,42 @@ export function NavBar() {
       })}
     </nav>
   );
+
+  if (isBlogDetail) {
+    return (
+      <>
+        {defaultNav}
+        <nav
+          className={`${styles.navBar} ${styles.detailNav} ${showRelated ? styles.blogDetailOpen : ""}`}
+          data-detail-nav
+        >
+          <button
+            className={`${styles.dockItem} ${styles.blogDetailBtn}`}
+            onClick={() => router.back()}
+            aria-label={dict.blog.backToBlog}
+          >
+            <span className={styles.dockIcon}>{BackIcon}</span>
+          </button>
+          <button
+            className={`${styles.dockItem} ${styles.blogDetailBtn} ${showRelated ? styles.blogDetailBtnActive : ""}`}
+            onClick={toggleRelated}
+            aria-label="Related articles"
+          >
+            <span className={styles.dockIcon}>{ListIcon}</span>
+          </button>
+          <button
+            className={`${styles.dockItem} ${styles.blogDetailBtn}`}
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+          >
+            <span className={styles.dockIcon}>
+              {theme === "light" ? SunIcon : MoonIcon}
+            </span>
+          </button>
+        </nav>
+      </>
+    );
+  }
+
+  return defaultNav;
 }

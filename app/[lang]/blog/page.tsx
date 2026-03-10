@@ -15,8 +15,7 @@ import { groupByCategory, buildDisplayItems, latestDate } from "./_lib/helpers";
 import { PostCard } from "./_components/PostCard";
 import { TopicAccordion } from "./_components/TopicAccordion";
 import { BlogNav } from "./_components/BlogNav";
-import { DarkModeToggle } from "@/app/[lang]/_shared/DarkModeToggle";
-import topStyles from "@/app/style/shared/TopActions.module.css";
+
 
 export default function BlogPage() {
   const { locale, dictionary: dict } = useDictionary();
@@ -60,9 +59,6 @@ export default function BlogPage() {
 
   return (
     <div className={styles.shell}>
-      <div className={topStyles.topActions}>
-        <DarkModeToggle />
-      </div>
       <BlogNav
         locale={locale}
         activeCategory={activeCategory}
