@@ -94,7 +94,7 @@ export function NavBar() {
       >
         <button
           className={`${styles.dockItem} ${styles.blogDetailBtn}`}
-          onClick={() => router.push(`/${locale}/blog`)}
+          onClick={() => router.back()}
           aria-label={dict.blog.backToBlog}
         >
           <span className={styles.dockIcon}>{BackIcon}</span>

@@ -10,6 +10,7 @@ import {
 import type { BlogTopic } from "@/lib/mock/blog";
 import styles from "@/app/style/blog/page.module.css";
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { groupByCategory, buildDisplayItems, latestDate } from "./_lib/helpers";
 import { PostCard } from "./_components/PostCard";
 import { TopicAccordion } from "./_components/TopicAccordion";
@@ -19,7 +20,10 @@ import topStyles from "@/app/style/shared/TopActions.module.css";
 
 export default function BlogPage() {
   const { locale, dictionary: dict } = useDictionary();
-  const [activeCategory, setActiveCategory] = useState<string>("allPosts");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialCat = searchParams.get("cat") || "allPosts";
+  const [activeCategory, setActiveCategory] = useState<string>(initialCat);
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
   const [pendingScroll, setPendingScroll] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -62,7 +66,14 @@ export default function BlogPage() {
       <BlogNav
         locale={locale}
         activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
+        onCategoryChange={(cat) => {
+          setActiveCategory(cat);
+          const params = new URLSearchParams(searchParams.toString());
+          if (cat === "allPosts") params.delete("cat");
+          else params.set("cat", cat);
+          const qs = params.toString();
+          router.replace(`/${locale}/blog${qs ? `?${qs}` : ""}`, { scroll: false });
+        }}
         categoryCounts={Object.fromEntries(categories.map((c) => [c, grouped[c]?.length ?? 0]))}
         categoryLabels={Object.fromEntries(blogCategories.map((c) => [c, catLabel(c)]))}
         totalPosts={blogPosts.length}
