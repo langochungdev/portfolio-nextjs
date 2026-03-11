@@ -7,9 +7,9 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   Legend,
+  LabelList,
 } from "recharts";
 import styles from "@/app/style/admin/dashboard.module.css";
 
@@ -68,18 +68,16 @@ export default function AdminDashboardPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="var(--color-text-muted)" />
               <YAxis tick={{ fontSize: 12 }} stroke="var(--color-text-muted)" />
-              <Tooltip
-                contentStyle={{
-                  background: "var(--color-bg)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: 8,
-                  fontSize: 13,
-                }}
-              />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="home" name={t.home} stroke="#3b82f6" fillOpacity={1} fill="url(#colorHome)" />
-              <Area type="monotone" dataKey="blog" name={t.blog} stroke="#10b981" fillOpacity={1} fill="url(#colorBlog)" />
-              <Area type="monotone" dataKey="certificates" name={t.certificates} stroke="#f59e0b" fillOpacity={1} fill="url(#colorCert)" />
+              <Area type="monotone" dataKey="home" name={t.home} stroke="#3b82f6" fillOpacity={1} fill="url(#colorHome)">
+                <LabelList dataKey="home" position="top" style={{ fontSize: 11, fill: "#3b82f6", fontWeight: 600 }} />
+              </Area>
+              <Area type="monotone" dataKey="blog" name={t.blog} stroke="#10b981" fillOpacity={1} fill="url(#colorBlog)">
+                <LabelList dataKey="blog" position="top" style={{ fontSize: 11, fill: "#10b981", fontWeight: 600 }} />
+              </Area>
+              <Area type="monotone" dataKey="certificates" name={t.certificates} stroke="#f59e0b" fillOpacity={1} fill="url(#colorCert)">
+                <LabelList dataKey="certificates" position="top" style={{ fontSize: 11, fill: "#f59e0b", fontWeight: 600 }} />
+              </Area>
             </AreaChart>
           </ResponsiveContainer>
         </div>

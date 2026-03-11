@@ -48,7 +48,10 @@
     "namePlaceholder": "Your name...",
     "placeholder": "Type your question here...",
     "send": "Send",
-    "successMsg": "Thanks! I'll get back to you soon 🐱"
+    "successMsg": "Thanks! I'll get back to you soon 🐱",
+    "greetMorning": "Good morning, beautiful ☀️",
+    "greetAfternoon": "Good afternoon, beautiful 🌤️",
+    "greetEvening": "Good evening, beautiful 🌙"
   },
   "admin": {
     "login": {
@@ -62,6 +65,7 @@
       "dashboard": "Dashboard",
       "posts": "Posts",
       "messages": "Messages",
+      "hints": "Hints",
       "logout": "Logout"
     },
     "dashboard": {
@@ -93,6 +97,19 @@
       "mobilePreview": "Mobile Preview",
       "noPostsYet": "No posts yet",
       "createFirst": "Create your first post"
+    },
+    "hints": {
+      "title": "Hints",
+      "newHint": "New Hint",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "post": "Post",
+      "all": "All",
+      "noHints": "No hints yet",
+      "titlePlaceholder": "Hint title...",
+      "contentPlaceholder": "Hint content..."
     },
     "messages": {
       "title": "Messages",

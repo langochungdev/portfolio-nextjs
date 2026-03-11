@@ -589,3 +589,146 @@ export const collectionColors: Record<string, string> = {
   life: "#F59E0B",
   tutorial: "#8B5CF6",
 };
+
+export interface BlogHint {
+  id: string;
+  title: string;
+  content: string;
+  type: "tip" | "hint" | "note";
+  topicId?: string;
+  relatedPostId?: string;
+  author: string;
+  createdAt: string;
+}
+
+export const blogHints: BlogHint[] = [
+  {
+    id: "h1",
+    title: "Server Component không cần 'use client'",
+    content:
+      "Trong Next.js App Router, mọi component mặc định là Server Component. Chỉ thêm 'use client' khi cần hooks (useState, useEffect) hoặc browser APIs. Giữ Server Components càng nhiều càng tốt để giảm bundle size.",
+    type: "tip",
+    topicId: "react-ecosystem",
+    relatedPostId: "6",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-10T08:00:00Z",
+  },
+  {
+    id: "h2",
+    title: "Dùng React.cache() để deduplicate fetch",
+    content:
+      "Khi nhiều Server Components cần cùng data, wrap fetch trong React.cache(). React sẽ tự deduplicate — chỉ gọi API 1 lần dù 5 components cùng request. Không cần Context hay prop drilling.",
+    type: "tip",
+    topicId: "react-ecosystem",
+    relatedPostId: "1",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-09T14:30:00Z",
+  },
+  {
+    id: "h3",
+    title: "Streaming SSR với Suspense boundaries",
+    content:
+      "Bọc component chậm trong <Suspense fallback={<Skeleton />}>. Server sẽ stream HTML skeleton trước, rồi gửi actual content khi ready. User thấy UI ngay lập tức thay vì blank screen.",
+    type: "hint",
+    topicId: "react-ecosystem",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-08T10:15:00Z",
+  },
+  {
+    id: "h4",
+    title: "Parallel Routes cho Dashboard layouts",
+    content:
+      "Sử dụng @folder convention trong App Router: @analytics, @metrics, @notifications. Mỗi slot load độc lập, có loading state riêng. User không cần đợi tất cả panels load xong.",
+    type: "tip",
+    topicId: "react-ecosystem",
+    relatedPostId: "17",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-07T16:45:00Z",
+  },
+  {
+    id: "h5",
+    title: "Zustand: persist middleware cho offline support",
+    content:
+      "Thêm persist middleware vào Zustand store: create(persist(fn, { name: 'key' })). State tự lưu vào localStorage và restore khi reload. Perfect cho draft forms, user preferences.",
+    type: "tip",
+    topicId: "react-ecosystem",
+    relatedPostId: "16",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-06T09:00:00Z",
+  },
+  {
+    id: "h6",
+    title: "LCP tối ưu: priority cho hero image",
+    content:
+      "Thêm priority prop vào next/image cho hero image: <Image priority />. Nó sẽ preload image và disable lazy loading. Chỉ dùng cho above-the-fold images — thường 1-2 images mỗi page.",
+    type: "tip",
+    topicId: "web-performance",
+    relatedPostId: "8",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-05T11:20:00Z",
+  },
+  {
+    id: "h7",
+    title: "Edge Functions: giới hạn 25ms CPU time",
+    content:
+      "Edge Functions có giới hạn CPU time rất thấp (~25ms Vercel). Chỉ dùng cho lightweight tasks: auth check, redirect, header manipulation. Heavy computation nên đặt ở Serverless Functions.",
+    type: "note",
+    topicId: "web-performance",
+    relatedPostId: "7",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-04T15:00:00Z",
+  },
+  {
+    id: "h8",
+    title: "CLS fix: luôn đặt width/height cho media",
+    content:
+      "Mọi <img> và <video> phải có width + height attributes (hoặc aspect-ratio CSS). Browser dành sẵn space trước khi load, tránh layout shift. next/image tự handle việc này.",
+    type: "hint",
+    topicId: "web-performance",
+    relatedPostId: "8",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-03T08:30:00Z",
+  },
+  {
+    id: "h9",
+    title: "TypeScript: Prefer unknown over any",
+    content:
+      "Khi không biết type, dùng unknown thay vì any. unknown bắt buộc type narrowing trước khi sử dụng — an toàn hơn nhiều. Dùng type guards (typeof, instanceof, in) để narrow.",
+    type: "tip",
+    topicId: "clean-coding",
+    relatedPostId: "3",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-02T13:10:00Z",
+  },
+  {
+    id: "h10",
+    title: "Early return pattern",
+    content:
+      "Thay vì nested if/else, dùng early return: kiểm tra edge cases đầu function rồi return sớm. Code flat hơn, dễ đọc hơn, ít cognitive load. Guard clauses > deep nesting.",
+    type: "hint",
+    topicId: "clean-coding",
+    relatedPostId: "11",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-03-01T07:45:00Z",
+  },
+  {
+    id: "h11",
+    title: "Git: fixup commits cho clean history",
+    content:
+      "Dùng git commit --fixup <sha> rồi git rebase -i --autosquash. Fixup commits tự merge vào commit gốc khi rebase. History sạch hơn squash merge vì giữ được logical commits.",
+    type: "tip",
+    topicId: "clean-coding",
+    relatedPostId: "12",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-02-28T17:30:00Z",
+  },
+  {
+    id: "h12",
+    title: "CSS Modules: composes để share styles",
+    content:
+      "Dùng composes: className from './shared.module.css' để share styles giữa modules. Tránh duplicate CSS. Hoạt động tương tự @extend trong SCSS nhưng không có specificity issues.",
+    type: "tip",
+    author: "La Ngọc Hùng",
+    createdAt: "2026-02-27T10:00:00Z",
+  },
+];

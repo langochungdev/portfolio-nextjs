@@ -1,17 +1,18 @@
 export type BioBlock =
   | { type: "heading"; text: string }
   | { type: "paragraph"; text: string }
+  | { type: "quote"; text: string }
   | { type: "list"; items: string[] };
 
 export const bio: Record<"vi" | "en", BioBlock[]> = {
   vi: [
     {
-      type: "heading",
-      text: "Về tôi",
+      type: "quote",
+      text: "\u201CMọi thứ đều có thể — chỉ là chưa có cách, hoặc chưa tới lúc. Việc của mình là tìm cách, hoặc tìm đến lúc cách xuất hiện.\u201D",
     },
     {
       type: "paragraph",
-      text: "Viết đoạn giới thiệu bản thân của bạn ở đây. Ví dụ: tôi là lập trình viên fullstack với X năm kinh nghiệm...",
+      text: "Sinh viên Công nghệ — thích những thứ sáng tạo, theo chủ nghĩa tối giản.",
     },
     {
       type: "heading",
@@ -20,28 +21,21 @@ export const bio: Record<"vi" | "en", BioBlock[]> = {
     {
       type: "list",
       items: [
-        "Kỹ năng 1 — mô tả ngắn",
-        "Kỹ năng 2 — mô tả ngắn",
-        "Kỹ năng 3 — mô tả ngắn",
+        "CI/CD · Microservices · Testing & Debugging · SEO",
+        "Thiết kế & phát triển hệ thống CMS",
+        "Sản xuất content video & viết bài",
+        "Tiếng Anh giao tiếp & đọc hiểu văn bản",
       ],
-    },
-    {
-      type: "heading",
-      text: "Kinh nghiệm",
-    },
-    {
-      type: "paragraph",
-      text: "Viết tóm tắt kinh nghiệm làm việc hoặc dự án nổi bật ở đây.",
     },
   ],
   en: [
     {
-      type: "heading",
-      text: "About",
+      type: "quote",
+      text: "\u201CEverything is possible — it\u2019s just a matter of finding the way, or waiting for the right moment.\u201D",
     },
     {
       type: "paragraph",
-      text: "Write your self-introduction here. E.g. I'm a fullstack developer with X years of experience...",
+      text: "CS student — drawn to creative things, minimalist by principle.",
     },
     {
       type: "heading",
@@ -50,18 +44,11 @@ export const bio: Record<"vi" | "en", BioBlock[]> = {
     {
       type: "list",
       items: [
-        "Skill 1 — short description",
-        "Skill 2 — short description",
-        "Skill 3 — short description",
+        "CI/CD · Microservices · Testing & Debugging · SEO",
+        "CMS design & development",
+        "Video content production & writing",
+        "English communication & reading comprehension",
       ],
-    },
-    {
-      type: "heading",
-      text: "Experience",
-    },
-    {
-      type: "paragraph",
-      text: "Write a summary of your work experience or notable projects here.",
     },
   ],
 };

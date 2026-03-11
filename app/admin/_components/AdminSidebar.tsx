@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMockAuth } from "./MockAuthProvider";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
-import type { Locale } from "@/lib/i18n/config";
 import styles from "@/app/style/admin/sidebar.module.css";
 
 const DashboardIcon = (
@@ -38,7 +37,6 @@ const LogoutIcon = (
 );
 
 interface AdminSidebarProps {
-  locale: Locale;
   dict: Dictionary;
 }
 

@@ -11,7 +11,9 @@ export function ArticlesSection() {
   return (
     <section className={styles.section}>
       {content.map((block: BioBlock, i: number) =>
-        block.type === "heading" ? (
+        block.type === "quote" ? (
+          <blockquote key={i} className={styles.quote}>{block.text}</blockquote>
+        ) : block.type === "heading" ? (
           <h2 key={i} className={styles.heading}>{block.text}</h2>
         ) : block.type === "paragraph" ? (
           <p key={i} className={styles.paragraph}>{block.text}</p>

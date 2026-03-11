@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { PageViewTracker } from "@/app/[lang]/_shared/PageViewTracker";
 import { ArticlesSection } from "./component/ArticlesSection";
@@ -10,7 +12,12 @@ import { ProjectsSection } from "./component/ProjectsSection";
 import styles from "@/app/style/home/page.module.css";
 
 export default function HomePage() {
-  const { dictionary: dict } = useDictionary();
+  const { locale, dictionary: dict } = useDictionary();
+  const router = useRouter();
+
+  useEffect(() => {
+    router.prefetch(`/${locale}/blog`);
+  }, [router, locale]);
 
   return (
     <div className={styles.container}>

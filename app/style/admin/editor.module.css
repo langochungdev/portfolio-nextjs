@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    height: calc(100vh - 100px);
+    height: 100%;
 }
 
 .editorToolbar {
@@ -77,8 +77,8 @@
 }
 
 .splitView {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 20px;
     flex: 1;
     min-height: 0;
@@ -95,13 +95,141 @@
 }
 
 .previewPane {
-    border: 1px solid var(--color-border);
-    border-radius: 12px;
-    overflow-y: auto;
-    padding: 24px;
+    display: none;
+}
+
+.previewOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
     background: var(--color-bg);
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-border) transparent;
+    overflow-y: auto;
+    padding: 20px;
+    animation: fadeIn 0.15s ease;
+}
+
+.previewOverlayHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.previewOverlayTitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.previewOverlayClose {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.previewBtn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.previewBtnActive {
+    background: var(--color-text);
+    color: var(--color-bg);
+    border-color: var(--color-text);
+}
+
+.fieldsToggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color 0.15s;
+    align-self: flex-start;
+}
+
+.fieldsCollapse {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: collapseIn 0.15s ease;
+}
+
+@keyframes collapseIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mobilePreviewWrap {
+    max-width: 375px;
+    margin: 0 auto;
+    border: 2px dashed var(--color-border);
+    border-radius: 16px;
+    padding: 8px;
+    transition: max-width 0.3s ease;
+}
+
+.mobilePreviewWrap .tiptapWrap {
+    border-radius: 12px;
+}
+
+.mobilePreviewWrap .tiptapEditor :global(.tiptap) {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    padding: 12px;
+}
+
+.mobilePreviewWrap .tiptapEditor :global(.tiptap h1) {
+    font-size: 1.25rem;
+}
+
+.mobilePreviewWrap .tiptapEditor :global(.tiptap h2) {
+    font-size: 1.0625rem;
+}
+
+.mobilePreviewWrap .tiptapEditor :global(.tiptap h3) {
+    font-size: 0.9375rem;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .previewMobile {
@@ -175,43 +303,86 @@
     min-height: 300px;
 }
 
-.tiptapToolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    padding: 8px;
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg);
-}
-
-.tiptapBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 700;
-    font-family: inherit;
-    transition: background 0.15s, color 0.15s;
-}
-
-.tiptapBtnActive {
-    composes: tiptapBtn;
-    background: var(--color-border);
-    color: var(--color-text);
-}
-
 .tiptapEditor {
     flex: 1;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--color-border) transparent;
+}
+
+.slugInput {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.slashMenu {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 220px;
+    max-height: 320px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.slashMenu::-webkit-scrollbar {
+    display: none;
+}
+
+.slashItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: background 0.12s;
+}
+
+.slashItemActive {
+    composes: slashItem;
+    background: var(--color-border);
+}
+
+.slashIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+}
+
+.slashInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.slashTitle {
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.slashDesc {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
 }
 
 .tiptapEditor :global(.tiptap) {
@@ -356,6 +527,382 @@
     margin: 0.5rem 0;
 }
 
+.imageModalOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.12s ease;
+}
+
+.imageModal {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 440px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.htmlCodeModal {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 640px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.htmlCodeTextarea {
+    width: 100%;
+    min-height: 240px;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    resize: vertical;
+    tab-size: 2;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+.htmlCodeTextarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.imageModalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.imageModalTitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.imageModalClose {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.imageModalClose:hover {
+    color: var(--color-text);
+    background: var(--color-border);
+}
+
+.imageModalBody {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.imageModalDivider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+}
+
+.imageModalDivider::before,
+.imageModalDivider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+}
+
+.imageModalUploadBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    border: 1px dashed var(--color-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.imageModalUploadBtn:hover {
+    border-color: var(--color-text);
+    color: var(--color-text);
+}
+
+.imageModalPreview {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+    max-height: 180px;
+}
+
+.imageModalPreview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.imageModalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--color-border);
+}
+
+.imgNodeWrap {
+    display: flex;
+    width: 100%;
+    padding: 4px 0;
+    cursor: default;
+}
+
+.imgNodeInner {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    border-radius: 6px;
+    transition: box-shadow 0.15s;
+}
+
+.imgNodeSelected {
+    box-shadow: 0 0 0 2px #3b82f6;
+    border-radius: 6px;
+}
+
+.imgNodeImg {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    pointer-events: none;
+}
+
+.imgToolbar {
+    position: absolute;
+    top: -36px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 2px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 3px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.imgToolBtn {
+    padding: 4px 6px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.imgToolBtn:hover {
+    background: var(--color-border);
+    color: var(--color-text);
+}
+
+.imgToolBtnActive {
+    composes: imgToolBtn;
+    background: var(--color-border);
+    color: var(--color-text);
+}
+
+.resizeHandle {
+    position: absolute;
+    z-index: 5;
+}
+
+.resizeHandleRight {
+    top: 0;
+    right: -4px;
+    width: 8px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+.resizeHandleRight::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 2px;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 28px;
+    border-radius: 2px;
+    background: #3b82f6;
+    opacity: 0.7;
+}
+
+.resizeHandleBottom {
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    cursor: ns-resize;
+}
+
+.resizeHandleBottom::after {
+    content: "";
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 3px;
+    border-radius: 2px;
+    background: #3b82f6;
+    opacity: 0.7;
+}
+
+.resizeHandleBottomRight {
+    bottom: -4px;
+    right: -4px;
+    width: 14px;
+    height: 14px;
+    cursor: nwse-resize;
+}
+
+.resizeHandleBottomRight::after {
+    content: "";
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    border-right: 3px solid #3b82f6;
+    border-bottom: 3px solid #3b82f6;
+    border-radius: 0 0 2px 0;
+    opacity: 0.7;
+}
+
+.iframeNodeWrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 8px 0;
+}
+
+.iframeNodeInner {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    transition: box-shadow 0.15s;
+}
+
+.iframeNodeSelected {
+    box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.iframeNodeFrame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.iframeOverlay {
+    position: absolute;
+    inset: 0;
+    cursor: default;
+}
+
+.bubbleMenu {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 3px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.bubbleBtn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    transition: background 0.12s, color 0.12s;
+}
+
+.bubbleBtn:hover {
+    background: var(--color-border);
+    color: var(--color-text);
+}
+
+.bubbleBtnActive {
+    background: var(--color-border);
+    color: var(--color-text);
+}
+
+.bubbleDivider {
+    width: 1px;
+    height: 18px;
+    background: var(--color-border);
+    margin: 0 2px;
+}
+
+.tiptapEditor :global(.tiptap) {
+    white-space: pre-wrap;
+    tab-size: 4;
+}
+
+.tiptapEditor :global(.tiptap div[data-youtube-video]) {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+}
+
+.tiptapEditor :global(.tiptap div[data-youtube-video] iframe) {
+    border-radius: 8px;
+    max-width: 100%;
+}
+
 .error {
     color: #ef4444;
     font-size: 0.8125rem;
@@ -380,11 +927,23 @@
     }
 }
 
-@media (max-width: 768px) {
-    .splitView {
-        grid-template-columns: 1fr;
+@media (hover: hover) {
+    .previewOverlayClose:hover {
+        border-color: var(--color-text);
+        color: var(--color-text);
     }
 
+    .previewBtn:hover {
+        border-color: var(--color-text);
+        color: var(--color-text);
+    }
+
+    .fieldsToggle:hover {
+        color: var(--color-text);
+    }
+}
+
+@media (max-width: 768px) {
     .editorPage {
         height: auto;
         min-height: calc(100vh - 100px);
@@ -392,11 +951,5 @@
 
     .fieldRow {
         grid-template-columns: 1fr;
-    }
-
-    .previewMobile {
-        max-width: 100%;
-        box-shadow: none;
-        border-radius: 12px;
     }
 }

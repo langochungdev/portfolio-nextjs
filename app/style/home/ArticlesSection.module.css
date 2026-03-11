@@ -18,6 +18,17 @@
     margin-top: 0;
 }
 
+.quote {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--color-text);
+    line-height: 1.7;
+    margin: 0;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--color-accent);
+    opacity: 0.85;
+}
+
 .paragraph {
     font-size: 0.825rem;
     color: var(--color-text-muted);

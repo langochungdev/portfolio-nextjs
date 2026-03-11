@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import styles from "@/app/style/admin/messages.module.css";
 
@@ -45,16 +45,29 @@ const mockConversations: MockConversation[] = [
   },
 ];
 
+const BackIcon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 12H5" />
+    <path d="M12 19l-7-7 7-7" />
+  </svg>
+);
+
 export default function AdminMessagesPage() {
   const { dictionary: dict } = useDictionary();
   const t = dict.admin.messages;
-  const [activeId, setActiveId] = useState<string | null>(mockConversations[0]?.id ?? null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeConv = mockConversations.find((c) => c.id === activeId);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeId, activeConv?.messages.length]);
+
   return (
-    <div className={styles.messagesPage}>
+    <div className={`${styles.messagesPage} ${activeId ? styles.chatOpen : ""}`}>
       <div className={styles.convList}>
+        <div className={styles.convListHeader}>Tin nhắn</div>
         {mockConversations.map((conv) => (
           <div
             key={conv.id}
@@ -74,10 +87,23 @@ export default function AdminMessagesPage() {
       <div className={styles.chatArea}>
         {activeConv ? (
           <>
+            <div className={styles.chatHeader}>
+              <button
+                className={styles.chatBackBtn}
+                onClick={() => setActiveId(null)}
+              >
+                {BackIcon}
+              </button>
+              <div className={styles.chatHeaderAvatar}>{activeConv.userName[0]}</div>
+              <span className={styles.chatHeaderName}>{activeConv.userName}</span>
+            </div>
             <div className={styles.chatMessages}>
               {activeConv.messages.map((msg, i) => (
-                <div key={i}>
-                  <div className={msg.sender === "user" ? styles.msgUser : styles.msgAdmin}>
+                <div
+                  key={i}
+                  className={msg.sender === "admin" ? styles.msgRowAdmin : styles.msgRowUser}
+                >
+                  <div className={msg.sender === "admin" ? styles.msgAdmin : styles.msgUser}>
                     {msg.text}
                   </div>
                   <div className={msg.sender === "admin" ? styles.msgAdminTime : styles.msgTime}>
@@ -85,6 +111,7 @@ export default function AdminMessagesPage() {
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
             <div className={styles.chatInput}>
               <input

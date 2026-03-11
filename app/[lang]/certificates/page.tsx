@@ -67,16 +67,26 @@ function CertMarquee({
     rowRef.current.scrollLeft = scrollLeft.current - dx;
   }, []);
 
-  const onPointerUp = useCallback(() => {
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
     dragging.current = false;
     rowRef.current?.classList.remove(styles.certRowDragging);
-  }, []);
+    rowRef.current?.releasePointerCapture(e.pointerId);
+
+    if (!didDrag.current) {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const card = el?.closest(`.${styles.card}`) as HTMLElement | null;
+      if (card?.dataset.src) {
+        onOpen(card.dataset.src, card.dataset.alt ?? "");
+      }
+    }
+  }, [onOpen]);
 
   const renderCard = (cert: Certificate, keyPrefix = "") => (
     <div
       key={`${keyPrefix}${cert.id}`}
       className={styles.card}
-      onClick={() => { if (!didDrag.current) onOpen(cert.image, cert.title[locale]); }}
+      data-src={cert.image}
+      data-alt={cert.title[locale]}
     >
       <div className={styles.cardImage}>
         <img src={cert.image} alt={cert.title[locale]} />

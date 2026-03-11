@@ -10,14 +10,17 @@ import {
   getRelatedSnapshot,
   getRelatedServerSnapshot,
 } from "@/app/[lang]/_shared/blogDetailStore";
-import { blogPosts, blogTopics, collectionColors } from "@/lib/mock/blog";
+import { blogPosts, blogTopics, blogHints, collectionColors } from "@/lib/mock/blog";
+import TipsFeed from "@/app/[lang]/blog/_components/TipsFeed";
 import styles from "@/app/style/blog/detail.module.css";
-import { useMemo, useSyncExternalStore, useEffect, useRef } from "react";
+import tipsStyles from "@/app/style/blog/tips.module.css";
+import { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "react";
 
 export default function BlogDetailPage() {
   const { locale, dictionary: dict } = useDictionary();
   const params = useParams<{ slug: string }>();
   const post = blogPosts.find((p) => p.slug === params.slug);
+  const [showTips, setShowTips] = useState(false);
   const showRelated = useSyncExternalStore(
     subscribeRelated,
     getRelatedSnapshot,
@@ -68,6 +71,11 @@ export default function BlogDetailPage() {
     dict.blog.categories[post.category as keyof typeof dict.blog.categories] ?? post.category;
   const color = collectionColors[post.category] ?? post.color;
 
+  const currentTopicId = post.topic ?? undefined;
+  const tipsCount = currentTopicId
+    ? blogHints.filter((h) => h.topicId === currentTopicId).length
+    : blogHints.length;
+
   return (
     <>
       <aside className={styles.sidebar}>
@@ -92,6 +100,7 @@ export default function BlogDetailPage() {
                 key={p.id}
                 href={`/${locale}/blog/${p.slug}`}
                 className={`${styles.sidebarItem} ${p.slug === post.slug ? styles.sidebarItemActive : ""}`}
+                onClick={() => setShowTips(false)}
               >
                 {sidebarData.type === "topic" && (
                   <span className={styles.sidebarIndex}>{i + 1}</span>
@@ -101,9 +110,25 @@ export default function BlogDetailPage() {
             ))}
           </div>
         </div>
+
+        {tipsCount > 0 && (
+          <button
+            type="button"
+            className={tipsStyles.tipsBtn}
+            onClick={() => setShowTips(true)}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 1.5C4.1 1.5 1.75 3.85 1.75 6.75C1.75 8.05 2.25 9.22 3.07 10.1L2.5 12.5L5.05 11.7C5.64 11.92 6.3 12.04 7 12.04C9.9 12.04 12.25 9.69 12.25 6.79C12.25 3.89 9.9 1.5 7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Tips & Hints ({tipsCount})
+          </button>
+        )}
       </aside>
 
-      <main className={styles.main}>
+      {showTips ? (
+        <TipsFeed topicId={currentTopicId} onBack={() => setShowTips(false)} />
+      ) : (
+        <main className={styles.main}>
         <article className={styles.article}>
           <div className={styles.articleTop}>
             <span className={styles.tag}>{postCatLabel}</span>
@@ -125,7 +150,8 @@ export default function BlogDetailPage() {
             ))}
           </div>
         </article>
-      </main>
+        </main>
+      )}
 
       {showRelated && sidebarData &&
         createPortal(

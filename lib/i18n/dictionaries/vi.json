@@ -48,7 +48,10 @@
     "namePlaceholder": "Tên của bạn...",
     "placeholder": "Nhập câu hỏi của bạn...",
     "send": "Gửi",
-    "successMsg": "Cảm ơn! Tôi sẽ trả lời sớm 🐱"
+    "successMsg": "Cảm ơn! Tôi sẽ trả lời sớm 🐱",
+    "greetMorning": "Xin chào buổi sáng người đẹp ☀️",
+    "greetAfternoon": "Xin chào buổi chiều người đẹp 🌤️",
+    "greetEvening": "Xin chào buổi tối người đẹp 🌙"
   },
   "admin": {
     "login": {
@@ -62,6 +65,7 @@
       "dashboard": "Tổng quan",
       "posts": "Bài viết",
       "messages": "Tin nhắn",
+      "hints": "Gợi ý",
       "logout": "Đăng xuất"
     },
     "dashboard": {
@@ -93,6 +97,19 @@
       "mobilePreview": "Xem trước Mobile",
       "noPostsYet": "Chưa có bài viết",
       "createFirst": "Tạo bài viết đầu tiên"
+    },
+    "hints": {
+      "title": "Gợi ý",
+      "newHint": "Gợi ý mới",
+      "edit": "Chỉnh sửa",
+      "delete": "Xóa",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "post": "Đăng",
+      "all": "Tất cả",
+      "noHints": "Chưa có gợi ý nào",
+      "titlePlaceholder": "Tiêu đề gợi ý...",
+      "contentPlaceholder": "Nội dung gợi ý..."
     },
     "messages": {
       "title": "Tin nhắn",

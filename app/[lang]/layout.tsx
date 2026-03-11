@@ -45,11 +45,11 @@ export default async function LocaleLayout({
   const serverTheme = themeCookie === "dark" ? "dark" : "light";
 
   return (
-    <html lang={locale} data-theme={serverTheme} suppressHydrationWarning>
+    <html lang={locale} className={`${lexend.variable} ${vt323.variable}`} data-theme={serverTheme} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${lexend.variable} ${vt323.variable}`}>
+      <body>
         <AnimatedFavicon />
         <StableVh />
         <DictionaryProvider dictionary={dictionary} locale={locale} serverTheme={serverTheme}>

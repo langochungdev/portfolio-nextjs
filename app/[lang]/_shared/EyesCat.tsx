@@ -165,7 +165,20 @@ export function EyesCat() {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
+  const [greeting, setGreeting] = useState<string | null>(null);
   const keyboardVpStyle = useVirtualKeyboardOffset(open);
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    let msg: string;
+    if (hour >= 5 && hour < 12) msg = dict.eyesCat.greetMorning;
+    else if (hour >= 12 && hour < 18) msg = dict.eyesCat.greetAfternoon;
+    else msg = dict.eyesCat.greetEvening;
+
+    const showTimer = setTimeout(() => setGreeting(msg), 1500);
+    const hideTimer = setTimeout(() => setGreeting(null), 6000);
+    return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
+  }, [dict.eyesCat.greetMorning, dict.eyesCat.greetAfternoon, dict.eyesCat.greetEvening]);
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (!catRef.current) return;
@@ -268,11 +281,16 @@ export function EyesCat() {
       <div
         ref={catRef}
         className={styles.cat}
-        onClick={() => setOpen(true)}
+        onClick={() => { setOpen(true); setGreeting(null); }}
         title={dict.eyesCat.title}
         role="button"
         aria-label={dict.eyesCat.title}
       >
+        {greeting && (
+          <div className={styles.speechBalloon}>
+            {greeting}
+          </div>
+        )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/img/cat-icon.png"
