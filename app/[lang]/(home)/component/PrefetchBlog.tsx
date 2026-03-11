@@ -7,10 +7,16 @@ export function PrefetchBlog({ locale }: { locale: string }) {
   const router = useRouter();
 
   useEffect(() => {
-    const id = requestIdleCallback(() => {
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(() => {
+        router.prefetch(`/${locale}/blog`);
+      });
+      return () => cancelIdleCallback(id);
+    }
+    const timer = setTimeout(() => {
       router.prefetch(`/${locale}/blog`);
-    });
-    return () => cancelIdleCallback(id);
+    }, 1);
+    return () => clearTimeout(timer);
   }, [router, locale]);
 
   return null;

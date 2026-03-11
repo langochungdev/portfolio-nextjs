@@ -17,7 +17,16 @@ const FINGERPRINT_KEY = "visitor_fp";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 * 2;
 
 function generateId(): string {
-  return crypto.randomUUID();
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
 }
 
 function getFromLocalStorage(): string | null {
@@ -83,21 +92,6 @@ async function recoverByFingerprint(
   return null;
 }
 
-async function updateConversationFingerprint(
-  visitorId: string,
-  fingerprint: string,
-): Promise<void> {
-  try {
-    const ref = doc(db, "conversations", visitorId);
-    const snap = await getDoc(ref);
-    if (snap.exists() && snap.data().fingerprint !== fingerprint) {
-      await setDoc(ref, { fingerprint }, { merge: true });
-    }
-  } catch {
-    /* Firestore may be unreachable */
-  }
-}
-
 async function ensureConversationDoc(
   visitorId: string,
   fingerprint: string,
@@ -105,21 +99,32 @@ async function ensureConversationDoc(
   try {
     const ref = doc(db, "conversations", visitorId);
     const snap = await getDoc(ref);
+    const ua = navigator.userAgent;
+    const meta = {
+      os: getOS(ua),
+      browser: getBrowser(ua),
+      device: getDevice(),
+      lastIp: "",
+    };
     if (!snap.exists()) {
-      const ua = navigator.userAgent;
       await setDoc(ref, {
         userName: "",
         lastMessage: "",
         status: "unread",
         updatedAt: serverTimestamp(),
         fingerprint,
-        metadata: {
-          os: getOS(ua),
-          browser: getBrowser(ua),
-          device: getDevice(),
-          lastIp: "",
-        },
+        metadata: meta,
       });
+    } else {
+      const data = snap.data();
+      const needsUpdate =
+        !data.fingerprint ||
+        !data.metadata?.os ||
+        !data.metadata?.browser ||
+        !data.metadata?.device;
+      if (needsUpdate) {
+        await setDoc(ref, { fingerprint, metadata: meta }, { merge: true });
+      }
     }
   } catch {
     /* Firestore may be unreachable or rules may block */
@@ -139,6 +144,7 @@ export async function getOrCreateVisitorId(): Promise<VisitorIdentity> {
   if (localId) {
     persistId(localId);
     persistFingerprint(fingerprint);
+    await ensureConversationDoc(localId, fingerprint);
     return { visitorId: localId, fingerprint, isRecovered: false };
   }
 
@@ -146,7 +152,7 @@ export async function getOrCreateVisitorId(): Promise<VisitorIdentity> {
   if (cookieId) {
     persistId(cookieId);
     persistFingerprint(fingerprint);
-    await updateConversationFingerprint(cookieId, fingerprint);
+    await ensureConversationDoc(cookieId, fingerprint);
     return { visitorId: cookieId, fingerprint, isRecovered: false };
   }
 
@@ -154,7 +160,7 @@ export async function getOrCreateVisitorId(): Promise<VisitorIdentity> {
   if (recoveredId) {
     persistId(recoveredId);
     persistFingerprint(fingerprint);
-    await updateConversationFingerprint(recoveredId, fingerprint);
+    await ensureConversationDoc(recoveredId, fingerprint);
     return { visitorId: recoveredId, fingerprint, isRecovered: true };
   }
 

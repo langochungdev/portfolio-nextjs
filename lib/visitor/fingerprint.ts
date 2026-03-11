@@ -241,9 +241,17 @@ function getHardwareSignals(): string {
 }
 
 async function sha256(message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(message);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  let hash = 0;
+  for (let i = 0; i < message.length; i++) {
+    const chr = message.charCodeAt(i);
+    hash = ((hash << 5) - hash + chr) | 0;
+  }
+  return Math.abs(hash).toString(16).padStart(8, "0");
 }
