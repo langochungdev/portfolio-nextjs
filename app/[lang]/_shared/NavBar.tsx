@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useSyncExternalStore, useState, useEffect, useTransition } from "react";
+import { useSyncExternalStore, useState, useEffect } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { useTheme } from "@/app/[lang]/_shared/useTheme";
 import {
@@ -86,18 +86,14 @@ export function NavBar() {
   );
   const { theme, toggle: toggleTheme } = useTheme();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setPendingPath(null);
   }, [pathname]);
 
-  const handleNav = (href: string) => {
-    if (href === pathname) return;
+  const handleNav = (e: React.MouseEvent, href: string) => {
+    if (href === pathname) { e.preventDefault(); return; }
     setPendingPath(href);
-    startTransition(() => {
-      router.push(href);
-    });
   };
 
   const checkActive = (item: (typeof NAV_ITEMS)[number]) => {
@@ -122,7 +118,7 @@ export function NavBar() {
           <Link
             key={item.key}
             href={href}
-            onClick={(e) => { e.preventDefault(); handleNav(href); }}
+            onClick={(e) => handleNav(e, href)}
             className={`${styles.dockItem} ${isActive ? styles.dockItemActive : ""}`}
             title={dict.home.nav[item.key]}
           >
@@ -138,7 +134,7 @@ export function NavBar() {
   if (isBlogDetail) {
     return (
       <>
-        {isPending && <div className={styles.topLoader} />}
+        {pendingPath && <div className={styles.topLoader} />}
         {defaultNav}
         <nav
           className={`${styles.navBar} ${styles.detailNav} ${showRelated ? styles.blogDetailOpen : ""}`}
@@ -174,7 +170,7 @@ export function NavBar() {
 
   return (
     <>
-      {isPending && <div className={styles.topLoader} />}
+      {pendingPath && <div className={styles.topLoader} />}
       {defaultNav}
     </>
   );

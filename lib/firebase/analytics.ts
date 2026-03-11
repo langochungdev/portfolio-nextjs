@@ -49,7 +49,7 @@ function getTodayDateStr(): string {
   return `${y}-${m}-${d}`;
 }
 
-export async function trackPageView(page: PageKey): Promise<void> {
+export function trackPageView(page: PageKey): void {
   if (wasRecentlyTracked(page)) return;
 
   markTracked(page);
@@ -58,16 +58,12 @@ export async function trackPageView(page: PageKey): Promise<void> {
   const dayId = getTodayId();
   const dailyRef = doc(db, "analytics", "daily_stats", "days", dayId);
 
-  try {
-    await Promise.all([
-      setDoc(globalRef, { [page]: increment(1) }, { merge: true }),
-      setDoc(
-        dailyRef,
-        { date: getTodayDateStr(), [page]: increment(1) },
-        { merge: true },
-      ),
-    ]);
-  } catch {
-    /* Firestore may be unreachable */
-  }
+  Promise.all([
+    setDoc(globalRef, { [page]: increment(1) }, { merge: true }),
+    setDoc(
+      dailyRef,
+      { date: getTodayDateStr(), [page]: increment(1) },
+      { merge: true },
+    ),
+  ]).catch(() => {});
 }

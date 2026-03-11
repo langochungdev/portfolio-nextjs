@@ -7,6 +7,7 @@ import { SocialSection } from "./component/SocialSection";
 import { GithubSection } from "./component/GithubSection";
 import { PortraitSection } from "./component/PortraitSection";
 import { ProjectsSection } from "./component/ProjectsSection";
+import { PrefetchBlog } from "./component/PrefetchBlog";
 import styles from "@/app/style/home/page.module.css";
 
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
@@ -24,6 +25,7 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   return (
     <div className={styles.container}>
       <PageViewTracker page="home" />
+      <PrefetchBlog locale={locale} />
       <header className={styles.header}>
         <div className={styles.headerCenter}>
           <h1 className={styles.title}>La Ngọc Hùng</h1>

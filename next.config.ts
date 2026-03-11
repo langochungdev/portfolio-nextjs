@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
+  experimental: {
+    staleTimes: {
+      dynamic: 300,
+      static: 600,
+    },
+  },
 };
 
 export default nextConfig;
