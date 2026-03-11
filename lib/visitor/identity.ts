@@ -145,6 +145,7 @@ export async function getOrCreateVisitorId(): Promise<VisitorIdentity> {
   if (cookieId) {
     persistId(cookieId);
     persistFingerprint(fingerprint);
+    await updateConversationFingerprint(cookieId, fingerprint);
     return { visitorId: cookieId, fingerprint, isRecovered: false };
   }
 

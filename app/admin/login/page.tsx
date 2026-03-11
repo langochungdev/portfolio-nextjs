@@ -14,6 +14,8 @@ export default function AdminLoginPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -25,17 +27,29 @@ export default function AdminLoginPage() {
     return null;
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) return;
-    login(username.trim());
-    router.replace("/admin");
+    if (!username.trim() || !password) return;
+    setError("");
+    setSubmitting(true);
+    try {
+      const err = await login(username.trim(), password);
+      if (err) {
+        setError(err);
+      }
+    } catch {
+      setError("Đăng nhập thất bại");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className={styles.loginPage}>
       <form className={styles.loginCard} onSubmit={handleSubmit}>
         <h1 className={styles.loginTitle}>{t.title}</h1>
+
+        {error && <p className={styles.error}>{error}</p>}
 
         <div className={styles.field}>
           <label className={styles.fieldLabel} htmlFor="username">{t.username}</label>
@@ -60,11 +74,12 @@ export default function AdminLoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
+            required
           />
         </div>
 
-        <button className={styles.submitBtn} type="submit">
-          {t.submit}
+        <button className={styles.submitBtn} type="submit" disabled={submitting}>
+          {submitting ? "..." : t.submit}
         </button>
       </form>
     </div>

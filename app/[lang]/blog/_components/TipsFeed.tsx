@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { blogHints, blogTopics, type BlogHint } from "@/lib/mock/blog";
+import { useBlogData } from "@/app/[lang]/blog/_lib/BlogDataProvider";
+import type { HintDoc } from "@/app/[lang]/blog/_lib/types";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import styles from "@/app/style/blog/tips.module.css";
 
 const ITEMS_PER_PAGE = 4;
 
-const TYPE_LABELS: Record<BlogHint["type"], { vi: string; en: string }> = {
+const TYPE_LABELS: Record<HintDoc["type"], { vi: string; en: string }> = {
   tip: { vi: "Mẹo", en: "Tip" },
   hint: { vi: "Gợi ý", en: "Hint" },
   note: { vi: "Ghi chú", en: "Note" },
 };
 
-const TYPE_COLORS: Record<BlogHint["type"], string> = {
+const TYPE_COLORS: Record<HintDoc["type"], string> = {
   tip: "#3B82F6",
   hint: "#10B981",
   note: "#F59E0B",
@@ -44,14 +45,15 @@ interface TipsFeedProps {
 
 export default function TipsFeed({ topicId, onBack }: TipsFeedProps) {
   const { locale } = useDictionary();
+  const { hints, topics } = useBlogData();
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const allHints = topicId
-    ? blogHints.filter((h) => h.topicId === topicId)
-    : blogHints;
+    ? hints.filter((h) => h.topicId === topicId)
+    : hints;
 
-  const topic = topicId ? blogTopics.find((t) => t.id === topicId) : null;
+  const topic = topicId ? topics.find((t) => t.id === topicId) : null;
   const visibleHints = allHints.slice(0, visibleCount);
   const hasMore = visibleCount < allHints.length;
 
@@ -87,7 +89,7 @@ export default function TipsFeed({ topicId, onBack }: TipsFeedProps) {
         <div className={styles.feedHeaderInfo}>
           <h2 className={styles.feedTitle}>Tips & Hints</h2>
           {topic && (
-            <span className={styles.feedTopic}>{topic.title[locale]}</span>
+            <span className={styles.feedTopic}>{topic.name}</span>
           )}
         </div>
         <span className={styles.feedCount}>{allHints.length}</span>
@@ -97,11 +99,7 @@ export default function TipsFeed({ topicId, onBack }: TipsFeedProps) {
         {visibleHints.map((hint) => (
           <article key={hint.id} className={styles.hintCard}>
             <div className={styles.hintTop}>
-              <div className={styles.hintAvatar}>
-                {hint.author.charAt(0).toUpperCase()}
-              </div>
               <div className={styles.hintMeta}>
-                <span className={styles.hintAuthor}>{hint.author}</span>
                 <span className={styles.hintTime}>
                   {formatRelativeTime(hint.createdAt, locale)}
                 </span>
@@ -115,7 +113,10 @@ export default function TipsFeed({ topicId, onBack }: TipsFeedProps) {
             </div>
 
             <h3 className={styles.hintTitle}>{hint.title}</h3>
-            <p className={styles.hintContent}>{hint.content}</p>
+            <div
+              className={styles.hintContent}
+              dangerouslySetInnerHTML={{ __html: hint.content }}
+            />
 
             <div className={styles.hintActions}>
               <button type="button" className={styles.hintAction}>

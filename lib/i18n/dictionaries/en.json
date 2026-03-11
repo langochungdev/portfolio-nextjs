@@ -65,6 +65,7 @@
       "dashboard": "Dashboard",
       "posts": "Posts",
       "messages": "Messages",
+      "notifications": "Notifications",
       "hints": "Hints",
       "logout": "Logout"
     },
@@ -118,6 +119,22 @@
       "replied": "Replied",
       "typeReply": "Type a reply...",
       "send": "Send"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Enter notification title...",
+      "bodyLabel": "Body",
+      "bodyPlaceholder": "Enter notification body...",
+      "recipients": "Recipients",
+      "noSubscribers": "No subscribers yet",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "send": "Send notification",
+      "sent": "Sent",
+      "successCount": "success",
+      "failCount": "failed",
+      "sendError": "Failed to send notification"
     }
   }
 }

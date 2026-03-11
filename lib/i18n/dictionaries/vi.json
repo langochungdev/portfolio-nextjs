@@ -65,6 +65,7 @@
       "dashboard": "Tổng quan",
       "posts": "Bài viết",
       "messages": "Tin nhắn",
+      "notifications": "Thông báo",
       "hints": "Gợi ý",
       "logout": "Đăng xuất"
     },
@@ -118,6 +119,22 @@
       "replied": "Đã trả lời",
       "typeReply": "Nhập phản hồi...",
       "send": "Gửi"
+    },
+    "notifications": {
+      "title": "Thông báo",
+      "titleLabel": "Tiêu đề",
+      "titlePlaceholder": "Nhập tiêu đề thông báo...",
+      "bodyLabel": "Nội dung",
+      "bodyPlaceholder": "Nhập nội dung thông báo...",
+      "recipients": "Người nhận",
+      "noSubscribers": "Chưa có người đăng ký nhận thông báo",
+      "selectAll": "Chọn tất cả",
+      "deselectAll": "Bỏ chọn tất cả",
+      "send": "Gửi thông báo",
+      "sent": "Đã gửi",
+      "successCount": "thành công",
+      "failCount": "thất bại",
+      "sendError": "Gửi thông báo thất bại"
     }
   }
 }

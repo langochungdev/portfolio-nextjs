@@ -14,6 +14,22 @@ export function proxy(request: NextRequest) {
 
   if (pathname.startsWith("/admin")) return;
 
+  const staticFiles = [
+    "/robots.txt",
+    "/sitemap.xml",
+    "/manifest.webmanifest",
+    "/llms.txt",
+    "/service-worker.js",
+    "/firebase-messaging-sw.js",
+    "/apple-touch-icon.png",
+  ];
+  if (
+    staticFiles.includes(pathname) ||
+    pathname.startsWith("/icon-") ||
+    pathname.startsWith("/img/")
+  )
+    return;
+
   const pathnameHasLocale = locales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   );
@@ -26,5 +42,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|api|favicon\\.\\w+|img|images|fonts|public).*)"],
+  matcher: [
+    "/((?!_next|api|favicon\\.\\w+|img|images|fonts|public|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|llms\\.txt|service-worker\\.js|firebase-messaging-sw\\.js|icon-.*\\.png|apple-touch-icon\\.png).*)",
+  ],
 };

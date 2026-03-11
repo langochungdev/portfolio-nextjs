@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import { useRouter, useParams } from "next/navigation";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import dynamic from "next/dynamic";
 
 const TiptapEditor = dynamic(() => import("@/app/admin/_components/TiptapEditor").then(m => m.TiptapEditor), { ssr: false });
+import { fetchPost, updatePost } from "@/lib/firebase/posts";
+import { processContentMedia } from "@/lib/cloudinary/client";
 import styles from "@/app/style/admin/editor.module.css";
 
 export default function EditPostPage() {
@@ -23,26 +25,80 @@ export default function EditPostPage() {
       .replace(/-+/g, "-")
       .trim();
 
-  const [title, setTitle] = useState("Getting Started with Next.js 16");
-  const [slug, setSlug] = useState("getting-started-nextjs-16");
-  const [collectionId, setCollectionId] = useState("tech");
-  const [topicId, setTopicId] = useState("nextjs");
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [collectionId, setCollectionId] = useState("");
+  const [topicId, setTopicId] = useState("");
   const [thumbnail, setThumbnail] = useState("");
-  const [content, setContent] = useState("<p>This is a sample post content for editing. The real data will be loaded from Firestore in a future task.</p>");
-  const [isPinned, setIsPinned] = useState(true);
+  const [content, setContent] = useState("");
+  const [isPinned, setIsPinned] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [showFields, setShowFields] = useState(true);
   const [mobilePreview, setMobilePreview] = useState(false);
+
+  const originalContentRef = useRef("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const post = await fetchPost(params.id);
+        if (!post) { setError("Post not found"); setLoading(false); return; }
+        setTitle(post.title);
+        setSlug(post.slug);
+        setCollectionId(post.collectionId);
+        setTopicId(post.topicId);
+        setThumbnail(post.thumbnail);
+        setContent(post.content);
+        setIsPinned(post.isPinned);
+        originalContentRef.current = post.content;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load post");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [params.id]);
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
     setSlug(generateSlug(val));
   };
 
+  const handleSave = async () => {
+    if (!title.trim()) return;
+    setSaving(true);
+    setError("");
+    try {
+      const { processedHtml } = await processContentMedia(content, originalContentRef.current);
+      await updatePost(params.id, {
+        title: title.trim(),
+        slug: slug || generateSlug(title),
+        thumbnail: thumbnail.trim(),
+        content: processedHtml,
+        collectionId,
+        topicId,
+        isPinned,
+      });
+      originalContentRef.current = processedHtml;
+      router.push("/admin/posts");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi khi lưu bài viết");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div className={styles.editorPage}>Loading...</div>;
+  if (error && !title) return <div className={styles.editorPage}>{error}</div>;
+
   return (
     <div className={styles.editorPage}>
       <div className={styles.editorToolbar}>
-        <div className={styles.left} />
+        <div className={styles.left}>
+          {error && <span className={styles.error}>{error}</span>}
+        </div>
         <div className={styles.right}>
           <button
             className={`${styles.previewBtn} ${mobilePreview ? styles.previewBtnActive : ""}`}
@@ -53,11 +109,12 @@ export default function EditPostPage() {
           <button
             className={styles.cancelBtn}
             onClick={() => router.push("/admin/posts")}
+            disabled={saving}
           >
             {t.cancel}
           </button>
-          <button className={styles.saveBtn} disabled={saving}>
-            {saving ? "..." : t.save}
+          <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : t.save}
           </button>
         </div>
       </div>
@@ -154,8 +211,6 @@ export default function EditPostPage() {
           </div>
         </div>
       </div>
-
-
     </div>
   );
 }

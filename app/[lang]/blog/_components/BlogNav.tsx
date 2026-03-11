@@ -1,25 +1,24 @@
-import { blogCategories, collectionColors } from "@/lib/mock/blog";
 import type { Locale } from "@/lib/i18n/config";
 import { CollectionSidebar } from "@/app/[lang]/_shared/CollectionSidebar";
+import type { CollectionWithColor } from "@/app/[lang]/blog/_lib/types";
 
 interface BlogNavProps {
   locale: Locale;
   activeCategory: string;
   onCategoryChange: (cat: string) => void;
+  collections: CollectionWithColor[];
   categoryCounts: Record<string, number>;
-  categoryLabels: Record<string, string>;
   totalPosts: number;
 }
 
 export function BlogNav({
-  locale, activeCategory, onCategoryChange, categoryCounts, categoryLabels, totalPosts,
+  locale, activeCategory, onCategoryChange, collections, categoryCounts, totalPosts,
 }: BlogNavProps) {
-  const cats = blogCategories.filter((c) => c !== "allPosts");
-  const items = cats.map((cat) => ({
-    key: cat,
-    label: categoryLabels[cat] ?? cat,
-    color: collectionColors[cat] ?? "#1C1C1A",
-    count: categoryCounts[cat] ?? 0,
+  const items = collections.map((col) => ({
+    key: col.id,
+    label: col.name,
+    color: col.color,
+    count: categoryCounts[col.id] ?? 0,
   }));
 
   return (
@@ -28,7 +27,7 @@ export function BlogNav({
       activeKey={activeCategory}
       onSelect={onCategoryChange}
       allKey="allPosts"
-      allLabel={categoryLabels.allPosts ?? "All Posts"}
+      allLabel="All Posts"
       allCount={totalPosts}
       items={items}
       filters={[

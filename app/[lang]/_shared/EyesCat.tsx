@@ -6,6 +6,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { useTheme } from "@/app/[lang]/_shared/useTheme";
+import {
+  getOrCreateVisitorId,
+  type VisitorIdentity,
+} from "@/lib/visitor/identity";
+import {
+  sendMessage,
+  subscribeMessages,
+  type MessageDoc,
+} from "@/lib/firebase/conversations";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 import styles from "@/app/style/shared/EyesCat.module.css";
@@ -164,8 +173,11 @@ export function EyesCat() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
   const [greeting, setGreeting] = useState<string | null>(null);
+  const [identity, setIdentity] = useState<VisitorIdentity | null>(null);
+  const [messages, setMessages] = useState<MessageDoc[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const keyboardVpStyle = useVirtualKeyboardOffset(open);
 
   useEffect(() => {
@@ -260,20 +272,38 @@ export function EyesCat() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    getOrCreateVisitorId()
+      .then(setIdentity)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!identity) return;
+    return subscribeMessages(identity.visitorId, setMessages);
+  }, [identity]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
       nameRef.current?.focus();
       return;
     }
-    if (!message.trim()) return;
-    setSent(true);
-    setTimeout(() => {
-      setOpen(false);
-      setName("");
+    const text = message.trim();
+    if (!text || !identity || sending) return;
+    setSending(true);
+    try {
+      await sendMessage(identity.visitorId, text, "user");
       setMessage("");
-      setSent(false);
-    }, 2000);
+    } catch (err) {
+      console.error("Send failed:", err);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -382,57 +412,53 @@ export function EyesCat() {
                   </div>
                 </div>
 
-                {sent && (
-                  <div className={`${styles.msgRow} ${styles.msgRowSent}`}>
-                    <div className={styles.msgBubbleSent}>
-                      <div className={styles.msgSenderName}>{name}</div>
-                      {message}
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`${styles.msgRow} ${msg.sender === "user" ? styles.msgRowSent : ""}`}
+                  >
+                    {msg.sender === "admin" && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src="/img/cat-icon.png" alt="cat" className={styles.msgAvatar} draggable={false} />
+                    )}
+                    <div className={msg.sender === "user" ? styles.msgBubbleSent : styles.msgBubbleReceived}>
+                      {msg.text}
                     </div>
                   </div>
-                )}
+                ))}
 
-                {sent && (
-                  <div className={styles.msgRow}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/img/cat-icon.png" alt="cat" className={styles.msgAvatar} draggable={false} />
-                    <div className={styles.msgBubbleReceived}>
-                      {dict.eyesCat.successMsg}
-                    </div>
-                  </div>
-                )}
+                <div ref={messagesEndRef} />
               </div>
 
-              {!sent && (
-                <form className={styles.chatInputBar} onSubmit={handleSubmit}>
-                  <div className={styles.chatInputRow}>
-                    <textarea
-                      className={styles.chatTextarea}
-                      placeholder={dict.eyesCat.placeholder}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      rows={1}
-                      maxLength={500}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          if (name.trim() && message.trim()) handleSubmit(e);
-                        }
-                      }}
-                    />
-                    <button
-                      type="submit"
-                      className={styles.sendBtn}
-                      disabled={!message.trim()}
-                      aria-label={dict.eyesCat.send}
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
-                        <path d="M22 2 11 13" />
-                        <path d="M22 2 15 22 11 13 2 9z" />
-                      </svg>
-                    </button>
-                  </div>
-                </form>
-              )}
+              <form className={styles.chatInputBar} onSubmit={handleSubmit}>
+                <div className={styles.chatInputRow}>
+                  <textarea
+                    className={styles.chatTextarea}
+                    placeholder={dict.eyesCat.placeholder}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={1}
+                    maxLength={500}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (name.trim() && message.trim()) handleSubmit(e);
+                      }
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    className={styles.sendBtn}
+                    disabled={!message.trim() || sending}
+                    aria-label={dict.eyesCat.send}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+                      <path d="M22 2 11 13" />
+                      <path d="M22 2 15 22 11 13 2 9z" />
+                    </svg>
+                  </button>
+                </div>
+              </form>
             </div>
           </div>,
           document.body

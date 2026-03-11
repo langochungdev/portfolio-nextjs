@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 
 const TiptapEditor = dynamic(() => import("@/app/admin/_components/TiptapEditor").then(m => m.TiptapEditor), { ssr: false });
 import { createPost } from "@/lib/firebase/posts";
+import { processContentMedia } from "@/lib/cloudinary/client";
 import styles from "@/app/style/admin/editor.module.css";
 
 export default function NewPostPage() {
@@ -52,11 +53,12 @@ export default function NewPostPage() {
     setSaving(true);
 
     try {
+      const { processedHtml } = await processContentMedia(content, "");
       const id = await createPost({
         title: title.trim(),
         slug: slug.trim(),
         thumbnail: thumbnail.trim(),
-        content,
+        content: processedHtml,
         collectionId,
         topicId,
         isPinned,

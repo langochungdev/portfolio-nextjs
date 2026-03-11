@@ -39,8 +39,9 @@ interface CommandItem {
   command: (props: { editor: ReturnType<typeof useEditor>; range: { from: number; to: number } }) => void;
 }
 
-function ImageModal({ onInsert, onClose }: { onInsert: (src: string) => void; onClose: () => void }) {
+function ImageModal({ onInsert, onClose }: { onInsert: (src: string, alt: string) => void; onClose: () => void }) {
   const [url, setUrl] = useState("");
+  const [alt, setAlt] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +64,7 @@ function ImageModal({ onInsert, onClose }: { onInsert: (src: string) => void; on
 
   const handleInsert = () => {
     const src = preview ?? url.trim();
-    if (src) onInsert(src);
+    if (src) onInsert(src, alt.trim());
   };
 
   return (
@@ -105,6 +106,15 @@ function ImageModal({ onInsert, onClose }: { onInsert: (src: string) => void; on
               <img src={preview ?? url} alt="Preview" />
             </div>
           )}
+
+          <label className={styles.label} style={{ marginTop: "0.75rem" }}>Alt text (SEO)</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={alt}
+            onChange={(e) => setAlt(e.target.value)}
+            placeholder="Mô tả ngắn gọn nội dung ảnh..."
+          />
         </div>
 
         <div className={styles.imageModalFooter}>
@@ -258,6 +268,7 @@ function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
   const startY = useRef(0);
   const startW = useRef(0);
   const edge = useRef<"right" | "bottom-right" | "bottom">("right");
+  const [altValue, setAltValue] = useState(alt ?? "");
 
   const onPointerDown = useCallback((pos: "right" | "bottom-right" | "bottom") => (e: React.PointerEvent) => {
     e.preventDefault();
@@ -317,6 +328,16 @@ function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
         <img ref={imgRef} src={src} alt={alt ?? ""} draggable={false} className={styles.imgNodeImg} />
         {selected && (
           <>
+            <input
+              className={styles.imgAltInput}
+              type="text"
+              value={altValue}
+              onChange={(e) => setAltValue(e.target.value)}
+              onBlur={() => updateAttributes({ alt: altValue })}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); updateAttributes({ alt: altValue }); (e.target as HTMLInputElement).blur(); } }}
+              placeholder="Alt text (SEO)..."
+              onClick={(e) => e.stopPropagation()}
+            />
             <div className={`${styles.resizeHandle} ${styles.resizeHandleRight}`} onPointerDown={onPointerDown("right")} />
             <div className={`${styles.resizeHandle} ${styles.resizeHandleBottomRight}`} onPointerDown={onPointerDown("bottom-right")} />
           </>
@@ -332,6 +353,16 @@ const CustomImage = ImageExt.extend({
       ...this.parent?.(),
       width: { default: null, renderHTML: (attrs) => (attrs.width ? { width: attrs.width } : {}) },
       textAlign: { default: "center", renderHTML: (attrs) => ({ "data-align": attrs.textAlign }) },
+      "data-natural-width": {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-natural-width"),
+        renderHTML: (attrs) => (attrs["data-natural-width"] ? { "data-natural-width": attrs["data-natural-width"] } : {}),
+      },
+      "data-natural-height": {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-natural-height"),
+        renderHTML: (attrs) => (attrs["data-natural-height"] ? { "data-natural-height": attrs["data-natural-height"] } : {}),
+      },
     };
   },
   addNodeView() {
@@ -715,9 +746,9 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
     },
   });
 
-  const handleInsertImage = (src: string) => {
+  const handleInsertImage = (src: string, alt: string) => {
     if (!editor) return;
-    editor.chain().focus().setImage({ src }).run();
+    editor.chain().focus().setImage({ src, alt }).run();
     setModal(null);
   };
 

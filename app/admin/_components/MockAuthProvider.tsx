@@ -1,65 +1,76 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { auth } from "@/lib/firebase/config";
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  type User,
+} from "firebase/auth";
 
-interface MockUser {
+interface AdminUser {
   email: string;
   displayName: string;
+  uid: string;
 }
 
-interface MockAuthContextType {
-  user: MockUser | null;
+interface AuthContextType {
+  user: AdminUser | null;
   loading: boolean;
-  login: (username: string) => void;
-  logout: () => void;
+  login: (username: string, password: string) => Promise<string | null>;
+  logout: () => Promise<void>;
 }
 
-const MockAuthContext = createContext<MockAuthContextType>({
+const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  login: () => {},
-  logout: () => {},
+  login: async () => null,
+  logout: async () => {},
 });
 
-const STORAGE_KEY = "admin_mock_auth";
+function toAdminUser(fbUser: User): AdminUser {
+  const name = fbUser.email?.replace(/@.*$/, "") ?? "";
+  return { email: fbUser.email ?? "", displayName: name, uid: fbUser.uid };
+}
 
 export function MockAuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<MockUser | null>(null);
+  const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch {
-        sessionStorage.removeItem(STORAGE_KEY);
-      }
-    }
-    setLoading(false);
+    const unsub = onAuthStateChanged(auth, (fbUser) => {
+      setUser(fbUser ? toAdminUser(fbUser) : null);
+      setLoading(false);
+    });
+    return unsub;
   }, []);
 
-  const login = (username: string) => {
-    const mockUser: MockUser = {
-      email: `${username}@gmail.com`,
-      displayName: username,
-    };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(mockUser));
-    setUser(mockUser);
+  const login = async (username: string, password: string): Promise<string | null> => {
+    const email = username.includes("@") ? username : `${username}@gmail.com`;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      return null;
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code === "auth/invalid-credential" || code === "auth/user-not-found" || code === "auth/wrong-password") {
+        return "Sai tài khoản hoặc mật khẩu";
+      }
+      return code || "Đăng nhập thất bại";
+    }
   };
 
-  const logout = () => {
-    sessionStorage.removeItem(STORAGE_KEY);
-    setUser(null);
+  const logout = async () => {
+    await signOut(auth);
   };
 
   return (
-    <MockAuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
-    </MockAuthContext.Provider>
+    </AuthContext.Provider>
   );
 }
 
 export function useMockAuth() {
-  return useContext(MockAuthContext);
+  return useContext(AuthContext);
 }

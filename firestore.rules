@@ -9,8 +9,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated()
-        && request.auth.token.email != null
-        && request.auth.token.email.matches('.*@gmail\\.com$');
+        && request.auth.uid == 'Q65DEkU7R6g8OHIsMpQpfgQp5hz2';
     }
 
     // Collections
@@ -45,15 +44,12 @@ service cloud.firestore {
 
     // Conversations
     match /conversations/{visitorId} {
-      allow read: if isAdmin();
+      allow read: if true;
       allow create: if true;
-      allow update: if isAdmin()
-        || (request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['lastMessage', 'updatedAt']));
+      allow update: if true;
 
       match /messages/{messageId} {
-        allow read: if isAdmin()
-          || visitorId == request.auth.uid;
+        allow read: if true;
         allow create: if true;
       }
     }
@@ -65,10 +61,10 @@ service cloud.firestore {
     }
 
     match /analytics/daily_stats {
-      allow read: if isAdmin();
+      allow read: if true;
 
       match /days/{dayId} {
-        allow read: if isAdmin();
+        allow read: if true;
         allow write: if true;
       }
     }

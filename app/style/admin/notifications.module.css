@@ -1,0 +1,181 @@
+.notificationsPage {
+    padding: 24px;
+    max-width: 640px;
+}
+
+.pageTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 24px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.input {
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 0.875rem;
+    font-family: inherit;
+    outline: none;
+}
+
+.input:focus {
+    border-color: #3b82f6;
+}
+
+.textarea {
+    composes: input;
+    min-height: 80px;
+    resize: vertical;
+}
+
+.subscriberSection {
+    margin-top: 8px;
+}
+
+.subscriberTitle {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 8px;
+}
+
+.subscriberList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+}
+
+.subscriberItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.subscriberItemSelected {
+    composes: subscriberItem;
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.subscriberName {
+    flex: 1;
+}
+
+.selectAll {
+    font-size: 0.75rem;
+    color: #3b82f6;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
+    margin-bottom: 6px;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.sendBtn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    background: #3b82f6;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.sendBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.resultMsg {
+    font-size: 0.8125rem;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.resultSuccess {
+    composes: resultMsg;
+    background: rgba(34, 197, 94, 0.1);
+    color: #15803d;
+}
+
+.resultError {
+    composes: resultMsg;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.noSubscribers {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    padding: 12px 0;
+}
+
+@media (hover: hover) {
+    .sendBtn:not(:disabled):hover {
+        opacity: 0.85;
+    }
+
+    .subscriberItem:hover {
+        background: var(--color-border);
+    }
+
+    .selectAll:hover {
+        text-decoration: underline;
+    }
+}
+
+@media (max-width: 768px) {
+    .notificationsPage {
+        padding: 16px;
+    }
+}

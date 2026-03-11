@@ -1,37 +1,35 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { CollectionPanel } from "@/app/admin/_components/CollectionPanel";
 import { TopicPanel } from "@/app/admin/_components/TopicPanel";
 import { PostPanel } from "@/app/admin/_components/PostPanel";
+import {
+  fetchCollections,
+  addCollection as addColFb,
+  renameCollection as renameColFb,
+  deleteCollection as deleteColFb,
+  fetchTopics,
+  addTopic as addTopicFb,
+  renameTopic as renameTopicFb,
+  deleteTopic as deleteTopicFb,
+  type CollectionDoc,
+  type TopicDoc,
+} from "@/lib/firebase/collections";
+import {
+  fetchPosts,
+  createPost,
+  updatePost,
+  deletePost as deletePostFb,
+  type PostDoc,
+} from "@/lib/firebase/posts";
+import {
+  processContentMedia,
+  deleteContentMedia,
+  deleteFromCloudinary,
+  extractPublicId,
+} from "@/lib/cloudinary/client";
 import styles from "@/app/style/admin/posts.module.css";
-
-interface CollectionItem {
-  id: string;
-  name: string;
-  order: number;
-}
-
-interface TopicItem {
-  id: string;
-  name: string;
-  collectionId: string;
-  order: number;
-}
-
-interface PostItem {
-  id: string;
-  title: string;
-  slug: string;
-  thumbnail: string;
-  content: string;
-  collectionId: string;
-  topicId: string;
-  isPinned: boolean;
-  views: number;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface HintItem {
   id: string;
@@ -45,46 +43,38 @@ interface HintItem {
   updatedAt: string;
 }
 
-const INIT_COLLECTIONS: CollectionItem[] = [
-  { id: "tech", name: "Tech", order: 0 },
-  { id: "code", name: "Code", order: 1 },
-  { id: "design", name: "Design", order: 2 },
-  { id: "life", name: "Life", order: 3 },
-  { id: "tutorial", name: "Tutorial", order: 4 },
-];
-
-const INIT_TOPICS: TopicItem[] = [
-  { id: "nextjs", name: "Next.js", collectionId: "tech", order: 0 },
-  { id: "react", name: "React", collectionId: "tech", order: 1 },
-  { id: "firebase", name: "Firebase", collectionId: "tech", order: 2 },
-  { id: "typescript", name: "TypeScript", collectionId: "code", order: 0 },
-];
-
-const INIT_POSTS: PostItem[] = [
-  { id: "1", title: "Getting Started with Next.js 16", slug: "getting-started-nextjs-16", thumbnail: "", content: "<p>Sample content...</p>", collectionId: "tech", topicId: "nextjs", isPinned: true, views: 245, createdAt: "2026-03-10", updatedAt: "2026-03-10" },
-  { id: "2", title: "CSS Grid Layout Complete Guide", slug: "css-grid-complete-guide", thumbnail: "", content: "<p>CSS Grid guide...</p>", collectionId: "code", topicId: "", isPinned: false, views: 182, createdAt: "2026-03-09", updatedAt: "2026-03-09" },
-  { id: "3", title: "Firebase Auth Best Practices", slug: "firebase-auth-best-practices", thumbnail: "", content: "<p>Firebase auth...</p>", collectionId: "tech", topicId: "firebase", isPinned: false, views: 156, createdAt: "2026-03-08", updatedAt: "2026-03-08" },
-  { id: "4", title: "Design System with CSS Variables", slug: "design-system-css-variables", thumbnail: "", content: "<p>Design system...</p>", collectionId: "design", topicId: "", isPinned: false, views: 134, createdAt: "2026-03-07", updatedAt: "2026-03-07" },
-  { id: "5", title: "TypeScript Utility Types Deep Dive", slug: "typescript-utility-types", thumbnail: "", content: "<p>TypeScript types...</p>", collectionId: "code", topicId: "typescript", isPinned: true, views: 298, createdAt: "2026-03-06", updatedAt: "2026-03-06" },
-];
-
-const INIT_HINTS: HintItem[] = [
-  { id: "h1", title: "Server Component không cần 'use client'", content: "Trong Next.js App Router, mọi component mặc định là Server Component. Chỉ thêm 'use client' khi cần hooks hoặc browser APIs.", type: "tip", topicId: "nextjs", relatedPostId: "1", order: 0, createdAt: "2026-03-10", updatedAt: "2026-03-10" },
-  { id: "h2", title: "React.cache() deduplicate fetch", content: "Wrap fetch trong React.cache(). React sẽ tự deduplicate — chỉ gọi API 1 lần dù nhiều components cùng request.", type: "tip", topicId: "react", relatedPostId: "", order: 0, createdAt: "2026-03-09", updatedAt: "2026-03-09" },
-  { id: "h3", title: "Firebase Auth refresh token", content: "Sử dụng onAuthStateChanged listener thay vì check auth state manually. Tự handle refresh token.", type: "hint", topicId: "firebase", relatedPostId: "3", order: 0, createdAt: "2026-03-08", updatedAt: "2026-03-08" },
-  { id: "h4", title: "TypeScript: Prefer unknown over any", content: "Khi không biết type, dùng unknown thay vì any. unknown bắt buộc type narrowing trước khi sử dụng.", type: "tip", topicId: "typescript", relatedPostId: "", order: 0, createdAt: "2026-03-07", updatedAt: "2026-03-07" },
-  { id: "h5", title: "CSS Modules: composes để share styles", content: "Dùng composes: className from './shared.module.css' để share styles giữa modules.", type: "note", topicId: "", relatedPostId: "", order: 0, createdAt: "2026-03-06", updatedAt: "2026-03-06" },
-];
-
 export default function AdminPostsPage() {
-  const [collections, setCollections] = useState(INIT_COLLECTIONS);
-  const [topics, setTopics] = useState(INIT_TOPICS);
-  const [posts, setPosts] = useState(INIT_POSTS);
-  const [hints, setHints] = useState(INIT_HINTS);
-  const [selectedColId, setSelectedColId] = useState<string | null>("tech");
+  const [collections, setCollections] = useState<CollectionDoc[]>([]);
+  const [topics, setTopics] = useState<TopicDoc[]>([]);
+  const [posts, setPosts] = useState<PostDoc[]>([]);
+  const [hints, setHints] = useState<HintItem[]>([]);
+  const [selectedColId, setSelectedColId] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
-  const [editingPost, setEditingPost] = useState<PostItem | null>(null);
+  const [editingPost, setEditingPost] = useState<PostDoc | null>(null);
   const [isNewPost, setIsNewPost] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [cols, tps, pts] = await Promise.all([
+        fetchCollections(),
+        fetchTopics(),
+        fetchPosts(),
+      ]);
+      setCollections(cols);
+      setTopics(tps);
+      setPosts(pts);
+      if (cols.length > 0 && !selectedColId) setSelectedColId(cols[0].id);
+    } catch (err) {
+      console.error("Failed to load data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedColId]);
+
+  useEffect(() => { loadData(); }, []);
 
   const colTopics = useMemo(
     () => topics.filter((t) => t.collectionId === selectedColId),
@@ -131,33 +121,49 @@ export default function AdminPostsPage() {
     setIsNewPost(false);
   };
 
-  const addCol = (name: string) => {
-    const id = name.toLowerCase().replace(/\s+/g, "-");
-    setCollections((prev) => [...prev, { id, name, order: prev.length }]);
+  const addCol = async (name: string) => {
+    try {
+      const id = await addColFb(name, collections.length);
+      setCollections((prev) => [...prev, { id, name, order: prev.length }]);
+    } catch (err) { console.error(err); }
   };
 
-  const renameCol = (id: string, name: string) => {
-    setCollections((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
+  const renameCol = async (id: string, name: string) => {
+    try {
+      await renameColFb(id, name);
+      setCollections((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
+    } catch (err) { console.error(err); }
   };
 
-  const deleteCol = (id: string) => {
-    setCollections((prev) => prev.filter((c) => c.id !== id));
-    if (selectedColId === id) { setSelectedColId(null); setSelectedTopicId(null); }
+  const deleteCol = async (id: string) => {
+    try {
+      await deleteColFb(id);
+      setCollections((prev) => prev.filter((c) => c.id !== id));
+      if (selectedColId === id) { setSelectedColId(null); setSelectedTopicId(null); }
+    } catch (err) { console.error(err); }
   };
 
-  const addTopic = (name: string) => {
+  const addTopic = async (name: string) => {
     if (!selectedColId) return;
-    const id = name.toLowerCase().replace(/\s+/g, "-");
-    setTopics((prev) => [...prev, { id, name, collectionId: selectedColId, order: colTopics.length }]);
+    try {
+      const id = await addTopicFb(name, selectedColId, colTopics.length);
+      setTopics((prev) => [...prev, { id, name, collectionId: selectedColId, order: colTopics.length }]);
+    } catch (err) { console.error(err); }
   };
 
-  const renameTopic = (id: string, name: string) => {
-    setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, name } : t)));
+  const renameTopic = async (id: string, name: string) => {
+    try {
+      await renameTopicFb(id, name);
+      setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, name } : t)));
+    } catch (err) { console.error(err); }
   };
 
-  const deleteTopic = (id: string) => {
-    setTopics((prev) => prev.filter((t) => t.id !== id));
-    if (selectedTopicId === id) setSelectedTopicId(null);
+  const deleteTopic = async (id: string) => {
+    try {
+      await deleteTopicFb(id);
+      setTopics((prev) => prev.filter((t) => t.id !== id));
+      if (selectedTopicId === id) setSelectedTopicId(null);
+    } catch (err) { console.error(err); }
   };
 
   const filteredHints = useMemo(() => {
@@ -173,30 +179,71 @@ export default function AdminPostsPage() {
     const now = new Date().toISOString().split("T")[0];
     setEditingPost({
       id: "", title: "", slug: "", thumbnail: "", content: "",
-      collectionId: selectedColId ?? "tech", topicId: selectedTopicId ?? "",
+      collectionId: selectedColId ?? "", topicId: selectedTopicId ?? "",
       isPinned: false, views: 0, createdAt: now, updatedAt: now,
     });
     setIsNewPost(true);
   };
 
-  const handleEditPost = (post: PostItem) => {
+  const handleEditPost = (post: PostDoc) => {
     setEditingPost({ ...post });
     setIsNewPost(false);
   };
 
-  const handleSavePost = (post: PostItem) => {
-    if (isNewPost) {
-      setPosts((prev) => [{ ...post, id: Date.now().toString() }, ...prev]);
-    } else {
-      setPosts((prev) => prev.map((p) => (p.id === post.id ? post : p)));
+  const handleSavePost = async (post: PostDoc) => {
+    setSaving(true);
+    try {
+      const oldContent = isNewPost ? "" : (posts.find((p) => p.id === post.id)?.content ?? "");
+      const { processedHtml } = await processContentMedia(post.content, oldContent);
+
+      if (isNewPost) {
+        const id = await createPost({
+          title: post.title,
+          slug: post.slug,
+          thumbnail: post.thumbnail,
+          content: processedHtml,
+          collectionId: post.collectionId,
+          topicId: post.topicId,
+          isPinned: post.isPinned,
+        });
+        const now = new Date().toISOString().split("T")[0];
+        setPosts((prev) => [{ ...post, id, content: processedHtml, createdAt: now, updatedAt: now }, ...prev]);
+      } else {
+        await updatePost(post.id, {
+          title: post.title,
+          slug: post.slug,
+          thumbnail: post.thumbnail,
+          content: processedHtml,
+          collectionId: post.collectionId,
+          topicId: post.topicId,
+          isPinned: post.isPinned,
+        });
+        setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...post, content: processedHtml, updatedAt: new Date().toISOString().split("T")[0] } : p)));
+      }
+      setEditingPost(null);
+      setIsNewPost(false);
+    } catch (err) {
+      console.error("Save failed:", err);
+      alert(err instanceof Error ? err.message : "Lỗi khi lưu bài viết");
+    } finally {
+      setSaving(false);
     }
-    setEditingPost(null);
-    setIsNewPost(false);
   };
 
-  const handleDeletePost = (id: string) => {
-    setPosts((prev) => prev.filter((p) => p.id !== id));
-    if (editingPost?.id === id) { setEditingPost(null); setIsNewPost(false); }
+  const handleDeletePost = async (id: string) => {
+    const post = posts.find((p) => p.id === id);
+    if (!post) return;
+    try {
+      await deleteContentMedia(post.content);
+      const thumbId = post.thumbnail ? extractPublicId(post.thumbnail) : null;
+      if (thumbId) await deleteFromCloudinary([thumbId]);
+      await deletePostFb(id);
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+      if (editingPost?.id === id) { setEditingPost(null); setIsNewPost(false); }
+    } catch (err) {
+      console.error("Delete failed:", err);
+      alert(err instanceof Error ? err.message : "Lỗi khi xóa bài viết");
+    }
   };
 
   const handleAddHint = (hint: Omit<HintItem, "id">) => {
@@ -212,6 +259,10 @@ export default function AdminPostsPage() {
   };
 
   const handleCancelEdit = () => { setEditingPost(null); setIsNewPost(false); };
+
+  if (loading) {
+    return <div className={styles.triPanel}><div className={styles.panel}>Loading...</div></div>;
+  }
 
   return (
     <div className={styles.triPanel}>
@@ -243,6 +294,7 @@ export default function AdminPostsPage() {
         isNew={isNewPost}
         collections={collections}
         topics={topics}
+        saving={saving}
         onNew={handleNewPost}
         onEdit={handleEditPost}
         onSave={handleSavePost}

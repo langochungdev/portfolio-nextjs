@@ -1,11 +1,11 @@
-import type { BlogPost, BlogTopic } from "@/lib/mock/blog";
+import type { PostDoc, TopicDoc } from "@/app/[lang]/blog/_lib/types";
 import type { Locale } from "@/lib/i18n/config";
 import { PostCard } from "./PostCard";
 import styles from "@/app/style/blog/page.module.css";
 
 interface TopicAccordionProps {
-  topic: BlogTopic;
-  posts: BlogPost[];
+  topic: TopicDoc;
+  posts: PostDoc[];
   isOpen: boolean;
   isPinned?: boolean;
   locale: Locale;
@@ -17,15 +17,14 @@ interface TopicAccordionProps {
 export function TopicAccordion({
   topic, posts, isOpen, isPinned, locale, label, pinnedText, onToggle,
 }: TopicAccordionProps) {
-  const tp = posts.filter((p) => p.topic === topic.id);
+  const tp = posts.filter((p) => p.topicId === topic.id);
   if (!tp.length) return null;
   return (
     <div id={topic.id} className={styles.topicSection}>
       <button className={styles.topicToggle} onClick={onToggle}>
         <div className={styles.topicInfo}>
           {isPinned && pinnedText && <span className={styles.pinnedBadge}>{pinnedText}</span>}
-          <h3 className={styles.topicTitle}>{topic.title[locale]}</h3>
-          <p className={styles.topicDesc}>{topic.description[locale]}</p>
+          <h3 className={styles.topicTitle}>{topic.name}</h3>
         </div>
         <span className={`${styles.topicChevron} ${isOpen ? styles.topicChevronOpen : ""}`}>▾</span>
       </button>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { useHeaderActions } from "@/app/admin/_components/HeaderActionsContext";
 import { HintList } from "@/app/admin/_components/HintList";
+import { uploadToCloudinary, deleteFromCloudinary, extractPublicId } from "@/lib/cloudinary/client";
 import dynamic from "next/dynamic";
 import styles from "@/app/style/admin/posts.module.css";
 import editorStyles from "@/app/style/admin/editor.module.css";
@@ -50,6 +51,7 @@ interface Props {
   isNew: boolean;
   collections: CollectionItem[];
   topics: TopicItem[];
+  saving?: boolean;
   onNew: () => void;
   onEdit: (post: PostItem) => void;
   onSave: (post: PostItem) => void;
@@ -71,7 +73,7 @@ const TrashIcon = () => (
 const generateSlug = (text: string) =>
   text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
-export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, collections, topics, onNew, onEdit, onSave, onDelete, onCancel, onAddHint, onUpdateHint, onDeleteHint }: Props) {
+export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, collections, topics, saving, onNew, onEdit, onSave, onDelete, onCancel, onAddHint, onUpdateHint, onDeleteHint }: Props) {
   const { dictionary: dict } = useDictionary();
   const t = dict.admin.posts;
   const [tab, setTab] = useState<"posts" | "hints">("posts");
@@ -83,6 +85,7 @@ export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, c
         post={editingPost}
         isNew={isNew}
         collections={collections}
+        saving={saving}
         onSave={onSave}
         onCancel={onCancel}
       />
@@ -161,10 +164,11 @@ export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, c
   );
 }
 
-function PostEditor({ post, isNew, collections, onSave, onCancel }: {
+function PostEditor({ post, isNew, collections, saving, onSave, onCancel }: {
   post: PostItem;
   isNew: boolean;
   collections: CollectionItem[];
+  saving?: boolean;
   onSave: (post: PostItem) => void;
   onCancel: () => void;
 }) {
@@ -175,6 +179,8 @@ function PostEditor({ post, isNew, collections, onSave, onCancel }: {
   const [title, setTitle] = useState(post.title);
   const [slug, setSlug] = useState(post.slug);
   const [thumbnail, setThumbnail] = useState(post.thumbnail);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState(post.content);
   const [collectionId, setCollectionId] = useState(post.collectionId);
   const [isPinned, setIsPinned] = useState(post.isPinned);
@@ -182,6 +188,36 @@ function PostEditor({ post, isNew, collections, onSave, onCancel }: {
   const handleTitleChange = (val: string) => {
     setTitle(val);
     if (isNew) setSlug(generateSlug(val));
+  };
+
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setThumbnailUploading(true);
+    try {
+      const oldId = thumbnail ? extractPublicId(thumbnail) : null;
+      if (oldId) await deleteFromCloudinary([oldId]);
+      const { url } = await uploadToCloudinary(file);
+      setThumbnail(url);
+    } catch (err) {
+      console.error("Thumbnail upload failed:", err);
+      alert(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setThumbnailUploading(false);
+      if (thumbnailInputRef.current) thumbnailInputRef.current.value = "";
+    }
+  };
+
+  const handleThumbnailRemove = async () => {
+    const publicId = thumbnail ? extractPublicId(thumbnail) : null;
+    if (publicId) {
+      try {
+        await deleteFromCloudinary([publicId]);
+      } catch (err) {
+        console.error("Thumbnail delete failed:", err);
+      }
+    }
+    setThumbnail("");
   };
 
   const onSaveRef = useRef(onSave);
@@ -211,17 +247,17 @@ function PostEditor({ post, isNew, collections, onSave, onCancel }: {
   useEffect(() => {
     setActions(
       <>
-        <button type="button" className={styles.editorBackBtn} onClick={handleCancel}>
+        <button type="button" className={styles.editorBackBtn} onClick={handleCancel} disabled={saving}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5" /><path d="M12 19l-7-7 7-7" />
           </svg>
         </button>
-        <button type="button" className={styles.cancelBtn} onClick={handleCancel}>{t.cancel}</button>
-        <button type="button" className={styles.saveBtn} onClick={handleSave}>{t.save}</button>
+        <button type="button" className={styles.cancelBtn} onClick={handleCancel} disabled={saving}>{t.cancel}</button>
+        <button type="button" className={styles.saveBtn} onClick={handleSave} disabled={saving}>{saving ? "Saving..." : t.save}</button>
       </>
     );
     return () => setActions(null);
-  }, [handleSave, handleCancel, setActions, t.cancel, t.save]);
+  }, [handleSave, handleCancel, setActions, t.cancel, t.save, saving]);
 
   return (
     <div className={styles.editorPanel}>
@@ -239,7 +275,21 @@ function PostEditor({ post, isNew, collections, onSave, onCancel }: {
         <div className={styles.editorFieldRow}>
           <div className={editorStyles.fieldGroup} style={{ flex: 1 }}>
             <label className={editorStyles.label}>{t.thumbnailLabel}</label>
-            <input className={editorStyles.input} type="text" value={thumbnail} onChange={(e) => setThumbnail(e.target.value)} placeholder="https://..." />
+            {thumbnail ? (
+              <div className={styles.thumbnailPreview}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={thumbnail} alt="Thumbnail" className={styles.thumbnailImg} />
+                <button type="button" className={styles.thumbnailRemoveBtn} onClick={handleThumbnailRemove} aria-label="Remove thumbnail">✕</button>
+                <button type="button" className={styles.thumbnailChangeBtn} onClick={() => thumbnailInputRef.current?.click()} disabled={thumbnailUploading}>
+                  {thumbnailUploading ? "..." : "Change"}
+                </button>
+              </div>
+            ) : (
+              <button type="button" className={styles.thumbnailUploadBtn} onClick={() => thumbnailInputRef.current?.click()} disabled={thumbnailUploading}>
+                {thumbnailUploading ? "Uploading..." : "Upload thumbnail"}
+              </button>
+            )}
+            <input ref={thumbnailInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleThumbnailUpload} />
           </div>
         </div>
         <div className={styles.editorFieldRow}>

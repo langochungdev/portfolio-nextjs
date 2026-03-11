@@ -1,0 +1,57 @@
+# La Ngọc Hùng - Software Engineer Portfolio
+
+> Personal blog and portfolio of La Ngọc Hùng (langochungdev), a Software Engineer from Vietnam.
+
+## About
+
+- Name: La Ngọc Hùng (Lã Ngọc Hùng)
+- Username: langochungdev
+- Role: Software Engineer / Full-Stack Developer
+- Website: https://langochung.me
+- Email: langochungdev@gmail.com
+- GitHub: https://github.com/langochungdev
+- Location: Vietnam
+
+## Tech Stack
+
+- Frontend: Next.js, Nuxt.js, TypeScript, React, Vue.js
+- Backend: Spring Boot (Java/Kotlin), Node.js
+- Database: Firebase Firestore, PostgreSQL
+- DevOps: Linux, Docker, Vercel, Git
+- Design: Figma
+- AI: Claude AI
+
+## Website Structure
+
+- Homepage: https://langochung.me/vi (Vietnamese), https://langochung.me/en (English)
+- Blog: https://langochung.me/vi/blog - Technical articles, tutorials, and tips about software engineering
+- Certificates: https://langochung.me/vi/certificates - Professional certifications and achievements
+
+## Projects
+
+- Thiệp 4U (story4u.online): Interactive greeting card platform with seasonal themes (Aesthetic, Christmas, Valentine, etc.)
+- Portfolio Website (langochung.me): Personal portfolio and blog built with Next.js, TypeScript, Firebase
+
+## Blog Content
+
+The blog section covers topics including:
+- Web Development (Next.js, Nuxt.js, React, Vue.js)
+- Backend Development (Spring Boot, Java, Kotlin)
+- DevOps & Deployment
+- Software Engineering Best Practices
+- Technical Tips & Tricks
+
+## Languages
+
+- Vietnamese (primary)
+- English
+
+## Sitemap
+
+- https://langochung.me/sitemap.xml
+
+## Contact
+
+For collaboration or inquiries, reach out via:
+- Email: langochungdev@gmail.com
+- GitHub: https://github.com/langochungdev

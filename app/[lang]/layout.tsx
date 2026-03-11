@@ -4,6 +4,7 @@ import { NavBar } from "./_shared/NavBar";
 import { EyesCat } from "./_shared/EyesCat";
 import { StableVh } from "./_shared/StableVh";
 import { AnimatedFavicon } from "./_shared/AnimatedFavicon";
+import { ChatWidget } from "./_shared/ChatWidget";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 import { cookies } from "next/headers";
@@ -23,6 +24,8 @@ const lexend = Lexend({
 });
 
 const themeScript = `(function(){try{var t=document.cookie.match(/(?:^|;)\\s*theme=(light|dark)/);if(t)document.documentElement.setAttribute("data-theme",t[1]);else{var s=localStorage.getItem("theme-preference");if(s==="dark"||s==="light"){document.documentElement.setAttribute("data-theme",s);document.cookie="theme="+s+";path=/;max-age=31536000;SameSite=Lax"}}}catch(e){}})();`;
+
+const swScript = `if("serviceWorker"in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("/service-worker.js")})}`;
 
 export function generateStaticParams() {
   return i18nConfig.locales.map((lang) => ({ lang }));
@@ -48,6 +51,8 @@ export default async function LocaleLayout({
     <html lang={locale} className={`${lexend.variable} ${vt323.variable}`} data-theme={serverTheme} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: swScript }} />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body>
         <AnimatedFavicon />
@@ -58,6 +63,7 @@ export default async function LocaleLayout({
             <NavBar />
             <EyesCat />
           </div>
+          <ChatWidget />
         </DictionaryProvider>
       </body>
     </html>
