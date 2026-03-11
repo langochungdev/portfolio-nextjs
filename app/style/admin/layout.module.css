@@ -7,13 +7,6 @@
     color: var(--color-text);
 }
 
-.mainArea {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 0;
-}
-
 .content {
     flex: 1;
     overflow: hidden;

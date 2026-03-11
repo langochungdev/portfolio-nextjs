@@ -121,11 +121,10 @@ export async function processContentMedia(
   const uploadedIds: string[] = [];
 
   for (let i = 0; i < localSrcs.length; i++) {
-    const escapedSrc = localSrcs[i].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const { url, publicId, width, height } = uploadResults[i];
-    html = html.replace(
-      new RegExp(`(<img[^>]*?)src="${escapedSrc}"`, "g"),
-      `$1src="${url}" data-natural-width="${width}" data-natural-height="${height}"`,
+    html = html.replaceAll(
+      `src="${localSrcs[i]}"`,
+      `src="${url}" data-natural-width="${width}" data-natural-height="${height}"`,
     );
     uploadedIds.push(publicId);
   }

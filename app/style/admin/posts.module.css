@@ -398,6 +398,40 @@
     overflow: hidden;
 }
 
+.editorToolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.editorToolbarRight {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fieldsToggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    margin: 8px 14px 0;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color 0.15s;
+    align-self: flex-start;
+    flex-shrink: 0;
+}
+
 .editorFields {
     display: flex;
     flex-direction: column;
@@ -405,6 +439,19 @@
     padding: 14px;
     border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
+    animation: fieldsIn 0.15s ease;
+}
+
+@keyframes fieldsIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .editorFieldRow {
@@ -579,6 +626,10 @@
 
     .editorBackBtn:hover {
         border-color: var(--color-text);
+        color: var(--color-text);
+    }
+
+    .fieldsToggle:hover {
         color: var(--color-text);
     }
 

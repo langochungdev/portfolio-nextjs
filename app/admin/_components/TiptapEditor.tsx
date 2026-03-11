@@ -14,6 +14,7 @@ import CodeBlock from "@tiptap/extension-code-block";
 import ImageExt from "@tiptap/extension-image";
 import LinkExt from "@tiptap/extension-link";
 import Youtube from "@tiptap/extension-youtube";
+import TextAlign from "@tiptap/extension-text-align";
 import { Node, Extension, ReactNodeViewRenderer, mergeAttributes } from "@tiptap/react";
 import Suggestion, { type SuggestionProps } from "@tiptap/suggestion";
 import {
@@ -304,11 +305,7 @@ function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
       className={styles.imgNodeWrap}
       style={{ justifyContent: justifyMap[textAlign ?? "center"] }}
     >
-      <div
-        ref={wrapRef}
-        className={`${styles.imgNodeInner} ${selected ? styles.imgNodeSelected : ""}`}
-        style={{ width: width ? `${width}px` : "100%" }}
-      >
+      <div ref={wrapRef} className={styles.imgNodeOuter} style={{ width: width ? `${width}px` : "100%" }}>
         {selected && (
           <div className={styles.imgToolbar}>
             {(["left", "center", "right"] as const).map((a) => (
@@ -325,9 +322,11 @@ function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
             ))}
           </div>
         )}
-        <img ref={imgRef} src={src} alt={alt ?? ""} draggable={false} className={styles.imgNodeImg} />
+        <div
+          className={`${styles.imgNodeInner} ${selected ? styles.imgNodeSelected : ""}`}
+        >
+          <img ref={imgRef} src={src} alt={alt ?? ""} draggable={false} className={styles.imgNodeImg} />
         {selected && (
-          <>
             <input
               className={styles.imgAltInput}
               type="text"
@@ -338,6 +337,10 @@ function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
               placeholder="Alt text (SEO)..."
               onClick={(e) => e.stopPropagation()}
             />
+        )}
+        </div>
+        {selected && (
+          <>
             <div className={`${styles.resizeHandle} ${styles.resizeHandleRight}`} onPointerDown={onPointerDown("right")} />
             <div className={`${styles.resizeHandle} ${styles.resizeHandleBottomRight}`} onPointerDown={onPointerDown("bottom-right")} />
           </>
@@ -738,6 +741,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
       Youtube.configure({ inline: false, width: 640, height: 360, nocookie: true }),
       CustomIframe,
       Indent,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
       createSlashCommands(),
     ],
     content,
@@ -748,7 +752,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
 
   const handleInsertImage = (src: string, alt: string) => {
     if (!editor) return;
-    editor.chain().focus().setImage({ src, alt }).run();
+    editor.chain().focus().setImage({ src, alt, width: 250 }).run();
     setModal(null);
   };
 
@@ -775,7 +779,16 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
   return (
     <div className={styles.tiptapWrap}>
       <div className={styles.tiptapEditor}>
-        <BubbleMenu editor={editor} className={styles.bubbleMenu}>
+        <BubbleMenu
+          editor={editor}
+          className={styles.bubbleMenu}
+          shouldShow={({ editor: e, state }) => {
+            const { empty } = state.selection;
+            if (empty) return false;
+            if (e.isActive("resizableImage") || e.isActive("image") || e.isActive("resizableIframe") || e.isActive("youtube")) return false;
+            return true;
+          }}
+        >
           <button
             type="button"
             className={`${styles.bubbleBtn} ${editor.isActive("bold") ? styles.bubbleBtnActive : ""}`}
@@ -803,6 +816,34 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
             onClick={() => editor.chain().focus().toggleCode().run()}
           >
             {"<>"}
+          </button>
+          <div className={styles.bubbleDivider} />
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive({ textAlign: "left" }) ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="17" y1="10" x2="3" y2="10" /><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="14" x2="3" y2="14" /><line x1="17" y1="18" x2="3" y2="18" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive({ textAlign: "center" }) ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="10" x2="6" y2="10" /><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="14" x2="3" y2="14" /><line x1="18" y1="18" x2="6" y2="18" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive({ textAlign: "right" }) ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="21" y1="10" x2="7" y2="10" /><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="14" x2="3" y2="14" /><line x1="21" y1="18" x2="7" y2="18" />
+            </svg>
           </button>
           <div className={styles.bubbleDivider} />
           <button

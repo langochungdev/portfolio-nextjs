@@ -4,8 +4,6 @@ import { MockAuthProvider } from "./MockAuthProvider";
 import { DictionaryProvider } from "@/app/[lang]/_shared/DictionaryProvider";
 import { AuthGuard } from "./AuthGuard";
 import { AdminSidebar } from "./AdminSidebar";
-import { AdminHeader } from "./AdminHeader";
-import { HeaderActionsProvider } from "./HeaderActionsContext";
 import { usePathname } from "next/navigation";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
 import type { Locale } from "@/lib/i18n/config";
@@ -26,15 +24,10 @@ function AdminInner({
   }
 
   return (
-    <HeaderActionsProvider>
-      <div className={styles.adminLayout}>
-        <AdminSidebar dict={dict} />
-        <div className={styles.mainArea}>
-          <AdminHeader dict={dict} />
-          <main className={styles.content}>{children}</main>
-        </div>
-      </div>
-    </HeaderActionsProvider>
+    <div className={styles.adminLayout}>
+      <AdminSidebar dict={dict} />
+      <main className={styles.content}>{children}</main>
+    </div>
   );
 }
 

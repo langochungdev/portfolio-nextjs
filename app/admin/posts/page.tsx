@@ -26,6 +26,7 @@ import {
 import {
   processContentMedia,
   deleteContentMedia,
+  uploadToCloudinary,
   deleteFromCloudinary,
   extractPublicId,
 } from "@/lib/cloudinary/client";
@@ -190,9 +191,23 @@ export default function AdminPostsPage() {
     setIsNewPost(false);
   };
 
-  const handleSavePost = async (post: PostDoc) => {
+  const handleSavePost = async (post: PostDoc, thumbnailFile?: File) => {
     setSaving(true);
     try {
+      let finalThumbnail = post.thumbnail;
+      if (thumbnailFile) {
+        const oldThumb = isNewPost ? "" : (posts.find((p) => p.id === post.id)?.thumbnail ?? "");
+        const oldId = oldThumb ? extractPublicId(oldThumb) : null;
+        if (oldId) await deleteFromCloudinary([oldId]);
+        const { url } = await uploadToCloudinary(thumbnailFile);
+        finalThumbnail = url;
+      } else if (!post.thumbnail) {
+        const oldThumb = isNewPost ? "" : (posts.find((p) => p.id === post.id)?.thumbnail ?? "");
+        const oldId = oldThumb ? extractPublicId(oldThumb) : null;
+        if (oldId) await deleteFromCloudinary([oldId]);
+        finalThumbnail = "";
+      }
+
       const oldContent = isNewPost ? "" : (posts.find((p) => p.id === post.id)?.content ?? "");
       const { processedHtml } = await processContentMedia(post.content, oldContent);
 
@@ -200,25 +215,25 @@ export default function AdminPostsPage() {
         const id = await createPost({
           title: post.title,
           slug: post.slug,
-          thumbnail: post.thumbnail,
+          thumbnail: finalThumbnail,
           content: processedHtml,
           collectionId: post.collectionId,
           topicId: post.topicId,
           isPinned: post.isPinned,
         });
         const now = new Date().toISOString().split("T")[0];
-        setPosts((prev) => [{ ...post, id, content: processedHtml, createdAt: now, updatedAt: now }, ...prev]);
+        setPosts((prev) => [{ ...post, id, thumbnail: finalThumbnail, content: processedHtml, createdAt: now, updatedAt: now }, ...prev]);
       } else {
         await updatePost(post.id, {
           title: post.title,
           slug: post.slug,
-          thumbnail: post.thumbnail,
+          thumbnail: finalThumbnail,
           content: processedHtml,
           collectionId: post.collectionId,
           topicId: post.topicId,
           isPinned: post.isPinned,
         });
-        setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...post, content: processedHtml, updatedAt: new Date().toISOString().split("T")[0] } : p)));
+        setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...post, thumbnail: finalThumbnail, content: processedHtml, updatedAt: new Date().toISOString().split("T")[0] } : p)));
       }
       setEditingPost(null);
       setIsNewPost(false);

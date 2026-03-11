@@ -691,12 +691,18 @@
     cursor: default;
 }
 
-.imgNodeInner {
+.imgNodeOuter {
     position: relative;
     display: inline-block;
     max-width: 100%;
+}
+
+.imgNodeInner {
+    position: relative;
+    display: block;
     border-radius: 6px;
     transition: box-shadow 0.15s;
+    overflow: hidden;
 }
 
 .imgNodeSelected {
@@ -713,33 +719,37 @@
 }
 
 .imgAltInput {
-    display: block;
+    position: absolute;
+    bottom: 0;
+    left: 0;
     width: 100%;
-    padding: 4px 8px;
-    margin-top: 4px;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    background: var(--color-bg);
-    color: var(--color-text-muted);
+    padding: 6px 8px;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0 0 6px 6px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
     font-size: 0.75rem;
     font-family: inherit;
     outline: none;
+    backdrop-filter: blur(4px);
+    box-sizing: border-box;
 }
 
 .imgAltInput:focus {
-    border-color: #3b82f6;
+    background: rgba(0, 0, 0, 0.7);
 }
 
 .imgAltInput::placeholder {
-    color: var(--color-text-muted);
-    opacity: 0.5;
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .imgToolbar {
     position: absolute;
-    top: -36px;
+    top: -40px;
     left: 50%;
     transform: translateX(-50%);
+    white-space: nowrap;
     display: flex;
     gap: 2px;
     background: var(--color-bg);
