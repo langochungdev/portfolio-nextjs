@@ -222,6 +222,7 @@
     font-size: 1rem;
     line-height: 1.8;
     color: #1C1C1A;
+    overflow: hidden;
 }
 
 .content p {
@@ -243,15 +244,34 @@
 }
 
 .content img[data-align="right"] {
-    display: block;
-    margin-left: auto;
-    margin-right: 0;
+    float: right;
+    margin-left: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .content img[data-align="left"] {
-    display: block;
-    margin-left: 0;
-    margin-right: auto;
+    float: left;
+    margin-right: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.content div[data-clear] {
+    clear: both;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.content div[data-clear]+p,
+.content div[data-clear]+h1,
+.content div[data-clear]+h2,
+.content div[data-clear]+h3,
+.content div[data-clear]+div,
+.content div[data-clear]+ul,
+.content div[data-clear]+ol,
+.content div[data-clear]+blockquote {
+    clear: both;
 }
 
 .skeleton {

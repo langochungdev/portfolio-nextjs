@@ -387,11 +387,23 @@
 
 .tiptapEditor :global(.tiptap) {
     padding: 16px;
+    padding-bottom: 50vh;
     min-height: 100%;
     outline: none;
     font-size: 0.9375rem;
     line-height: 1.7;
     color: var(--color-text);
+    overflow: hidden;
+}
+
+.clearFloat {
+    clear: both;
+    height: 0;
+    margin: 8px 0;
+    border-top: 2px dashed var(--color-border);
+    opacity: 0.6;
+    user-select: none;
+    cursor: default;
 }
 
 .tiptapEditor :global(.tiptap.ProseMirror-hideselection *::selection) {
@@ -685,8 +697,6 @@
 }
 
 .imgNodeWrap {
-    display: flex;
-    width: 100%;
     padding: 4px 0;
     cursor: default;
 }

@@ -298,12 +298,17 @@ function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
   }, [width, updateAttributes]);
 
   const setAlign = (a: Align) => updateAttributes({ textAlign: a });
-  const justifyMap: Record<Align, string> = { left: "flex-start", center: "center", right: "flex-end" };
+
+  const wrapStyle: React.CSSProperties = textAlign === "left"
+    ? { float: "left", marginRight: "1rem", marginBottom: "0.5rem" }
+    : textAlign === "right"
+      ? { float: "right", marginLeft: "1rem", marginBottom: "0.5rem" }
+      : { display: "flex", justifyContent: "center", width: "100%" };
 
   return (
     <NodeViewWrapper
       className={styles.imgNodeWrap}
-      style={{ justifyContent: justifyMap[textAlign ?? "center"] }}
+      style={wrapStyle}
     >
       <div ref={wrapRef} className={styles.imgNodeOuter} style={{ width: width ? `${width}px` : "100%" }}>
         {selected && (
@@ -354,8 +359,19 @@ const CustomImage = ImageExt.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
-      width: { default: null, renderHTML: (attrs) => (attrs.width ? { width: attrs.width } : {}) },
-      textAlign: { default: "center", renderHTML: (attrs) => ({ "data-align": attrs.textAlign }) },
+      width: {
+        default: null,
+        parseHTML: (el) => {
+          const w = el.getAttribute("width");
+          return w ? Number(w) : null;
+        },
+        renderHTML: (attrs) => (attrs.width ? { width: attrs.width } : {}),
+      },
+      textAlign: {
+        default: "center",
+        parseHTML: (el) => el.getAttribute("data-align") || "center",
+        renderHTML: (attrs) => ({ "data-align": attrs.textAlign }),
+      },
       "data-natural-width": {
         default: null,
         parseHTML: (el) => el.getAttribute("data-natural-width"),
@@ -488,6 +504,27 @@ const Indent = Extension.create({
   },
 });
 
+const ClearFloat = Node.create({
+  name: "clearFloat",
+  group: "block",
+  atom: true,
+  parseHTML() {
+    return [{ tag: 'div[data-clear]' }];
+  },
+  renderHTML() {
+    return ['div', { 'data-clear': 'true', style: 'clear:both' }];
+  },
+  addNodeView() {
+    return ({ HTMLAttributes }) => {
+      const dom = document.createElement('div');
+      dom.className = styles.clearFloat;
+      dom.setAttribute('data-clear', 'true');
+      dom.contentEditable = 'false';
+      return { dom };
+    };
+  },
+});
+
 const COMMANDS: CommandItem[] = [
   {
     title: "Heading 1",
@@ -551,6 +588,14 @@ const COMMANDS: CommandItem[] = [
     icon: "—",
     command: ({ editor, range }) => {
       editor?.chain().focus().deleteRange(range).setHorizontalRule().run();
+    },
+  },
+  {
+    title: "Clear Float",
+    description: "Ngắt bao quanh ảnh",
+    icon: "⏎",
+    command: ({ editor, range }) => {
+      editor?.chain().focus().deleteRange(range).insertContent({ type: "clearFloat" }).run();
     },
   },
 ];
@@ -741,6 +786,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
       Youtube.configure({ inline: false, width: 640, height: 360, nocookie: true }),
       CustomIframe,
       Indent,
+      ClearFloat,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       createSlashCommands(),
     ],

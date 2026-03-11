@@ -192,71 +192,80 @@ export default function AdminPostsPage() {
   };
 
   const handleSavePost = async (post: PostDoc, thumbnailFile?: File) => {
-    setSaving(true);
+    const tempId = isNewPost ? `temp-${Date.now()}` : post.id;
+    const now = new Date().toISOString().split("T")[0];
+    const optimisticPost = { ...post, id: tempId, updatedAt: now, ...(isNewPost ? { createdAt: now } : {}) };
+
+    if (isNewPost) {
+      setPosts((prev) => [optimisticPost, ...prev]);
+    } else {
+      setPosts((prev) => prev.map((p) => (p.id === post.id ? optimisticPost : p)));
+    }
+    setEditingPost(null);
+    const wasNew = isNewPost;
+    setIsNewPost(false);
+    setSaving(false);
+
+    const prevPosts = [...posts];
+    const rollback = () => setPosts(prevPosts);
+
     try {
       let finalThumbnail = post.thumbnail;
       if (thumbnailFile) {
-        const oldThumb = isNewPost ? "" : (posts.find((p) => p.id === post.id)?.thumbnail ?? "");
+        const oldThumb = wasNew ? "" : (prevPosts.find((p) => p.id === post.id)?.thumbnail ?? "");
         const oldId = oldThumb ? extractPublicId(oldThumb) : null;
-        if (oldId) await deleteFromCloudinary([oldId]);
+        if (oldId) deleteFromCloudinary([oldId]).catch(console.error);
         const { url } = await uploadToCloudinary(thumbnailFile);
         finalThumbnail = url;
       } else if (!post.thumbnail) {
-        const oldThumb = isNewPost ? "" : (posts.find((p) => p.id === post.id)?.thumbnail ?? "");
+        const oldThumb = wasNew ? "" : (prevPosts.find((p) => p.id === post.id)?.thumbnail ?? "");
         const oldId = oldThumb ? extractPublicId(oldThumb) : null;
-        if (oldId) await deleteFromCloudinary([oldId]);
+        if (oldId) deleteFromCloudinary([oldId]).catch(console.error);
         finalThumbnail = "";
       }
 
-      const oldContent = isNewPost ? "" : (posts.find((p) => p.id === post.id)?.content ?? "");
+      const oldContent = wasNew ? "" : (prevPosts.find((p) => p.id === post.id)?.content ?? "");
       const { processedHtml } = await processContentMedia(post.content, oldContent);
 
-      if (isNewPost) {
+      if (wasNew) {
         const id = await createPost({
-          title: post.title,
-          slug: post.slug,
-          thumbnail: finalThumbnail,
-          content: processedHtml,
-          collectionId: post.collectionId,
-          topicId: post.topicId,
-          isPinned: post.isPinned,
+          title: post.title, slug: post.slug, thumbnail: finalThumbnail,
+          content: processedHtml, collectionId: post.collectionId,
+          topicId: post.topicId, isPinned: post.isPinned,
         });
-        const now = new Date().toISOString().split("T")[0];
-        setPosts((prev) => [{ ...post, id, thumbnail: finalThumbnail, content: processedHtml, createdAt: now, updatedAt: now }, ...prev]);
+        setPosts((prev) => prev.map((p) => p.id === tempId ? { ...optimisticPost, id, thumbnail: finalThumbnail, content: processedHtml } : p));
       } else {
         await updatePost(post.id, {
-          title: post.title,
-          slug: post.slug,
-          thumbnail: finalThumbnail,
-          content: processedHtml,
-          collectionId: post.collectionId,
-          topicId: post.topicId,
-          isPinned: post.isPinned,
+          title: post.title, slug: post.slug, thumbnail: finalThumbnail,
+          content: processedHtml, collectionId: post.collectionId,
+          topicId: post.topicId, isPinned: post.isPinned,
         });
-        setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...post, thumbnail: finalThumbnail, content: processedHtml, updatedAt: new Date().toISOString().split("T")[0] } : p)));
+        setPosts((prev) => prev.map((p) => p.id === post.id ? { ...optimisticPost, thumbnail: finalThumbnail, content: processedHtml } : p));
       }
-      setEditingPost(null);
-      setIsNewPost(false);
     } catch (err) {
       console.error("Save failed:", err);
+      rollback();
       alert(err instanceof Error ? err.message : "Lỗi khi lưu bài viết");
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDeletePost = async (id: string) => {
     const post = posts.find((p) => p.id === id);
     if (!post) return;
+
+    const prevPosts = [...posts];
+    setPosts((prev) => prev.filter((p) => p.id !== id));
+    if (editingPost?.id === id) { setEditingPost(null); setIsNewPost(false); }
+
     try {
-      await deleteContentMedia(post.content);
-      const thumbId = post.thumbnail ? extractPublicId(post.thumbnail) : null;
-      if (thumbId) await deleteFromCloudinary([thumbId]);
-      await deletePostFb(id);
-      setPosts((prev) => prev.filter((p) => p.id !== id));
-      if (editingPost?.id === id) { setEditingPost(null); setIsNewPost(false); }
+      await Promise.all([
+        deleteContentMedia(post.content),
+        (() => { const tid = post.thumbnail ? extractPublicId(post.thumbnail) : null; return tid ? deleteFromCloudinary([tid]).catch(console.error) : Promise.resolve(); })(),
+        deletePostFb(id),
+      ]);
     } catch (err) {
       console.error("Delete failed:", err);
+      setPosts(prevPosts);
       alert(err instanceof Error ? err.message : "Lỗi khi xóa bài viết");
     }
   };
