@@ -1,8 +1,6 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
+import { getDictionary } from "@/lib/i18n/getDictionary";
+import { i18nConfig, type Locale } from "@/lib/i18n/config";
+import { fetchContributions } from "@/lib/content/github";
 import { PageViewTracker } from "@/app/[lang]/_shared/PageViewTracker";
 import { ArticlesSection } from "./component/ArticlesSection";
 import { SocialSection } from "./component/SocialSection";
@@ -11,13 +9,17 @@ import { PortraitSection } from "./component/PortraitSection";
 import { ProjectsSection } from "./component/ProjectsSection";
 import styles from "@/app/style/home/page.module.css";
 
-export default function HomePage() {
-  const { locale, dictionary: dict } = useDictionary();
-  const router = useRouter();
+export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params;
+  const locale = i18nConfig.locales.includes(lang as Locale)
+    ? (lang as Locale)
+    : i18nConfig.defaultLocale;
+  const dict = await getDictionary(locale);
 
-  useEffect(() => {
-    router.prefetch(`/${locale}/blog`);
-  }, [router, locale]);
+  let githubData = null;
+  try {
+    githubData = await fetchContributions("langochungdev");
+  } catch { /* GitHub API unavailable */ }
 
   return (
     <div className={styles.container}>
@@ -31,10 +33,10 @@ export default function HomePage() {
 
       <div className={styles.grid}>
         <aside className={styles.leftColumn}>
-          <ArticlesSection />
+          <ArticlesSection locale={locale} />
           <div className={styles.leftBottom}>
             <SocialSection />
-            <GithubSection />
+            <GithubSection data={githubData} />
           </div>
         </aside>
 

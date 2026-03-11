@@ -1,5 +1,4 @@
-"use client";
-
+import Image from "next/image";
 import { profileData } from "@/lib/mock/home";
 import styles from "@/app/style/home/PortraitSection.module.css";
 
@@ -27,9 +26,11 @@ export function PortraitSection() {
             key={skill.name}
             className={`${styles.techIcon} ${ICON_POSITIONS[i]}`}
           >
-            <img
+            <Image
               src={skill.icon}
               alt={skill.name}
+              width={40}
+              height={40}
               draggable={false}
             />
           </div>
@@ -37,10 +38,15 @@ export function PortraitSection() {
       </div>
 
       <div className={styles.portraitWrapper}>
-        <img
+        <Image
           src="/img/portrait.webp"
           alt="portrait"
-          className={styles.portraitImage}          draggable={false}        />
+          width={400}
+          height={500}
+          priority
+          className={styles.portraitImage}
+          draggable={false}
+        />
       </div>
     </>
   );

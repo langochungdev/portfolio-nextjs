@@ -1,11 +1,8 @@
-"use client";
-
-import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { bio, type BioBlock } from "@/lib/content/bio";
+import type { Locale } from "@/lib/i18n/config";
 import styles from "@/app/style/home/ArticlesSection.module.css";
 
-export function ArticlesSection() {
-  const { locale } = useDictionary();
+export function ArticlesSection({ locale }: { locale: Locale }) {
   const content: BioBlock[] = bio[locale];
 
   return (

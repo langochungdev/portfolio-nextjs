@@ -1,11 +1,7 @@
-"use client";
-
-import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { profileData } from "@/lib/mock/home";
 import styles from "@/app/style/home/SocialSection.module.css";
 
 export function SocialSection() {
-  const { dictionary: dict } = useDictionary();
 
   return (
     <section>

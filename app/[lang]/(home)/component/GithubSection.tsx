@@ -1,7 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import styles from "@/app/style/home/GithubSection.module.css";
 import type { ContributionCell } from "@/lib/content/github";
 
@@ -17,27 +13,7 @@ const LEVEL_CLASS: Record<number, string> = {
   4: styles.githubCellActive4,
 };
 
-let cached: ContributionData | null = null;
-
-export function GithubSection() {
-  const { dictionary: dict } = useDictionary();
-  const [data, setData] = useState<ContributionData | null>(cached);
-
-  useEffect(() => {
-    if (cached) return;
-    fetch("/api/github/contributions")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.cells) {
-          cached = json;
-          setData(json);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const SKELETON_CELLS = 53 * 7;
-
+export function GithubSection({ data }: { data: ContributionData | null }) {
   const weeks = data
     ? Array.from({ length: Math.ceil(data.cells.length / 7) }, (_, i) =>
         data.cells.slice(i * 7, i * 7 + 7)
@@ -48,25 +24,19 @@ export function GithubSection() {
     <section>
       <div className={styles.githubBox}>
         <div className={styles.githubInner}>
-          {!data ? (
-            <div className={styles.githubGrid}>
-              {Array.from({ length: SKELETON_CELLS }).map((_, i) => (
-                <div key={i} className={styles.githubCell} />
-              ))}
-            </div>
-          ) : (
-            <div className={styles.githubGrid}>
-              {weeks.map((week, wi) =>
-                week.map((day, di) => (
-                  <div
-                    key={`${wi}-${di}`}
-                    className={`${styles.githubCell} ${LEVEL_CLASS[day.level] ?? ""}`}
-                    title={`${day.date}: ${day.count} contributions`}
-                  />
-                ))
-              )}
-            </div>
-          )}
+          <div className={styles.githubGrid}>
+            {data
+              ? weeks.map((week, wi) =>
+                  week.map((day, di) => (
+                    <div
+                      key={`${wi}-${di}`}
+                      className={`${styles.githubCell} ${LEVEL_CLASS[day.level] ?? ""}`}
+                      title={`${day.date}: ${day.count} contributions`}
+                    />
+                  ))
+                )
+              : null}
+          </div>
           <div className={styles.githubFooter}>
             {data ? (
               <>

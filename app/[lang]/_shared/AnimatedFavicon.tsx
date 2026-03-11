@@ -105,42 +105,51 @@ function drawLetter(ctx: CanvasRenderingContext2D, letterObj: { char: string; co
 
 export function AnimatedFavicon() {
   useEffect(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = SIZE;
-    canvas.height = SIZE;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    document
-      .querySelectorAll<HTMLLinkElement>("link[rel='icon'], link[rel='shortcut icon']")
-      .forEach((el) => el.remove());
-
-    const link = document.createElement("link");
-    link.rel = "icon";
-    link.type = "image/png";
-    document.head.appendChild(link);
-
-    const totalFrames = DISCO_FRAMES + LETTERS.length;
-    let currentFrame = 0;
     let timerId: ReturnType<typeof setTimeout>;
+    let link: HTMLLinkElement | null = null;
+    let createdLink = false;
 
-    function nextFrame() {
-      if (currentFrame < DISCO_FRAMES) {
-        drawDiscoBall(ctx!, currentFrame);
+    const delayId = setTimeout(() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const existing = document.querySelector<HTMLLinkElement>("link[rel='icon']");
+      if (existing) {
+        link = existing;
+        link.type = "image/png";
       } else {
-        drawLetter(ctx!, LETTERS[currentFrame - DISCO_FRAMES]);
+        link = document.createElement("link");
+        link.rel = "icon";
+        link.type = "image/png";
+        document.head.appendChild(link);
+        createdLink = true;
       }
-      link.href = canvas.toDataURL("image/png");
-      const duration = currentFrame < DISCO_FRAMES ? DISCO_DURATION : LETTER_DURATION;
-      currentFrame = (currentFrame + 1) % totalFrames;
-      timerId = setTimeout(nextFrame, duration);
-    }
 
-    nextFrame();
+      const totalFrames = DISCO_FRAMES + LETTERS.length;
+      let currentFrame = 0;
+
+      function nextFrame() {
+        if (currentFrame < DISCO_FRAMES) {
+          drawDiscoBall(ctx!, currentFrame);
+        } else {
+          drawLetter(ctx!, LETTERS[currentFrame - DISCO_FRAMES]);
+        }
+        link!.href = canvas.toDataURL("image/png");
+        const duration = currentFrame < DISCO_FRAMES ? DISCO_DURATION : LETTER_DURATION;
+        currentFrame = (currentFrame + 1) % totalFrames;
+        timerId = setTimeout(nextFrame, duration);
+      }
+
+      nextFrame();
+    }, 3000);
 
     return () => {
+      clearTimeout(delayId);
       clearTimeout(timerId);
-      link.remove();
+      if (createdLink) link?.remove();
     };
   }, []);
 

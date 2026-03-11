@@ -50,7 +50,7 @@ export default async function LocaleLayout({
     <html lang={locale} className={`${lexend.variable} ${vt323.variable}`} data-theme={serverTheme} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <script dangerouslySetInnerHTML={{ __html: swScript }} />
+        <script dangerouslySetInnerHTML={{ __html: swScript }} defer />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body>

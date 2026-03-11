@@ -1,5 +1,3 @@
-"use client";
-
 import { projectsData } from "@/lib/mock/home";
 import { ProjectCard } from "./ProjectCard";
 import styles from "@/app/style/home/ProjectsSection.module.css";

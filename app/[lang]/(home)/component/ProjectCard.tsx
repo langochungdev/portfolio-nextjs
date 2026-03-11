@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import styles from "@/app/style/home/ProjectCard.module.css";
 
 const TILTS = ["-2.5deg", "1.8deg", "-1.2deg"];
@@ -31,10 +32,11 @@ export function ProjectCard({ title, tech, color, index, link }: ProjectCardProp
       className={styles.projectCard}
       style={{ transform: `rotate(${tilt})` }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src="/img/project1.png"
         alt={title}
+        width={400}
+        height={300}
         className={styles.projectImage}
         draggable={false}
       />
