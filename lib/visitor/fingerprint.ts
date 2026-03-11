@@ -4,9 +4,7 @@ export async function generateFingerprint(): Promise<string> {
   signals.push(getNavigatorSignals());
   signals.push(getScreenSignals());
   signals.push(getTimezoneSignals());
-  signals.push(await getCanvasFingerprint());
   signals.push(await getWebGLFingerprint());
-  signals.push(await getAudioFingerprint());
   signals.push(getFontSignals());
   signals.push(getHardwareSignals());
 
@@ -45,45 +43,6 @@ function getTimezoneSignals(): string {
   return `${tz}::${offset}`;
 }
 
-async function getCanvasFingerprint(): Promise<string> {
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = 256;
-    canvas.height = 64;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return "no-canvas";
-
-    ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = "#f60";
-    ctx.fillRect(100, 1, 62, 20);
-
-    ctx.fillStyle = "#069";
-    ctx.font = "14px Arial";
-    ctx.fillText("fingerprint:canvas,1.0", 2, 15);
-
-    ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-    ctx.font = "18px Georgia";
-    ctx.fillText("fingerprint:canvas,1.0", 4, 45);
-
-    ctx.globalCompositeOperation = "multiply";
-    ctx.fillStyle = "rgb(255,0,255)";
-    ctx.beginPath();
-    ctx.arc(50, 50, 50, 0, Math.PI * 2, true);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = "rgb(0,255,255)";
-    ctx.beginPath();
-    ctx.arc(100, 50, 50, 0, Math.PI * 2, true);
-    ctx.closePath();
-    ctx.fill();
-
-    return canvas.toDataURL();
-  } catch {
-    return "canvas-error";
-  }
-}
-
 async function getWebGLFingerprint(): Promise<string> {
   try {
     const canvas = document.createElement("canvas");
@@ -108,63 +67,6 @@ async function getWebGLFingerprint(): Promise<string> {
     );
   } catch {
     return "webgl-error";
-  }
-}
-
-async function getAudioFingerprint(): Promise<string> {
-  try {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as Window & { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!AudioCtx) return "no-audio";
-
-    const ctx = new AudioCtx();
-    const oscillator = ctx.createOscillator();
-    const analyser = ctx.createAnalyser();
-    const gain = ctx.createGain();
-    const compressor = ctx.createDynamicsCompressor();
-
-    oscillator.type = "triangle";
-    oscillator.frequency.setValueAtTime(10000, ctx.currentTime);
-
-    compressor.threshold.setValueAtTime(-50, ctx.currentTime);
-    compressor.knee.setValueAtTime(40, ctx.currentTime);
-    compressor.ratio.setValueAtTime(12, ctx.currentTime);
-    compressor.attack.setValueAtTime(0, ctx.currentTime);
-    compressor.release.setValueAtTime(0.25, ctx.currentTime);
-
-    oscillator.connect(compressor);
-    compressor.connect(analyser);
-    analyser.connect(gain);
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.connect(ctx.destination);
-
-    oscillator.start(0);
-
-    await new Promise<void>((resolve) => {
-      const timeout = setTimeout(resolve, 200);
-      const check = () => {
-        if (ctx.currentTime > 0) {
-          clearTimeout(timeout);
-          resolve();
-        } else {
-          requestAnimationFrame(check);
-        }
-      };
-      check();
-    });
-
-    const dataArray = new Float32Array(analyser.frequencyBinCount);
-    analyser.getFloatFrequencyData(dataArray);
-
-    oscillator.stop();
-    await ctx.close();
-
-    const sum = dataArray.slice(0, 30).reduce((a, b) => a + Math.abs(b), 0);
-    return `audio::${sum.toFixed(6)}`;
-  } catch {
-    return "audio-error";
   }
 }
 
