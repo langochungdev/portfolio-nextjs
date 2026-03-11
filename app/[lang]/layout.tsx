@@ -4,7 +4,6 @@ import { NavBar } from "./_shared/NavBar";
 import { EyesCat } from "./_shared/EyesCat";
 import { StableVh } from "./_shared/StableVh";
 import { AnimatedFavicon } from "./_shared/AnimatedFavicon";
-import { ChatWidget } from "./_shared/ChatWidget";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 import { cookies } from "next/headers";
@@ -63,7 +62,6 @@ export default async function LocaleLayout({
             <NavBar />
             <EyesCat />
           </div>
-          <ChatWidget />
         </DictionaryProvider>
       </body>
     </html>

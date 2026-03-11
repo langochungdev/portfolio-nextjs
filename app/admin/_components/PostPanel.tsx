@@ -71,7 +71,7 @@ const TrashIcon = () => (
 );
 
 const generateSlug = (text: string) =>
-  text.toLowerCase().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
+  text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
 export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, collections, topics, saving, onNew, onEdit, onSave, onDelete, onCancel, onAddHint, onUpdateHint, onDeleteHint }: Props) {
   const { dictionary: dict } = useDictionary();

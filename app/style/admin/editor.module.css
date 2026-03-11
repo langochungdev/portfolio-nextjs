@@ -394,6 +394,14 @@
     color: var(--color-text);
 }
 
+.tiptapEditor :global(.tiptap.ProseMirror-hideselection *::selection) {
+    background: transparent;
+}
+
+.tiptapEditor :global(.tiptap.ProseMirror-hideselection *) {
+    caret-color: transparent;
+}
+
 .tiptapEditor :global(.tiptap p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
     float: left;

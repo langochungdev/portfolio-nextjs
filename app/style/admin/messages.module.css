@@ -9,8 +9,12 @@
 .convList {
     border-right: 1px solid var(--color-border);
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-border) transparent;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.convList::-webkit-scrollbar {
+    display: none;
 }
 
 .convListHeader {
@@ -81,6 +85,8 @@
 .chatArea {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
 }
 
 .chatHeader {
@@ -140,8 +146,13 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-border) transparent;
+    min-height: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.chatMessages::-webkit-scrollbar {
+    display: none;
 }
 
 .msgRowUser {

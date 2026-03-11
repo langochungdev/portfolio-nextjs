@@ -49,9 +49,12 @@
     "placeholder": "Nhập câu hỏi của bạn...",
     "send": "Gửi",
     "successMsg": "Cảm ơn! Tôi sẽ trả lời sớm 🐱",
-    "greetMorning": "Xin chào buổi sáng người đẹp ☀️",
-    "greetAfternoon": "Xin chào buổi chiều người đẹp 🌤️",
-    "greetEvening": "Xin chào buổi tối người đẹp 🌙"
+    "greetMorning": "Chào buổi sáng người đẹp ☀️",
+    "greetAfternoon": "Chào buổi chiều người đẹp 🌤️",
+    "greetEvening": "Chào buổi tối người đẹp 🌙",
+    "greetMorningName": "Chào buổi sáng {name} ☀️",
+    "greetAfternoonName": "Chào buổi chiều {name} 🌤️",
+    "greetEveningName": "Chào buổi tối {name} 🌙"
   },
   "admin": {
     "login": {

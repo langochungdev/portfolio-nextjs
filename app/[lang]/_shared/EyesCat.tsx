@@ -13,6 +13,8 @@ import {
 import {
   sendMessage,
   subscribeMessages,
+  fetchConversationUserName,
+  updateConversationUserName,
   type MessageDoc,
 } from "@/lib/firebase/conversations";
 import { i18nConfig } from "@/lib/i18n/config";
@@ -44,7 +46,6 @@ function useVirtualKeyboardOffset(active: boolean) {
 
   useEffect(() => {
     if (!active || !window.visualViewport) {
-      setVpStyle({});
       return;
     }
 
@@ -68,6 +69,7 @@ function useVirtualKeyboardOffset(active: boolean) {
     return () => {
       vv.removeEventListener("resize", update);
       vv.removeEventListener("scroll", update);
+      setVpStyle({});
     };
   }, [active]);
 
@@ -168,6 +170,7 @@ export function EyesCat() {
   const pathname = usePathname();
   const catRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [leftPupil, setLeftPupil] = useState<PupilOffset>({ x: 0, y: 0 });
   const [rightPupil, setRightPupil] = useState<PupilOffset>({ x: 0, y: 0 });
   const [open, setOpen] = useState(false);
@@ -181,16 +184,28 @@ export function EyesCat() {
   const keyboardVpStyle = useVirtualKeyboardOffset(open);
 
   useEffect(() => {
+    if (!open) return;
+    requestAnimationFrame(() => {
+      if (name.trim()) textareaRef.current?.focus();
+      else nameRef.current?.focus();
+    });
+  }, [open]);
+
+  useEffect(() => {
     const hour = new Date().getHours();
     let msg: string;
-    if (hour >= 5 && hour < 12) msg = dict.eyesCat.greetMorning;
-    else if (hour >= 12 && hour < 18) msg = dict.eyesCat.greetAfternoon;
-    else msg = dict.eyesCat.greetEvening;
+    const trimmedName = name.trim();
+    if (hour >= 5 && hour < 12)
+      msg = trimmedName ? dict.eyesCat.greetMorningName.replace("{name}", trimmedName) : dict.eyesCat.greetMorning;
+    else if (hour >= 12 && hour < 18)
+      msg = trimmedName ? dict.eyesCat.greetAfternoonName.replace("{name}", trimmedName) : dict.eyesCat.greetAfternoon;
+    else
+      msg = trimmedName ? dict.eyesCat.greetEveningName.replace("{name}", trimmedName) : dict.eyesCat.greetEvening;
 
     const showTimer = setTimeout(() => setGreeting(msg), 1500);
     const hideTimer = setTimeout(() => setGreeting(null), 6000);
     return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
-  }, [dict.eyesCat.greetMorning, dict.eyesCat.greetAfternoon, dict.eyesCat.greetEvening]);
+  }, [name, dict.eyesCat.greetMorning, dict.eyesCat.greetAfternoon, dict.eyesCat.greetEvening, dict.eyesCat.greetMorningName, dict.eyesCat.greetAfternoonName, dict.eyesCat.greetEveningName]);
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (!catRef.current) return;
@@ -280,12 +295,19 @@ export function EyesCat() {
 
   useEffect(() => {
     if (!identity) return;
+    fetchConversationUserName(identity.visitorId)
+      .then((saved) => { if (saved) setName(saved); })
+      .catch(() => {});
+  }, [identity]);
+
+  useEffect(() => {
+    if (!identity) return;
     return subscribeMessages(identity.visitorId, setMessages);
   }, [identity]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+  }, [messages.length, open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -368,7 +390,22 @@ export function EyesCat() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     maxLength={50}
-                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const trimmed = name.trim();
+                        if (trimmed && identity) {
+                          updateConversationUserName(identity.visitorId, trimmed).catch(() => {});
+                        }
+                        textareaRef.current?.focus();
+                      }
+                    }}
+                    onBlur={() => {
+                      const trimmed = name.trim();
+                      if (trimmed && identity) {
+                        updateConversationUserName(identity.visitorId, trimmed).catch(() => {});
+                      }
+                    }}
                   />
                   <span className={styles.chatStatus}>Online</span>
                 </div>
@@ -433,6 +470,7 @@ export function EyesCat() {
               <form className={styles.chatInputBar} onSubmit={handleSubmit}>
                 <div className={styles.chatInputRow}>
                   <textarea
+                    ref={textareaRef}
                     className={styles.chatTextarea}
                     placeholder={dict.eyesCat.placeholder}
                     value={message}

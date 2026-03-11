@@ -51,7 +51,10 @@
     "successMsg": "Thanks! I'll get back to you soon 🐱",
     "greetMorning": "Good morning, beautiful ☀️",
     "greetAfternoon": "Good afternoon, beautiful 🌤️",
-    "greetEvening": "Good evening, beautiful 🌙"
+    "greetEvening": "Good evening, beautiful 🌙",
+    "greetMorningName": "Good morning, {name} ☀️",
+    "greetAfternoonName": "Good afternoon, {name} 🌤️",
+    "greetEveningName": "Good evening, {name} 🌙"
   },
   "admin": {
     "login": {
