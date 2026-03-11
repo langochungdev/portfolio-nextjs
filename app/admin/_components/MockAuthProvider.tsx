@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { auth } from "@/lib/firebase/config";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 import {
   signInWithEmailAndPassword,
   signOut,
@@ -39,7 +39,7 @@ export function MockAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (fbUser) => {
+    const unsub = onAuthStateChanged(getFirebaseAuth(), (fbUser) => {
       setUser(fbUser ? toAdminUser(fbUser) : null);
       setLoading(false);
     });
@@ -49,7 +49,7 @@ export function MockAuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string): Promise<string | null> => {
     const email = username.includes("@") ? username : `${username}@gmail.com`;
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
       return null;
     } catch (err) {
       const code = (err as { code?: string }).code ?? "";
@@ -61,7 +61,7 @@ export function MockAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await signOut(auth);
+    await signOut(getFirebaseAuth());
   };
 
   return (

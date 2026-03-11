@@ -9,7 +9,9 @@ import {
   where,
   orderBy,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { getFirebaseDb } from "@/lib/firebase/config";
+
+const db = getFirebaseDb();
 
 export interface CollectionDoc {
   id: string;

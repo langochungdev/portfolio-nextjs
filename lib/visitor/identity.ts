@@ -8,9 +8,10 @@ import {
   getDocs,
   serverTimestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { getFirebaseDb } from "@/lib/firebase/config";
 import { generateFingerprint } from "@/lib/visitor/fingerprint";
 
+const db = getFirebaseDb();
 const VISITOR_ID_KEY = "visitor_id";
 const FINGERPRINT_KEY = "visitor_fp";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 * 2;

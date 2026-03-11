@@ -4,7 +4,7 @@
 
 ## About
 
-- Name: La Ngọc Hùng (Lã Ngọc Hùng)
+- Name: La Ngọc Hùng (La Ngọc Hùng)
 - Username: langochungdev
 - Role: Software Engineer / Full-Stack Developer
 - Website: https://langochung.me

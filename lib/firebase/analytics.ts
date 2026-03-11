@@ -1,5 +1,7 @@
 import { doc, setDoc, increment } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { getFirebaseDb } from "@/lib/firebase/config";
+
+const db = getFirebaseDb();
 
 export type PageKey = "home" | "blog" | "certification";
 

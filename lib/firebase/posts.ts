@@ -11,7 +11,9 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { getFirebaseDb } from "@/lib/firebase/config";
+
+const db = getFirebaseDb();
 
 export interface PostInput {
   title: string;

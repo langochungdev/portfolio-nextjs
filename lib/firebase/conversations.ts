@@ -11,7 +11,9 @@ import {
   onSnapshot,
   type Unsubscribe,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { getFirebaseDb } from "@/lib/firebase/config";
+
+const db = getFirebaseDb();
 
 export interface MessageDoc {
   id: string;
@@ -44,7 +46,10 @@ function tsToStr(ts: unknown): string {
 }
 
 export async function fetchConversations(): Promise<ConversationDoc[]> {
-  const q = query(collection(db, "conversations"), orderBy("updatedAt", "desc"));
+  const q = query(
+    collection(db, "conversations"),
+    orderBy("updatedAt", "desc"),
+  );
   const snap = await getDocs(q);
   return snap.docs.map((d) => {
     const data = d.data();
@@ -55,7 +60,12 @@ export async function fetchConversations(): Promise<ConversationDoc[]> {
       status: data.status ?? "unread",
       updatedAt: tsToStr(data.updatedAt),
       fingerprint: data.fingerprint ?? "",
-      metadata: data.metadata ?? { os: "", browser: "", device: "", lastIp: "" },
+      metadata: data.metadata ?? {
+        os: "",
+        browser: "",
+        device: "",
+        lastIp: "",
+      },
     };
   });
 }
@@ -63,7 +73,10 @@ export async function fetchConversations(): Promise<ConversationDoc[]> {
 export function subscribeConversations(
   cb: (convs: ConversationDoc[]) => void,
 ): Unsubscribe {
-  const q = query(collection(db, "conversations"), orderBy("updatedAt", "desc"));
+  const q = query(
+    collection(db, "conversations"),
+    orderBy("updatedAt", "desc"),
+  );
   return onSnapshot(q, (snap) => {
     cb(
       snap.docs.map((d) => {
@@ -75,7 +88,12 @@ export function subscribeConversations(
           status: data.status ?? "unread",
           updatedAt: tsToStr(data.updatedAt),
           fingerprint: data.fingerprint ?? "",
-          metadata: data.metadata ?? { os: "", browser: "", device: "", lastIp: "" },
+          metadata: data.metadata ?? {
+            os: "",
+            browser: "",
+            device: "",
+            lastIp: "",
+          },
         };
       }),
     );
