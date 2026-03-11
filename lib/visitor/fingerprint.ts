@@ -4,8 +4,7 @@ export async function generateFingerprint(): Promise<string> {
   signals.push(getNavigatorSignals());
   signals.push(getScreenSignals());
   signals.push(getTimezoneSignals());
-  signals.push(await getWebGLFingerprint());
-  signals.push(getFontSignals());
+  signals.push(getWebGLStableSignals());
   signals.push(getHardwareSignals());
 
   const raw = signals.filter(Boolean).join("|");
@@ -19,10 +18,7 @@ function getNavigatorSignals(): string {
     n.language,
     (n.languages || []).join(","),
     n.platform,
-    n.hardwareConcurrency || 0,
-    (n as Navigator & { deviceMemory?: number }).deviceMemory || "unknown",
     n.maxTouchPoints || 0,
-    "pdfViewerEnabled" in n ? String(n.pdfViewerEnabled) : "n/a",
   ].join("::");
 }
 
@@ -43,86 +39,38 @@ function getTimezoneSignals(): string {
   return `${tz}::${offset}`;
 }
 
-async function getWebGLFingerprint(): Promise<string> {
+function getWebGLStableSignals(): string {
   try {
     const canvas = document.createElement("canvas");
     const gl =
       canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     if (!gl || !(gl instanceof WebGLRenderingContext)) return "no-webgl";
 
-    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
-    const vendor = debugInfo
-      ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
-      : "unknown";
-    const renderer = debugInfo
-      ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-      : "unknown";
-
-    const extensions = (gl.getSupportedExtensions() || []).join(",");
     const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-    const maxViewport = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
-
-    return [vendor, renderer, maxTextureSize, maxViewport, extensions].join(
-      "::",
+    const maxRenderBufferSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE);
+    const aliasedLineRange = gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE);
+    const aliasedPointRange = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
+    const maxVertexAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS);
+    const maxVaryingVectors = gl.getParameter(gl.MAX_VARYING_VECTORS);
+    const maxFragUniformVectors = gl.getParameter(
+      gl.MAX_FRAGMENT_UNIFORM_VECTORS,
     );
+    const maxVertexUniformVectors = gl.getParameter(
+      gl.MAX_VERTEX_UNIFORM_VECTORS,
+    );
+
+    return [
+      maxTextureSize,
+      maxRenderBufferSize,
+      Array.from(aliasedLineRange as Float32Array).join(","),
+      Array.from(aliasedPointRange as Float32Array).join(","),
+      maxVertexAttribs,
+      maxVaryingVectors,
+      maxFragUniformVectors,
+      maxVertexUniformVectors,
+    ].join("::");
   } catch {
     return "webgl-error";
-  }
-}
-
-function getFontSignals(): string {
-  const testFonts = [
-    "monospace",
-    "sans-serif",
-    "serif",
-    "Arial",
-    "Courier New",
-    "Georgia",
-    "Times New Roman",
-    "Verdana",
-    "Helvetica",
-    "Comic Sans MS",
-    "Impact",
-    "Lucida Console",
-    "Palatino Linotype",
-    "Trebuchet MS",
-    "Tahoma",
-  ];
-
-  const baseFonts = ["monospace", "sans-serif", "serif"];
-  const testStr = "mmmmmmmmmmlli";
-  const testSize = "72px";
-
-  try {
-    const span = document.createElement("span");
-    span.style.position = "absolute";
-    span.style.left = "-9999px";
-    span.style.fontSize = testSize;
-    span.style.lineHeight = "normal";
-    span.textContent = testStr;
-    document.body.appendChild(span);
-
-    const baseWidths: Record<string, number> = {};
-    for (const bf of baseFonts) {
-      span.style.fontFamily = bf;
-      baseWidths[bf] = span.offsetWidth;
-    }
-
-    const detected: string[] = [];
-    for (const font of testFonts) {
-      for (const bf of baseFonts) {
-        span.style.fontFamily = `'${font}', ${bf}`;
-        if (span.offsetWidth !== baseWidths[bf]) {
-          detected.push(font);
-          break;
-        }
-      }
-    }
-
-    document.body.removeChild(span);
-    return `fonts::${detected.join(",")}`;
-  } catch {
-    return "fonts-error";
   }
 }
 
@@ -130,14 +78,9 @@ function getHardwareSignals(): string {
   const signals: string[] = [];
 
   signals.push(String("ontouchstart" in window));
-  signals.push(
-    String(
-      "mediaDevices" in navigator &&
-        "enumerateDevices" in navigator.mediaDevices,
-    ),
-  );
-  signals.push(String("bluetooth" in navigator));
-  signals.push(String("usb" in navigator));
+  signals.push(String(navigator.maxTouchPoints > 0));
+  signals.push(String(window.matchMedia("(pointer: coarse)").matches));
+  signals.push(String(window.matchMedia("(hover: none)").matches));
 
   return `hw::${signals.join(",")}`;
 }
