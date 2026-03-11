@@ -17,6 +17,23 @@ import styles from "@/app/style/blog/detail.module.css";
 import tipsStyles from "@/app/style/blog/tips.module.css";
 import { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "react";
 
+function processContent(html: string): string {
+  return html
+    .replace(
+      /<img\s([^>]*data-align="(left|right|center)"[^>]*)>/g,
+      (_match, attrs, align) => {
+        const style =
+          align === "left"
+            ? "float:left;margin-right:1rem;margin-bottom:0.5rem"
+            : align === "right"
+              ? "float:right;margin-left:1rem;margin-bottom:0.5rem"
+              : "display:flex;justify-content:center;width:100%";
+        return `<div style="${style}"><img ${attrs}></div>`;
+      }
+    )
+    .replace(/<p><\/p>/g, "<p><br></p>");
+}
+
 export default function BlogDetailClient() {
   const { locale, dictionary: dict } = useDictionary();
   const params = useParams<{ slug: string }>();
@@ -148,7 +165,7 @@ export default function BlogDetailClient() {
 
           <h1 className={styles.title}>{post.title}</h1>
 
-          <div className={styles.content} dangerouslySetInnerHTML={{ __html: post.content }} />
+          <div className={styles.content} dangerouslySetInnerHTML={{ __html: processContent(post.content) }} />
         </article>
         </main>
       )}
