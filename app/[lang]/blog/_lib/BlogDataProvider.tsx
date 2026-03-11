@@ -33,10 +33,16 @@ export function useBlogData() {
   return useContext(BlogDataContext);
 }
 
+const CACHE_TTL = 5 * 60 * 1000;
+let cachedData: BlogData | null = null;
+let cachedAt = 0;
+
 export function BlogDataProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<BlogData>(EMPTY);
+  const isFresh = cachedData && Date.now() - cachedAt < CACHE_TTL;
+  const [data, setData] = useState<BlogData>(isFresh ? cachedData! : EMPTY);
 
   useEffect(() => {
+    if (isFresh) return;
     let cancelled = false;
 
     async function load() {
@@ -51,7 +57,10 @@ export function BlogDataProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
 
         const collections = assignCollectionColors(rawCollections);
-        setData({ collections, topics, posts, hints, loading: false });
+        const result: BlogData = { collections, topics, posts, hints, loading: false };
+        cachedData = result;
+        cachedAt = Date.now();
+        setData(result);
       } catch (err) {
         console.error("Failed to load blog data:", err);
         if (!cancelled) {
@@ -64,7 +73,7 @@ export function BlogDataProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isFresh]);
 
   return (
     <BlogDataContext.Provider value={data}>{children}</BlogDataContext.Provider>

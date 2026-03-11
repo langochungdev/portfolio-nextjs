@@ -2,14 +2,11 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { DictionaryProvider } from "./_shared/DictionaryProvider";
 import { NavBar } from "./_shared/NavBar";
 import { StableVh } from "./_shared/StableVh";
+import { LazyEyesCat, LazyAnimatedFavicon } from "./_shared/LazyComponents";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 import { cookies } from "next/headers";
 import { VT323, Lexend } from "next/font/google";
-import dynamic from "next/dynamic";
-
-const EyesCat = dynamic(() => import("./_shared/EyesCat").then((m) => m.EyesCat), { ssr: false });
-const AnimatedFavicon = dynamic(() => import("./_shared/AnimatedFavicon").then((m) => m.AnimatedFavicon), { ssr: false });
 
 const vt323 = VT323({
   weight: "400",
@@ -56,13 +53,13 @@ export default async function LocaleLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body>
-        <AnimatedFavicon />
+        <LazyAnimatedFavicon />
         <StableVh />
         <DictionaryProvider dictionary={dictionary} locale={locale} serverTheme={serverTheme}>
           {children}
           <div className="bottom-bar">
             <NavBar />
-            <EyesCat />
+            <LazyEyesCat />
           </div>
         </DictionaryProvider>
       </body>
