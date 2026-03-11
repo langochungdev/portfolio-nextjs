@@ -8,6 +8,7 @@ import { GithubSection } from "./component/GithubSection";
 import { PortraitSection } from "./component/PortraitSection";
 import { ProjectsSection } from "./component/ProjectsSection";
 import { PrefetchBlog } from "./component/PrefetchBlog";
+import { JsonLd, profilePageSchema, breadcrumbSchema } from "@/lib/seo/schemas";
 import styles from "@/app/style/home/page.module.css";
 
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
@@ -24,6 +25,13 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
 
   return (
     <div className={styles.container}>
+      <JsonLd data={profilePageSchema()} />
+      <JsonLd
+        data={breadcrumbSchema(
+          [{ name: "Trang chủ", url: "https://langochung.me" }],
+          "breadcrumb-home",
+        )}
+      />
       <PageViewTracker page="home" />
       <PrefetchBlog locale={locale} />
       <header className={styles.header}>

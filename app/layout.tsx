@@ -37,24 +37,24 @@ export const metadata: Metadata = {
     alternateLocale: "en_US",
     url: "https://langochung.me",
     siteName: "langochungdev",
-    title: "La Ngọc Hùng - Software Engineer",
+    title: "La Ngọc Hùng, Xin Chào",
     description:
-      "Software Engineer Portfolio & Blog by La Ngọc Hùng. Web development, backend, DevOps.",
+      "Thiết kế và triển khai web, app, extension, business tools theo yêu cầu.",
     images: [
       {
-        url: "/icon-512x512.png",
-        width: 512,
-        height: 512,
-        alt: "langochungdev logo",
+        url: "/og-img.png",
+        width: 1200,
+        height: 630,
+        alt: "La Ngọc Hùng - langochungdev",
       },
     ],
   },
   twitter: {
-    card: "summary",
-    title: "La Ngọc Hùng - Software Engineer",
+    card: "summary_large_image",
+    title: "La Ngọc Hùng, Xin Chào",
     description:
-      "Software Engineer Portfolio & Blog by La Ngọc Hùng.",
-    images: ["/icon-512x512.png"],
+      "Thiết kế và triển khai web, app, extension, business tools theo yêu cầu.",
+    images: ["/og-img.png"],
   },
   icons: {
     icon: [

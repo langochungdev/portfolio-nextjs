@@ -7,6 +7,7 @@ import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 import { cookies } from "next/headers";
 import { VT323, Lexend } from "next/font/google";
+import { JsonLd, personSchema, webSiteSchema } from "@/lib/seo/schemas";
 
 const vt323 = VT323({
   weight: "400",
@@ -51,6 +52,8 @@ export default async function LocaleLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: swScript }} defer />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <JsonLd data={personSchema()} />
+        <JsonLd data={webSiteSchema()} />
       </head>
       <body>
         <LazyAnimatedFavicon />

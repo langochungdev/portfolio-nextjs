@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { fetchPostBySlug } from "@/lib/firebase/posts";
 import { getExcerpt } from "../_lib/helpers";
 import BlogDetailClient from "./BlogDetailClient";
+import { JsonLd, articleSchema, breadcrumbSchema } from "@/lib/seo/schemas";
 
 interface Props {
   params: Promise<{ lang: string; slug: string }>;
@@ -44,6 +45,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return meta;
 }
 
-export default function BlogDetailPage() {
-  return <BlogDetailClient />;
+export default async function BlogDetailPage({ params }: Props) {
+  const { lang, slug } = await params;
+  const post = await fetchPostBySlug(slug);
+
+  return (
+    <>
+      {post && (
+        <>
+          <JsonLd data={articleSchema(post, lang)} />
+          <JsonLd
+            data={breadcrumbSchema(
+              [
+                { name: "Trang chủ", url: "https://langochung.me" },
+                { name: "Blog", url: `https://langochung.me/${lang}/blog` },
+                {
+                  name: post.title,
+                  url: `https://langochung.me/${lang}/blog/${slug}`,
+                },
+              ],
+              `breadcrumb-blog-${slug}`,
+            )}
+          />
+        </>
+      )}
+      <BlogDetailClient />
+    </>
+  );
 }
