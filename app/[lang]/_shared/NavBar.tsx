@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSyncExternalStore, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { useTheme } from "@/app/[lang]/_shared/useTheme";
 import {
@@ -86,10 +87,19 @@ export function NavBar() {
   );
   const { theme, toggle: toggleTheme } = useTheme();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setPendingPath(null);
   }, [pathname]);
+
+  const loader = pendingPath && mounted
+    ? createPortal(<div className={styles.topLoader} />, document.body)
+    : null;
 
   const handleNav = (e: React.MouseEvent, href: string) => {
     if (href === pathname) { e.preventDefault(); return; }
@@ -134,7 +144,7 @@ export function NavBar() {
   if (isBlogDetail) {
     return (
       <>
-        {pendingPath && <div className={styles.topLoader} />}
+        {loader}
         {defaultNav}
         <nav
           className={`${styles.navBar} ${styles.detailNav} ${showRelated ? styles.blogDetailOpen : ""}`}
@@ -170,7 +180,7 @@ export function NavBar() {
 
   return (
     <>
-      {pendingPath && <div className={styles.topLoader} />}
+      {loader}
       {defaultNav}
     </>
   );

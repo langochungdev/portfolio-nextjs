@@ -21,12 +21,12 @@ export function proxy(request: NextRequest) {
     "/llms.txt",
     "/service-worker.js",
     "/firebase-messaging-sw.js",
-    "/apple-touch-icon.png",
   ];
   if (
     staticFiles.includes(pathname) ||
     pathname.startsWith("/icon-") ||
-    pathname.startsWith("/img/")
+    pathname.startsWith("/img/") ||
+    /^\/[^/]+\.(png|svg|gif|ico|webp|jpg|jpeg)$/.test(pathname)
   )
     return;
 
@@ -43,6 +43,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next|api|favicon\\.\\w+|img|images|fonts|public|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|llms\\.txt|service-worker\\.js|firebase-messaging-sw\\.js|icon-.*\\.png|apple-touch-icon\\.png).*)",
+    "/((?!_next|api|favicon\.\\w+|img|images|fonts|public|robots\.txt|sitemap\.xml|manifest\.webmanifest|llms\.txt|service-worker\.js|firebase-messaging-sw\.js|[^/]+\.(?:png|svg|gif|ico|webp|jpg|jpeg)).*)",
   ],
 };

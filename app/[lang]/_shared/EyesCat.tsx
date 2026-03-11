@@ -41,39 +41,42 @@ interface PupilOffset {
 
 const MAX_PUPIL = 4;
 
-function useVirtualKeyboardOffset(active: boolean) {
-  const [vpStyle, setVpStyle] = useState<React.CSSProperties>({});
-
+function useVirtualKeyboard(overlayRef: React.RefObject<HTMLDivElement | null>, active: boolean) {
   useEffect(() => {
-    if (!active || !window.visualViewport) {
-      return;
-    }
+    const el = overlayRef.current;
+    if (!active || !el || !window.visualViewport) return;
 
     const vv = window.visualViewport;
-    function update() {
-      const diff = window.innerHeight - vv!.height;
-      if (diff > 50) {
-        setVpStyle({
-          height: `${vv!.height}px`,
-          top: `${vv!.offsetTop}px`,
-          bottom: "auto",
-        });
-      } else {
-        setVpStyle({});
-      }
+    let raf = 0;
+
+    function sync() {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (!el) return;
+        const kbOpen = window.innerHeight - vv!.height > 50;
+        if (kbOpen) {
+          el.style.height = `${vv!.height}px`;
+          el.style.top = `${vv!.offsetTop}px`;
+        } else {
+          el.style.height = "";
+          el.style.top = "";
+        }
+      });
     }
 
-    update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
+    sync();
+    vv.addEventListener("resize", sync);
+    vv.addEventListener("scroll", sync);
     return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-      setVpStyle({});
+      cancelAnimationFrame(raf);
+      vv.removeEventListener("resize", sync);
+      vv.removeEventListener("scroll", sync);
+      if (el) {
+        el.style.height = "";
+        el.style.top = "";
+      }
     };
-  }, [active]);
-
-  return vpStyle;
+  }, [overlayRef, active]);
 }
 
 function calcPupilOffset(
@@ -181,7 +184,8 @@ export function EyesCat() {
   const [identity, setIdentity] = useState<VisitorIdentity | null>(null);
   const [messages, setMessages] = useState<MessageDoc[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const keyboardVpStyle = useVirtualKeyboardOffset(open);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useVirtualKeyboard(overlayRef, open);
 
   useEffect(() => {
     if (!open) return;
@@ -369,8 +373,8 @@ export function EyesCat() {
       {open &&
         createPortal(
           <div
-            className={`${styles.overlay} ${Object.keys(keyboardVpStyle).length > 0 ? styles.overlayKeyboard : ""}`}
-            style={keyboardVpStyle}
+            ref={overlayRef}
+            className={styles.overlay}
           >
             <div className={styles.backdrop} onClick={() => setOpen(false)} />
             <div className={styles.chatPanel}>
