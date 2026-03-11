@@ -14,15 +14,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { groupByCategory, buildDisplayItems, latestDate } from "./_lib/helpers";
 import { PostCard } from "./_components/PostCard";
 import { TopicAccordion } from "./_components/TopicAccordion";
-import { BlogNav } from "./_components/BlogNav";
+import { PageViewTracker } from "@/app/[lang]/_shared/PageViewTracker";
 
 
 export default function BlogPage() {
   const { locale, dictionary: dict } = useDictionary();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialCat = searchParams.get("cat") || "allPosts";
-  const [activeCategory, setActiveCategory] = useState<string>(initialCat);
+  const activeCategory = searchParams.get("cat") || "allPosts";
   const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
   const [pendingScroll, setPendingScroll] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -57,32 +56,24 @@ export default function BlogPage() {
       return n;
     });
 
-  return (
-    <div className={styles.shell}>
-      <BlogNav
-        locale={locale}
-        activeCategory={activeCategory}
-        onCategoryChange={(cat) => {
-          setActiveCategory(cat);
-          const params = new URLSearchParams(searchParams.toString());
-          if (cat === "allPosts") params.delete("cat");
-          else params.set("cat", cat);
-          const qs = params.toString();
-          router.replace(`/${locale}/blog${qs ? `?${qs}` : ""}`, { scroll: false });
-        }}
-        categoryCounts={Object.fromEntries(categories.map((c) => [c, grouped[c]?.length ?? 0]))}
-        categoryLabels={Object.fromEntries(blogCategories.map((c) => [c, catLabel(c)]))}
-        totalPosts={blogPosts.length}
-      />
+  const switchCategory = (cat: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (cat === "allPosts") params.delete("cat");
+    else params.set("cat", cat);
+    const qs = params.toString();
+    router.replace(`/${locale}/blog${qs ? `?${qs}` : ""}`, { scroll: false });
+  };
 
-      <main className={styles.main} ref={mainRef}>
+  return (
+    <main className={styles.main} ref={mainRef}>
+        <PageViewTracker page="blog" />
         {activeCategory === "allPosts"
           ? categories.filter((c) => grouped[c]?.length).map((cat, i) => {
               const posts = grouped[cat];
               const color = collectionColors[cat] ?? "#1C1C1A";
               const items = buildDisplayItems(posts, topicsByCat[cat] ?? []).slice(0, 4);
               return (
-                <section key={cat} className={styles.collectorBlock} style={{ animationDelay: `${i * 0.07}s` }}>
+                <section key={cat} className={styles.collectorBlock}>
                   <div className={styles.collectorHeader}>
                     <span className={styles.collectorDot} style={{ background: color }} />
                     <h2 className={styles.collectorTitle}>{catLabel(cat)}</h2>
@@ -98,7 +89,7 @@ export default function BlogPage() {
                         <button
                           key={item.topic.id}
                           className={`${styles.card} ${styles.topicWrapCard}`}
-                          onClick={() => { setActiveCategory(cat); setPendingScroll(item.topic.id); router.replace(`/${locale}/blog?cat=${cat}`, { scroll: false }); }}
+                          onClick={() => { setPendingScroll(item.topic.id); switchCategory(cat); }}
                         >
                           <div className={styles.cardTopRow}>
                             <span className={`${styles.cardTag} ${styles.topicTag}`}>{dict.blog.topic}</span>
@@ -115,7 +106,7 @@ export default function BlogPage() {
                     )}
                     <button
                       className={`${styles.card} ${styles.viewMoreCard}`}
-                      onClick={() => { setActiveCategory(cat); mainRef.current?.scrollTo(0, 0); router.replace(`/${locale}/blog?cat=${cat}`, { scroll: false }); }}
+                      onClick={() => { mainRef.current?.scrollTo(0, 0); switchCategory(cat); }}
                     >
                       <span className={styles.viewMoreLabel}>{dict.blog.viewMore}</span>
                       <span className={styles.viewMoreCat}>{catLabel(cat)}</span>
@@ -169,6 +160,5 @@ export default function BlogPage() {
               );
             })()}
       </main>
-    </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useState, useEffect, useTransition } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { useTheme } from "@/app/[lang]/_shared/useTheme";
 import {
@@ -85,20 +85,44 @@ export function NavBar() {
     getRelatedServerSnapshot
   );
   const { theme, toggle: toggleTheme } = useTheme();
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
+
+  const handleNav = (href: string) => {
+    if (href === pathname) return;
+    setPendingPath(href);
+    startTransition(() => {
+      router.push(href);
+    });
+  };
+
+  const checkActive = (item: (typeof NAV_ITEMS)[number]) => {
+    const href = `/${locale}${item.path}`;
+    if (pendingPath !== null) {
+      return item.path === ""
+        ? pendingPath === `/${locale}` || pendingPath === `/${locale}/`
+        : pendingPath.startsWith(href);
+    }
+    return item.path === ""
+      ? pathname === `/${locale}` || pathname === `/${locale}/`
+      : pathname.startsWith(href);
+  };
 
   const defaultNav = (
     <nav className={`${styles.navBar} ${isBlogDetail ? styles.defaultNavDetail : ""}`}>
       {NAV_ITEMS.map((item) => {
         const href = `/${locale}${item.path}`;
-        const isActive =
-          item.path === ""
-            ? pathname === `/${locale}` || pathname === `/${locale}/`
-            : pathname.startsWith(href);
+        const isActive = checkActive(item);
 
         return (
           <Link
             key={item.key}
             href={href}
+            onClick={(e) => { e.preventDefault(); handleNav(href); }}
             className={`${styles.dockItem} ${isActive ? styles.dockItemActive : ""}`}
             title={dict.home.nav[item.key]}
           >
@@ -114,6 +138,7 @@ export function NavBar() {
   if (isBlogDetail) {
     return (
       <>
+        {isPending && <div className={styles.topLoader} />}
         {defaultNav}
         <nav
           className={`${styles.navBar} ${styles.detailNav} ${showRelated ? styles.blogDetailOpen : ""}`}
@@ -147,5 +172,10 @@ export function NavBar() {
     );
   }
 
-  return defaultNav;
+  return (
+    <>
+      {isPending && <div className={styles.topLoader} />}
+      {defaultNav}
+    </>
+  );
 }

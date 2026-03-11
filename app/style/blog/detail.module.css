@@ -1,22 +1,3 @@
-.shell {
-    height: 100vh;
-    display: grid;
-    grid-template-columns: 220px 240px 1fr;
-    background: #F4F4F0;
-    font-family: var(--font-body);
-    color: #1C1C1A;
-}
-
-.collectionWrap {
-    display: contents;
-}
-
-@media (max-width: 768px) {
-    .collectionWrap {
-        display: block;
-    }
-}
-
 .sidebar {
     height: 100vh;
     overflow-y: auto;
@@ -161,7 +142,6 @@
 .article {
     max-width: 680px;
     margin: 0 auto;
-    animation: fadeUp 0.4s ease both;
 }
 
 .articleTop {
@@ -293,11 +273,6 @@
     }
 }
 
-:global([data-theme="dark"]) .shell {
-    background: #1a1a1a;
-    color: #E8E8E3;
-}
-
 :global([data-theme="dark"]) .sidebar {
     border-right-color: rgba(232, 232, 227, 0.08);
     scrollbar-color: #6a6a62 transparent;
@@ -396,36 +371,6 @@
         color: #E8E8E3;
     }
 
-    .desktopThemeBtn:hover {
-        border-color: var(--color-border-hover);
-        color: var(--color-text);
-    }
-}
-
-.desktopActions {
-    position: fixed;
-    top: 1.5rem;
-    right: 2rem;
-    z-index: 100;
-}
-
-.desktopThemeBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.5rem;
-    border: 1.5px solid var(--color-border);
-    color: var(--color-text-muted);
-    background: var(--color-card-bg);
-    cursor: pointer;
-    transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.desktopThemeBtn svg {
-    width: 1rem;
-    height: 1rem;
 }
 
 .relatedOverlay {
@@ -433,19 +378,7 @@
 }
 
 @media (max-width: 768px) {
-    .shell {
-        display: flex;
-        flex-direction: column;
-        grid-template-columns: unset;
-        height: auto;
-        min-height: 100vh;
-    }
-
     .sidebar {
-        display: none;
-    }
-
-    .desktopActions {
         display: none;
     }
 

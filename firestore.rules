@@ -1,0 +1,76 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated()
+        && request.auth.token.email != null
+        && request.auth.token.email.matches('.*@gmail\\.com$');
+    }
+
+    // Collections
+    match /collections/{collectionId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Topics
+    match /topics/{topicId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Posts
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isAdmin()
+        && request.resource.data.title is string
+        && request.resource.data.slug is string
+        && request.resource.data.content is string
+        && request.resource.data.collectionId is string;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Hints
+    match /hints/{hintId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Conversations
+    match /conversations/{visitorId} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update: if isAdmin()
+        || (request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['lastMessage', 'updatedAt']));
+
+      match /messages/{messageId} {
+        allow read: if isAdmin()
+          || visitorId == request.auth.uid;
+        allow create: if true;
+      }
+    }
+
+    // Analytics
+    match /analytics/global {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /analytics/daily_stats {
+      allow read: if isAdmin();
+
+      match /days/{dayId} {
+        allow read: if isAdmin();
+        allow write: if true;
+      }
+    }
+  }
+}

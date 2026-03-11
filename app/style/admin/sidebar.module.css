@@ -1,0 +1,246 @@
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--color-bg);
+    border-right: 1px solid var(--color-border);
+    padding: 16px 12px;
+    overflow: hidden;
+}
+
+.logo {
+    font-size: 1.125rem;
+    font-weight: 700;
+    padding: 8px 12px 20px;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.navItem.active {
+    background: var(--color-border);
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.navLabel {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+    margin-top: auto;
+}
+
+.userInfo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+}
+
+.avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-text);
+    flex-shrink: 0;
+}
+
+.userName {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logoutBtn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+    flex-shrink: 0;
+}
+
+.headerTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.headerBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    text-decoration: none;
+}
+
+@media (hover: hover) {
+    .navItem:not(.active):hover {
+        background: var(--color-border);
+        color: var(--color-text);
+    }
+
+    .logoutBtn:hover {
+        background: var(--color-border);
+        color: var(--color-accent);
+    }
+
+    .headerBtn:hover {
+        border-color: var(--color-border-hover);
+        color: var(--color-text);
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        padding: 12px 6px;
+    }
+
+    .logo {
+        font-size: 0.75rem;
+        padding: 4px 0 12px;
+        text-align: center;
+    }
+
+    .navLabel {
+        display: none;
+    }
+
+    .navItem {
+        justify-content: center;
+        padding: 12px;
+    }
+
+    .userName {
+        display: none;
+    }
+
+    .userInfo {
+        justify-content: center;
+        padding: 6px;
+    }
+
+    .logoutBtn {
+        justify-content: center;
+        padding: 12px;
+    }
+
+    .logoutBtn .navLabel {
+        display: none;
+    }
+
+    .header {
+        padding: 12px 16px;
+    }
+
+    .headerTitle {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: auto;
+        flex-direction: row;
+        align-items: center;
+        border-right: none;
+        border-top: 1px solid var(--color-border);
+        padding: 8px 12px;
+        z-index: 100;
+    }
+
+    .logo {
+        display: none;
+    }
+
+    .nav {
+        flex-direction: row;
+        gap: 4px;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .navItem {
+        padding: 10px 14px;
+    }
+
+    .bottom {
+        display: none;
+    }
+
+    .header {
+        padding: 12px 16px;
+    }
+}

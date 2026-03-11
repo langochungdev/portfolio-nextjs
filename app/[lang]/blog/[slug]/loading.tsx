@@ -2,9 +2,7 @@ import styles from "@/app/style/blog/detail.module.css";
 
 export default function BlogDetailLoading() {
   return (
-    <div className={styles.shell}>
-      <div className={styles.collectionWrap} />
-
+    <>
       <aside className={styles.sidebar}>
         <div className={styles.skeletonLine} style={{ width: "60%" }} />
         <div className={styles.sidebarSection}>
@@ -44,6 +42,6 @@ export default function BlogDetailLoading() {
           </div>
         </article>
       </main>
-    </div>
+    </>
   );
 }

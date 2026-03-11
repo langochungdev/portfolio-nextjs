@@ -1,0 +1,36 @@
+.shell {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    overflow: hidden;
+    font-family: var(--font-body);
+    color: #1C1C1A;
+    background: #F4F4F0;
+}
+
+.shellDetail {
+    grid-template-columns: 220px 240px 1fr;
+}
+
+:global([data-theme="dark"]) .shell {
+    background: #1a1a1a;
+    color: #E8E8E3;
+}
+
+.hidePills :global(.pillStrip) {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .shell {
+        height: auto;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        grid-template-columns: unset;
+    }
+
+    .shellDetail {
+        grid-template-columns: unset;
+    }
+}

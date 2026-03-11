@@ -49,5 +49,58 @@
     "placeholder": "Type your question here...",
     "send": "Send",
     "successMsg": "Thanks! I'll get back to you soon 🐱"
+  },
+  "admin": {
+    "login": {
+      "title": "Admin Login",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Sign In",
+      "error": "Invalid credentials"
+    },
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "posts": "Posts",
+      "messages": "Messages",
+      "logout": "Logout"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "totalVisits": "Total Visits",
+      "home": "Home",
+      "blog": "Blog",
+      "certificates": "Certificates",
+      "last7Days": "Last 7 Days",
+      "pageViews": "Page Views"
+    },
+    "posts": {
+      "title": "Posts",
+      "newPost": "New Post",
+      "editPost": "Edit Post",
+      "deletePost": "Delete Post",
+      "confirmDelete": "Are you sure you want to delete this post?",
+      "titleLabel": "Title",
+      "slugLabel": "Slug",
+      "collectionLabel": "Collection",
+      "topicLabel": "Topic",
+      "thumbnailLabel": "Thumbnail URL",
+      "contentLabel": "Content",
+      "pinned": "Pinned",
+      "save": "Save",
+      "cancel": "Cancel",
+      "preview": "Preview",
+      "editor": "Editor",
+      "mobilePreview": "Mobile Preview",
+      "noPostsYet": "No posts yet",
+      "createFirst": "Create your first post"
+    },
+    "messages": {
+      "title": "Messages",
+      "noMessages": "No messages yet",
+      "unread": "Unread",
+      "replied": "Replied",
+      "typeReply": "Type a reply...",
+      "send": "Send"
+    }
   }
 }

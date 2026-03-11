@@ -1,7 +1,7 @@
 "use client";
 
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
-
+import { PageViewTracker } from "@/app/[lang]/_shared/PageViewTracker";
 import { ArticlesSection } from "./component/ArticlesSection";
 import { SocialSection } from "./component/SocialSection";
 import { GithubSection } from "./component/GithubSection";
@@ -14,6 +14,7 @@ export default function HomePage() {
 
   return (
     <div className={styles.container}>
+      <PageViewTracker page="home" />
       <header className={styles.header}>
         <div className={styles.headerCenter}>
           <h1 className={styles.title}>La Ngọc Hùng</h1>

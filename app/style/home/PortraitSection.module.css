@@ -154,11 +154,24 @@
 }
 
 @media (max-width: 640px) {
+    @keyframes floatMobile {
+
+        0%,
+        100% {
+            translate: 0 0;
+        }
+
+        50% {
+            translate: 0 -14px;
+        }
+    }
+
     .techIcon {
         width: 2.25rem;
         height: 2.25rem;
         font-size: 0.5rem;
         border-radius: 0.5rem;
+        animation-name: floatMobile;
     }
 
     .techIcon1,

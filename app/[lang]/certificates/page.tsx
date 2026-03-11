@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
+import { PageViewTracker } from "@/app/[lang]/_shared/PageViewTracker";
 import { CollectionSidebar } from "@/app/[lang]/_shared/CollectionSidebar";
 import {
   certificates,
@@ -171,6 +172,7 @@ export default function CertificatesPage() {
 
   return (
     <div className={styles.shell}>
+      <PageViewTracker page="certification" />
       <CollectionSidebar
         locale={locale}
         activeKey={activeCategory}
@@ -191,7 +193,6 @@ export default function CertificatesPage() {
             <section
               key={key}
               className={styles.collectorBlock}
-              style={{ animationDelay: `${blockIdx * 0.07}s` }}
             >
               <div className={styles.collectorHeader}>
                 <span className={styles.collectorDot} style={{ background: color }} />

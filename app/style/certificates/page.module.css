@@ -34,7 +34,6 @@
 
 .collectorBlock {
     margin-bottom: 48px;
-    animation: fadeUp 0.4s ease both;
 }
 
 .collectorBlock:last-child {

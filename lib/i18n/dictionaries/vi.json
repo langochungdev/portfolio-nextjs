@@ -49,5 +49,58 @@
     "placeholder": "Nhập câu hỏi của bạn...",
     "send": "Gửi",
     "successMsg": "Cảm ơn! Tôi sẽ trả lời sớm 🐱"
+  },
+  "admin": {
+    "login": {
+      "title": "Đăng nhập Admin",
+      "username": "Tên đăng nhập",
+      "password": "Mật khẩu",
+      "submit": "Đăng nhập",
+      "error": "Thông tin không hợp lệ"
+    },
+    "sidebar": {
+      "dashboard": "Tổng quan",
+      "posts": "Bài viết",
+      "messages": "Tin nhắn",
+      "logout": "Đăng xuất"
+    },
+    "dashboard": {
+      "title": "Tổng quan",
+      "totalVisits": "Tổng lượt truy cập",
+      "home": "Trang chủ",
+      "blog": "Blog",
+      "certificates": "Chứng chỉ",
+      "last7Days": "7 ngày gần đây",
+      "pageViews": "Lượt xem trang"
+    },
+    "posts": {
+      "title": "Bài viết",
+      "newPost": "Bài viết mới",
+      "editPost": "Chỉnh sửa",
+      "deletePost": "Xóa bài viết",
+      "confirmDelete": "Bạn có chắc muốn xóa bài viết này?",
+      "titleLabel": "Tiêu đề",
+      "slugLabel": "Slug",
+      "collectionLabel": "Bộ sưu tập",
+      "topicLabel": "Chủ đề",
+      "thumbnailLabel": "URL ảnh bìa",
+      "contentLabel": "Nội dung",
+      "pinned": "Ghim",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "preview": "Xem trước",
+      "editor": "Soạn thảo",
+      "mobilePreview": "Xem trước Mobile",
+      "noPostsYet": "Chưa có bài viết",
+      "createFirst": "Tạo bài viết đầu tiên"
+    },
+    "messages": {
+      "title": "Tin nhắn",
+      "noMessages": "Chưa có tin nhắn",
+      "unread": "Chưa đọc",
+      "replied": "Đã trả lời",
+      "typeReply": "Nhập phản hồi...",
+      "send": "Gửi"
+    }
   }
 }
