@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   useRef,
+  useCallback,
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
@@ -16,12 +17,18 @@ import {
 } from "@/lib/visitor/identity";
 import { doc, setDoc, serverTimestamp, increment } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/config";
+import { requestFcmToken } from "@/lib/firebase/messaging";
+import { saveFcmToken } from "@/lib/firebase/notifications";
+
+type NotificationStatus = "unsupported" | "default" | "denied" | "granted";
 
 interface VisitorContextValue {
   visitorId: string | null;
   fingerprint: string | null;
   loading: boolean;
   isRecovered: boolean;
+  notificationStatus: NotificationStatus;
+  requestNotificationPermission: () => Promise<void>;
 }
 
 const VisitorContext = createContext<VisitorContextValue>({
@@ -29,6 +36,8 @@ const VisitorContext = createContext<VisitorContextValue>({
   fingerprint: null,
   loading: true,
   isRecovered: false,
+  notificationStatus: "unsupported",
+  requestNotificationPermission: async () => {},
 });
 
 function resolvePageKey(pathname: string): string {
@@ -69,50 +78,87 @@ function incrementVisitCount(visitorId: string): void {
 }
 
 export function VisitorProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<VisitorContextValue>({
-    visitorId: null,
-    fingerprint: null,
+  const [identity, setIdentity] = useState({
+    visitorId: null as string | null,
+    fingerprint: null as string | null,
     loading: true,
     isRecovered: false,
   });
+  const [notiStatus, setNotiStatus] = useState<NotificationStatus>("unsupported");
   const pathname = usePathname();
   const visitCounted = useRef(false);
 
   useEffect(() => {
     const cached = getStoredVisitorId();
     if (cached) {
-      setState((s) => ({ ...s, visitorId: cached }));
+      setIdentity((s) => ({ ...s, visitorId: cached }));
     }
 
     getOrCreateVisitorId()
       .then(({ visitorId, fingerprint, isRecovered }: VisitorIdentity) => {
-        setState({ visitorId, fingerprint, loading: false, isRecovered });
+        setIdentity({ visitorId, fingerprint, loading: false, isRecovered });
       })
       .catch(() => {
-        setState((s) => ({ ...s, loading: false }));
+        setIdentity((s) => ({ ...s, loading: false }));
       });
   }, []);
 
   useEffect(() => {
-    if (!state.visitorId || state.loading) return;
-    if (!visitCounted.current) {
-      visitCounted.current = true;
-      incrementVisitCount(state.visitorId);
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+      setNotiStatus("unsupported");
+      return;
     }
-  }, [state.visitorId, state.loading]);
+    const perm = Notification.permission as NotificationStatus;
+    setNotiStatus(perm === "granted" || perm === "denied" ? perm : "default");
+  }, []);
 
   useEffect(() => {
-    if (!state.visitorId || state.loading) return;
+    if (!identity.visitorId || identity.loading) return;
+    if (notiStatus !== "granted") return;
+    requestFcmToken()
+      .then((token) => {
+        if (token) saveFcmToken(identity.visitorId!, token);
+      })
+      .catch(() => {});
+  }, [identity.visitorId, identity.loading, notiStatus]);
+
+  const requestNotificationPermission = useCallback(async () => {
+    if (!identity.visitorId) return;
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+    try {
+      const token = await requestFcmToken();
+      if (token) {
+        await saveFcmToken(identity.visitorId, token);
+        setNotiStatus("granted");
+      } else {
+        setNotiStatus(Notification.permission as NotificationStatus);
+      }
+    } catch {
+      setNotiStatus(Notification.permission as NotificationStatus);
+    }
+  }, [identity.visitorId]);
+
+  useEffect(() => {
+    if (!identity.visitorId || identity.loading) return;
+    if (!visitCounted.current) {
+      visitCounted.current = true;
+      incrementVisitCount(identity.visitorId);
+    }
+  }, [identity.visitorId, identity.loading]);
+
+  useEffect(() => {
+    if (!identity.visitorId || identity.loading) return;
     const page = resolvePageKey(pathname);
 
-    sendHeartbeat(state.visitorId, page);
-    const interval = setInterval(() => sendHeartbeat(state.visitorId!, page), 30_000);
+    sendHeartbeat(identity.visitorId, page);
+    const interval = setInterval(() => sendHeartbeat(identity.visitorId!, page), 30_000);
 
-    const handleOffline = () => sendOffline(state.visitorId!);
+    const handleOffline = () => sendOffline(identity.visitorId!);
     window.addEventListener("beforeunload", handleOffline);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) handleOffline();
-      else sendHeartbeat(state.visitorId!, page);
+      else sendHeartbeat(identity.visitorId!, page);
     });
 
     return () => {
@@ -120,10 +166,16 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("beforeunload", handleOffline);
       handleOffline();
     };
-  }, [state.visitorId, state.loading, pathname]);
+  }, [identity.visitorId, identity.loading, pathname]);
+
+  const ctx: VisitorContextValue = {
+    ...identity,
+    notificationStatus: notiStatus,
+    requestNotificationPermission,
+  };
 
   return (
-    <VisitorContext.Provider value={state}>{children}</VisitorContext.Provider>
+    <VisitorContext.Provider value={ctx}>{children}</VisitorContext.Provider>
   );
 }
 

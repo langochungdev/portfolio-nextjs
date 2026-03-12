@@ -31,6 +31,34 @@ const MoonIcon = (
   </svg>
 );
 
+const BellIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+
+const BellOffIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    <path d="M18.63 13A17.89 17.89 0 0 1 18 8" />
+    <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14" />
+    <path d="M18 8a6 6 0 0 0-9.33-5" />
+    <line x1="1" y1="1" x2="23" y2="23" />
+  </svg>
+);
+
+const BellRingIcon = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    <path d="M2 2l1.5 1.5" />
+    <path d="M20.5 3.5L22 2" />
+    <path d="M4 10.5c-.5-.5-1.5-1-2-1" />
+    <path d="M22 9.5c-.5 0-1.5.5-2 1" />
+  </svg>
+);
+
 interface PupilOffset {
   x: number;
   y: number;
@@ -178,7 +206,7 @@ export function EyesCat() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [greeting, setGreeting] = useState<string | null>(null);
-  const { visitorId, loading: visitorLoading } = useVisitor();
+  const { visitorId, loading: visitorLoading, notificationStatus, requestNotificationPermission } = useVisitor();
   const [messages, setMessages] = useState<MessageDoc[]>([]);
   const prevMsgCountRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -427,6 +455,34 @@ export function EyesCat() {
                   >
                     {theme === "light" ? SunIcon : MoonIcon}
                   </button>
+                  {notificationStatus !== "unsupported" && (
+                    <button
+                      type="button"
+                      className={`${styles.settingBtn} ${notificationStatus === "granted" ? styles.settingBtnActive : ""}`}
+                      onClick={requestNotificationPermission}
+                      aria-label={
+                        notificationStatus === "granted"
+                          ? dict.eyesCat.notificationsEnabled
+                          : notificationStatus === "denied"
+                            ? dict.eyesCat.notificationsDenied
+                            : dict.eyesCat.enableNotifications
+                      }
+                      title={
+                        notificationStatus === "granted"
+                          ? dict.eyesCat.notificationsEnabled
+                          : notificationStatus === "denied"
+                            ? dict.eyesCat.notificationsDenied
+                            : dict.eyesCat.enableNotifications
+                      }
+                      disabled={notificationStatus === "denied"}
+                    >
+                      {notificationStatus === "granted"
+                        ? BellRingIcon
+                        : notificationStatus === "denied"
+                          ? BellOffIcon
+                          : BellIcon}
+                    </button>
+                  )}
                   <Link
                     href={(() => {
                       const nextLocale = i18nConfig.locales.find((l) => l !== locale) ?? i18nConfig.defaultLocale;

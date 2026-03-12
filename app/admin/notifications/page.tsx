@@ -21,6 +21,7 @@ export default function AdminNotificationsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [image, setImage] = useState("");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<SendResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,14 +58,17 @@ export default function AdminNotificationsPage() {
     setSending(true);
     setResult(null);
     try {
+      const payload: Record<string, unknown> = {
+        title: title.trim(),
+        body: body.trim(),
+        tokens: Array.from(selected),
+      };
+      if (image.trim()) payload.image = image.trim();
+
       const res = await fetch("/api/notifications/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          body: body.trim(),
-          tokens: Array.from(selected),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
@@ -74,6 +78,7 @@ export default function AdminNotificationsPage() {
       });
       setTitle("");
       setBody("");
+      setImage("");
     } catch (err) {
       setResult({
         type: "error",
@@ -82,7 +87,7 @@ export default function AdminNotificationsPage() {
     } finally {
       setSending(false);
     }
-  }, [title, body, selected, sending, t]);
+  }, [title, body, image, selected, sending, t]);
 
   if (loading) {
     return (
@@ -118,6 +123,31 @@ export default function AdminNotificationsPage() {
             placeholder={t.bodyPlaceholder}
             disabled={sending}
           />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>{t.imageLabel}</label>
+          <input
+            className={styles.input}
+            type="url"
+            value={image}
+            onChange={(e) => setImage(e.target.value)}
+            placeholder={t.imagePlaceholder}
+            disabled={sending}
+          />
+          {image.trim() && (
+            <img
+              className={styles.imagePreview}
+              src={image.trim()}
+              alt="Preview"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+              onLoad={(e) => {
+                (e.target as HTMLImageElement).style.display = "block";
+              }}
+            />
+          )}
         </div>
 
         <div className={styles.subscriberSection}>

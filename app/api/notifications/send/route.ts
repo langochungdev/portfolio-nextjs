@@ -4,12 +4,13 @@ import { getAdminMessaging } from "@/lib/firebase/admin";
 interface SendPayload {
   title: string;
   body: string;
+  image?: string;
   tokens: string[];
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { title, body, tokens } = (await req.json()) as SendPayload;
+    const { title, body, image, tokens } = (await req.json()) as SendPayload;
 
     if (!title || !body || !Array.isArray(tokens) || tokens.length === 0) {
       return NextResponse.json(
@@ -18,10 +19,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const data: Record<string, string> = { title, body };
+    if (image) data.image = image;
+
     const messaging = getAdminMessaging();
     const result = await messaging.sendEachForMulticast({
       tokens,
-      notification: { title, body },
+      data,
     });
 
     return NextResponse.json({

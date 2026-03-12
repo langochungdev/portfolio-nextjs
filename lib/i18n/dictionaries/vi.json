@@ -54,7 +54,10 @@
     "greetEvening": "Chào buổi tối người đẹp 🌙",
     "greetMorningName": "Chào buổi sáng {name} ☀️",
     "greetAfternoonName": "Chào buổi chiều {name} 🌤️",
-    "greetEveningName": "Chào buổi tối {name} 🌙"
+    "greetEveningName": "Chào buổi tối {name} 🌙",
+    "enableNotifications": "Bật thông báo",
+    "notificationsEnabled": "Đã bật thông báo",
+    "notificationsDenied": "Thông báo bị chặn"
   },
   "admin": {
     "login": {
@@ -129,6 +132,8 @@
       "titlePlaceholder": "Nhập tiêu đề thông báo...",
       "bodyLabel": "Nội dung",
       "bodyPlaceholder": "Nhập nội dung thông báo...",
+      "imageLabel": "URL hình ảnh (tuỳ chọn)",
+      "imagePlaceholder": "https://example.com/image.png",
       "recipients": "Người nhận",
       "noSubscribers": "Chưa có người đăng ký nhận thông báo",
       "selectAll": "Chọn tất cả",

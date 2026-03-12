@@ -54,7 +54,10 @@
     "greetEvening": "Good evening, beautiful 🌙",
     "greetMorningName": "Good morning, {name} ☀️",
     "greetAfternoonName": "Good afternoon, {name} 🌤️",
-    "greetEveningName": "Good evening, {name} 🌙"
+    "greetEveningName": "Good evening, {name} 🌙",
+    "enableNotifications": "Enable notifications",
+    "notificationsEnabled": "Notifications enabled",
+    "notificationsDenied": "Notifications blocked"
   },
   "admin": {
     "login": {
@@ -129,6 +132,8 @@
       "titlePlaceholder": "Enter notification title...",
       "bodyLabel": "Body",
       "bodyPlaceholder": "Enter notification body...",
+      "imageLabel": "Image URL (optional)",
+      "imagePlaceholder": "https://example.com/image.png",
       "recipients": "Recipients",
       "noSubscribers": "No subscribers yet",
       "selectAll": "Select all",

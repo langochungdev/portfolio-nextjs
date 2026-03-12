@@ -302,6 +302,16 @@
     }
 }
 
+.settingBtnActive {
+    color: var(--color-accent, #22c55e);
+    border-color: var(--color-accent, #22c55e);
+}
+
+.settingBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .closeBtn {
     display: flex;
     align-items: center;

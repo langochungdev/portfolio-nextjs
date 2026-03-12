@@ -19,18 +19,18 @@ function getMessagingInstance(): Messaging | null {
   return messagingInstance;
 }
 
-async function registerFcmServiceWorker(): Promise<
+async function getMainSwRegistration(): Promise<
   ServiceWorkerRegistration | undefined
 > {
-  const existing = await navigator.serviceWorker.getRegistration(
-    "/firebase-messaging-sw.js",
-  );
-  if (existing) return existing;
+  let reg = await navigator.serviceWorker.getRegistration("/");
+  if (!reg) {
+    reg = await navigator.serviceWorker.getRegistration();
+  }
+  if (!reg) return undefined;
 
-  const reg = await navigator.serviceWorker.register(
-    "/firebase-messaging-sw.js",
-  );
-  await navigator.serviceWorker.ready;
+  if (!reg.active) {
+    await navigator.serviceWorker.ready;
+  }
 
   reg.active?.postMessage({
     type: "FIREBASE_CONFIG",
@@ -60,7 +60,7 @@ export async function requestFcmToken(): Promise<string | null> {
   const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
   if (!vapidKey) return null;
 
-  const swReg = await registerFcmServiceWorker();
+  const swReg = await getMainSwRegistration();
 
   const token = await getToken(messaging, {
     vapidKey,
@@ -71,15 +71,17 @@ export async function requestFcmToken(): Promise<string | null> {
 }
 
 export function onForegroundMessage(
-  callback: (payload: { title: string; body: string }) => void,
+  callback: (payload: { title: string; body: string; image?: string }) => void,
 ): (() => void) | null {
   const messaging = getMessagingInstance();
   if (!messaging) return null;
 
   const unsubscribe = onMessage(messaging, (payload) => {
-    const title = payload.notification?.title ?? "Thông báo";
-    const body = payload.notification?.body ?? "";
-    callback({ title, body });
+    const title =
+      payload.data?.title ?? payload.notification?.title ?? "Thông báo";
+    const body = payload.data?.body ?? payload.notification?.body ?? "";
+    const image = payload.data?.image ?? payload.notification?.image;
+    callback({ title, body, image });
   });
 
   return unsubscribe;
