@@ -71,10 +71,12 @@ function docToPost(id: string, data: Record<string, unknown>): PostDoc {
 export async function fetchPosts(): Promise<PostDoc[]> {
   const q = query(
     collection(db, "posts"),
-    orderBy("order"),
+    orderBy("timestamps.createdAt", "desc"),
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => docToPost(d.id, d.data()));
+  return snap.docs
+    .map((d) => docToPost(d.id, d.data()))
+    .sort((a, b) => a.order - b.order);
 }
 
 export async function fetchPostsByCollection(

@@ -30,8 +30,7 @@ service cloud.firestore {
       allow create: if isAdmin()
         && request.resource.data.title is string
         && request.resource.data.slug is string
-        && request.resource.data.content is string
-        && request.resource.data.collectionId is string;
+        && request.resource.data.content is string;
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
