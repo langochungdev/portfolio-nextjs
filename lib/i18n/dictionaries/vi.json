@@ -82,7 +82,10 @@
       "blog": "Blog",
       "certificates": "Chứng chỉ",
       "last7Days": "7 ngày gần đây",
-      "pageViews": "Lượt xem trang"
+      "pageViews": "Lượt xem trang",
+      "topPosts": "Bài viết xem nhiều nhất",
+      "views": "lượt xem",
+      "noData": "Không có dữ liệu"
     },
     "posts": {
       "title": "Bài viết",

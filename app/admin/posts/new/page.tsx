@@ -1,13 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { useRouter } from "next/navigation";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
+import { TagSelector } from "@/app/admin/_components/TagSelector";
 import dynamic from "next/dynamic";
 
 const TiptapEditor = dynamic(() => import("@/app/admin/_components/TiptapEditor").then(m => m.TiptapEditor), { ssr: false });
 import { createPost } from "@/lib/firebase/posts";
+import {
+  fetchCollections,
+  fetchTopics,
+  addTopic as addTopicFb,
+  type CollectionDoc,
+  type TopicDoc,
+} from "@/lib/firebase/collections";
 import { processContentMedia } from "@/lib/cloudinary/client";
 import styles from "@/app/style/admin/editor.module.css";
 
@@ -18,8 +26,10 @@ export default function NewPostPage() {
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
-  const [collectionId, setCollectionId] = useState("tech");
-  const [topicId, setTopicId] = useState("");
+  const [collectionIds, setCollectionIds] = useState<string[]>([]);
+  const [topicIds, setTopicIds] = useState<string[]>([]);
+  const [collections, setCollections] = useState<CollectionDoc[]>([]);
+  const [topics, setTopics] = useState<TopicDoc[]>([]);
   const [thumbnail, setThumbnail] = useState("");
   const [content, setContent] = useState("");
   const [isPinned, setIsPinned] = useState(false);
@@ -28,6 +38,26 @@ export default function NewPostPage() {
   const [success, setSuccess] = useState("");
   const [showFields, setShowFields] = useState(true);
   const [mobilePreview, setMobilePreview] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [cols, tps] = await Promise.all([fetchCollections(), fetchTopics()]);
+        setCollections(cols);
+        setTopics(tps);
+        if (cols.length > 0) setCollectionIds([cols[0].id]);
+      } catch (err) {
+        console.error("Failed to load options:", err);
+      }
+    })();
+  }, []);
+
+  const handleCreateTopic = useCallback(async (name: string) => {
+    const colId = collectionIds[0] ?? "";
+    const id = await addTopicFb(name, colId, topics.length);
+    setTopics((prev) => [...prev, { id, name, collectionId: colId, order: prev.length }]);
+    return id;
+  }, [collectionIds, topics.length]);
 
   const generateSlug = (text: string) =>
     text
@@ -62,8 +92,8 @@ export default function NewPostPage() {
         slug: slug.trim(),
         thumbnail: thumbnail.trim(),
         content: processedHtml,
-        collectionId,
-        topicId,
+        collectionIds,
+        topicIds,
         isPinned,
       });
       setSuccess(`Đã tạo bài viết! ID: ${id}`);
@@ -142,6 +172,25 @@ export default function NewPostPage() {
               </div>
 
               <div className={styles.fieldRow}>
+                <TagSelector
+                  label={t.collectionLabel}
+                  options={collections}
+                  selected={collectionIds}
+                  onChange={setCollectionIds}
+                  required
+                  placeholder="Select collections..."
+                />
+                <TagSelector
+                  label={t.topicLabel ?? "Topic"}
+                  options={topics}
+                  selected={topicIds}
+                  onChange={setTopicIds}
+                  onCreate={handleCreateTopic}
+                  placeholder="Search or create topic..."
+                />
+              </div>
+
+              <div className={styles.fieldRow}>
                 <div className={styles.fieldGroup}>
                   <label className={styles.label}>{t.thumbnailLabel}</label>
                   <input
@@ -149,32 +198,6 @@ export default function NewPostPage() {
                     type="text"
                     value={thumbnail}
                     onChange={(e) => setThumbnail(e.target.value)}
-                  />
-                </div>
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>{t.collectionLabel}</label>
-                  <select
-                    className={styles.select}
-                    value={collectionId}
-                    onChange={(e) => setCollectionId(e.target.value)}
-                  >
-                    <option value="tech">Tech</option>
-                    <option value="code">Code</option>
-                    <option value="design">Design</option>
-                    <option value="life">Life</option>
-                    <option value="tutorial">Tutorial</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className={styles.fieldRow}>
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>{t.topicLabel}</label>
-                  <input
-                    className={styles.input}
-                    type="text"
-                    value={topicId}
-                    onChange={(e) => setTopicId(e.target.value)}
                   />
                 </div>
                 <div className={styles.checkRow}>

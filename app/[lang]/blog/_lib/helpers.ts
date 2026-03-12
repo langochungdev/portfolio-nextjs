@@ -19,7 +19,9 @@ export function getExcerpt(html: string, maxLength = 160): string {
 
 export function groupByCollection(posts: PostDoc[]) {
   const groups: Record<string, PostDoc[]> = {};
-  for (const p of posts) (groups[p.collectionId] ??= []).push(p);
+  for (const p of posts) {
+    for (const cid of p.collectionIds) (groups[cid] ??= []).push(p);
+  }
   return groups;
 }
 
@@ -30,7 +32,7 @@ export function buildDisplayItems(
   const items: DisplayItem[] = [];
   const used = new Set<string>();
   for (const t of topics) {
-    const tp = posts.filter((p) => p.topicId === t.id);
+    const tp = posts.filter((p) => p.topicIds.includes(t.id));
     if (tp.length) {
       items.push({ type: "topic", topic: t, posts: tp });
       tp.forEach((p) => used.add(p.id));

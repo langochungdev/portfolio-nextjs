@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { HintList } from "@/app/admin/_components/HintList";
+import { TagSelector } from "@/app/admin/_components/TagSelector";
 
 import dynamic from "next/dynamic";
 import styles from "@/app/style/admin/posts.module.css";
@@ -19,8 +20,8 @@ interface PostItem {
   slug: string;
   thumbnail: string;
   content: string;
-  collectionId: string;
-  topicId: string;
+  collectionIds: string[];
+  topicIds: string[];
   isPinned: boolean;
   views: number;
   createdAt: string;
@@ -56,6 +57,7 @@ interface Props {
   onSave: (post: PostItem, thumbnailFile?: File) => void;
   onDelete: (id: string) => void;
   onCancel: () => void;
+  onCreateTopic?: (name: string) => Promise<string>;
   onAddHint: (hint: Omit<HintItem, "id">) => void;
   onUpdateHint: (hint: HintItem) => void;
   onDeleteHint: (id: string) => void;
@@ -72,7 +74,7 @@ const TrashIcon = () => (
 const generateSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
-export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, collections, topics, saving, onNew, onEdit, onSave, onDelete, onCancel, onAddHint, onUpdateHint, onDeleteHint }: Props) {
+export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, collections, topics, saving, onNew, onEdit, onSave, onDelete, onCancel, onCreateTopic, onAddHint, onUpdateHint, onDeleteHint }: Props) {
   const { dictionary: dict } = useDictionary();
   const t = dict.admin.posts;
   const [tab, setTab] = useState<"posts" | "hints">("posts");
@@ -84,9 +86,11 @@ export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, c
         post={editingPost}
         isNew={isNew}
         collections={collections}
+        topics={topics}
         saving={saving}
         onSave={onSave}
         onCancel={onCancel}
+        onCreateTopic={onCreateTopic}
       />
     );
   }
@@ -163,13 +167,15 @@ export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, c
   );
 }
 
-function PostEditor({ post, isNew, collections, saving, onSave, onCancel }: {
+function PostEditor({ post, isNew, collections, topics, saving, onSave, onCancel, onCreateTopic }: {
   post: PostItem;
   isNew: boolean;
   collections: CollectionItem[];
+  topics: TopicItem[];
   saving?: boolean;
   onSave: (post: PostItem, thumbnailFile?: File) => void;
   onCancel: () => void;
+  onCreateTopic?: (name: string) => Promise<string>;
 }) {
   const { dictionary: dict } = useDictionary();
   const t = dict.admin.posts;
@@ -181,7 +187,8 @@ function PostEditor({ post, isNew, collections, saving, onSave, onCancel }: {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState(post.content);
-  const [collectionId, setCollectionId] = useState(post.collectionId);
+  const [collectionIds, setCollectionIds] = useState(post.collectionIds);
+  const [topicIds, setTopicIds] = useState(post.topicIds);
   const [isPinned, setIsPinned] = useState(post.isPinned);
 
   const handleTitleChange = (val: string) => {
@@ -215,12 +222,12 @@ function PostEditor({ post, isNew, collections, saving, onSave, onCancel }: {
       slug: slug || generateSlug(title),
       thumbnail,
       content,
-      collectionId,
-      topicId: post.topicId,
+      collectionIds,
+      topicIds,
       isPinned,
       updatedAt: new Date().toISOString().split("T")[0],
     }, thumbnailFile ?? undefined);
-  }, [title, slug, thumbnail, content, collectionId, isPinned, post, thumbnailFile]);
+  }, [title, slug, thumbnail, content, collectionIds, topicIds, isPinned, post, thumbnailFile]);
 
   const handleCancel = useCallback(() => {
     onCancelRef.current();
@@ -264,6 +271,24 @@ function PostEditor({ post, isNew, collections, saving, onSave, onCancel }: {
           </div>
         </div>
         <div className={styles.editorFieldRow}>
+          <TagSelector
+            label={t.collectionLabel}
+            options={collections}
+            selected={collectionIds}
+            onChange={setCollectionIds}
+            required
+            placeholder="Select collections..."
+          />
+          <TagSelector
+            label={t.topicLabel ?? "Topic"}
+            options={topics}
+            selected={topicIds}
+            onChange={setTopicIds}
+            onCreate={onCreateTopic}
+            placeholder="Search or create topic..."
+          />
+        </div>
+        <div className={styles.editorFieldRow}>
           <div className={editorStyles.fieldGroup} style={{ flex: 1 }}>
             <label className={editorStyles.label}>{t.thumbnailLabel}</label>
             {thumbnail ? (
@@ -281,14 +306,6 @@ function PostEditor({ post, isNew, collections, saving, onSave, onCancel }: {
               </button>
             )}
             <input ref={thumbnailInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleThumbnailUpload} />
-          </div>
-        </div>
-        <div className={styles.editorFieldRow}>
-          <div className={editorStyles.fieldGroup}>
-            <label className={editorStyles.label}>{t.collectionLabel}</label>
-            <select className={editorStyles.select} value={collectionId} onChange={(e) => setCollectionId(e.target.value)}>
-              {collections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
           </div>
           <div className={editorStyles.checkRow}>
             <input type="checkbox" id="pinned-editor" checked={isPinned} onChange={(e) => setIsPinned(e.target.checked)} />

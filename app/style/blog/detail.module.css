@@ -264,6 +264,99 @@
     clear: both;
 }
 
+.content figure {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.content figure img {
+    width: 100%;
+}
+
+.content figcaption {
+    font-size: 0.8125rem;
+    color: #7A7A72;
+    text-align: center;
+    padding: 6px 0;
+    line-height: 1.4;
+}
+
+.content video {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+}
+
+.content audio {
+    width: 100%;
+    max-width: 500px;
+}
+
+.content :global(.media-figure) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0.75rem auto;
+    max-width: 100%;
+}
+
+.content :global(.audio-figure) {
+    max-width: 500px;
+}
+
+.content :global(.file-preview) {
+    display: flex;
+    justify-content: center;
+    margin: 0.75rem 0;
+}
+
+.content :global(.file-preview) iframe {
+    border: 1px solid rgba(28, 28, 26, 0.10);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-height: 400px;
+}
+
+.content :global(.iframe-wrapper) {
+    display: flex;
+    justify-content: center;
+    margin: 0.75rem 0;
+}
+
+.content :global(.iframe-wrapper) iframe {
+    border: 1px solid rgba(28, 28, 26, 0.10);
+    border-radius: 8px;
+    max-width: 100%;
+}
+
+.content a[data-file-src] {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid rgba(28, 28, 26, 0.10);
+    border-radius: 6px;
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.content div[data-youtube-video] {
+    display: flex;
+    justify-content: center;
+    margin: 0.75rem 0;
+}
+
+.content div[data-youtube-video] iframe {
+    border-radius: 8px;
+    max-width: 100%;
+}
+
 .skeleton {
     background: rgba(28, 28, 26, 0.06);
     color: transparent;
@@ -385,6 +478,23 @@
 
 :global([data-theme="dark"]) .content p {
     color: #c8c8c3;
+}
+
+:global([data-theme="dark"]) .content figcaption {
+    color: #9a9a92;
+}
+
+:global([data-theme="dark"]) .content :global(.file-preview) iframe {
+    border-color: rgba(232, 232, 227, 0.10);
+}
+
+:global([data-theme="dark"]) .content :global(.iframe-wrapper) iframe {
+    border-color: rgba(232, 232, 227, 0.10);
+}
+
+:global([data-theme="dark"]) .content a[data-file-src] {
+    border-color: rgba(232, 232, 227, 0.10);
+}
 }
 
 @media (hover: hover) {

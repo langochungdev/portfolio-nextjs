@@ -82,7 +82,10 @@
       "blog": "Blog",
       "certificates": "Certificates",
       "last7Days": "Last 7 Days",
-      "pageViews": "Page Views"
+      "pageViews": "Page Views",
+      "topPosts": "Top Viewed Posts",
+      "views": "views",
+      "noData": "No data"
     },
     "posts": {
       "title": "Posts",

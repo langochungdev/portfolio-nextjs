@@ -5,9 +5,14 @@ const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const API_KEY = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY!;
 const API_SECRET = process.env.CLOUDINARY_API_SECRET!;
 
+type ResourceType = "image" | "video" | "raw";
+
 export async function POST(req: NextRequest) {
   try {
-    const { publicIds } = (await req.json()) as { publicIds: string[] };
+    const { publicIds, resourceType = "image" } = (await req.json()) as {
+      publicIds: string[];
+      resourceType?: ResourceType;
+    };
     if (!Array.isArray(publicIds) || publicIds.length === 0) {
       return NextResponse.json(
         { error: "No publicIds provided" },
@@ -31,7 +36,7 @@ export async function POST(req: NextRequest) {
         form.append("signature", signature);
 
         const res = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/destroy`,
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/destroy`,
           { method: "POST", body: form },
         );
         return { publicId, ok: res.ok };

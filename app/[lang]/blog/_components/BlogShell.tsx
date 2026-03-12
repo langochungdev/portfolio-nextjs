@@ -20,7 +20,7 @@ export function BlogShell({ children }: { children: React.ReactNode }) {
   if (isDetail) {
     const slug = pathname.split("/").pop();
     const post = posts.find((p) => p.slug === slug);
-    activeCategory = post?.collectionId ?? "allPosts";
+    activeCategory = post?.collectionIds[0] ?? "allPosts";
   } else {
     activeCategory = searchParams.get("cat") || "allPosts";
   }
@@ -29,7 +29,7 @@ export function BlogShell({ children }: { children: React.ReactNode }) {
     key: col.id,
     label: col.name,
     color: col.color,
-    count: posts.filter((p) => p.collectionId === col.id).length,
+    count: posts.filter((p) => p.collectionIds.includes(col.id)).length,
   }));
 
   const handleCategoryChange = (cat: string) => {

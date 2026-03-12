@@ -892,6 +892,123 @@
     cursor: default;
 }
 
+.mediaNodeMedia {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+}
+
+.mediaAltInput {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0 0 6px 6px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 0.75rem;
+    font-family: inherit;
+    outline: none;
+    backdrop-filter: blur(4px);
+    box-sizing: border-box;
+}
+
+.mediaAltInput:focus {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.mediaAltInput::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.audioNodeWrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 8px 0;
+}
+
+.audioNodeInner {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 8px;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    transition: box-shadow 0.15s;
+}
+
+.audioNodePlayer {
+    width: 100%;
+    border-radius: 4px;
+}
+
+.fileNodeWrap {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 8px 0;
+}
+
+.fileLinkNode {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    max-width: 400px;
+    width: 100%;
+    transition: box-shadow 0.15s;
+}
+
+.fileLinkAnchor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    word-break: break-all;
+}
+
+.fileLinkAnchor:hover {
+    text-decoration: underline;
+}
+
+.fileNodeToolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filePreviewToolbar {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.mediaFileName {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    padding: 4px 0;
+    text-align: center;
+}
+
 .bubbleMenu {
     display: flex;
     align-items: center;
@@ -1003,4 +1120,45 @@
     .fieldRow {
         grid-template-columns: 1fr;
     }
+}
+
+.mediaCaption {
+    display: block;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    padding: 4px 8px;
+    line-height: 1.4;
+}
+
+.mediaCaptionInput {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    padding: 6px 8px;
+    border: 1px dashed var(--color-border);
+    border-radius: 4px;
+    background: transparent;
+    font-family: inherit;
+    outline: none;
+    margin-top: 4px;
+    box-sizing: border-box;
+}
+
+.mediaCaptionInput:focus {
+    border-color: var(--color-text);
+    color: var(--color-text);
+}
+
+.mediaCaptionInput::placeholder {
+    color: var(--color-text-muted);
+    opacity: 0.6;
+}
+
+.mediaNodeColumn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }

@@ -17,7 +17,7 @@ interface TopicAccordionProps {
 export function TopicAccordion({
   topic, posts, isOpen, isPinned, locale, label, pinnedText, onToggle,
 }: TopicAccordionProps) {
-  const tp = posts.filter((p) => p.topicId === topic.id);
+  const tp = posts.filter((p) => p.topicIds.includes(topic.id));
   if (!tp.length) return null;
   return (
     <div id={topic.id} className={styles.topicSection}>

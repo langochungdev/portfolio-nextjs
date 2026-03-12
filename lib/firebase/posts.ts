@@ -20,8 +20,8 @@ export interface PostInput {
   slug: string;
   thumbnail: string;
   content: string;
-  collectionId: string;
-  topicId: string;
+  collectionIds: string[];
+  topicIds: string[];
   isPinned: boolean;
 }
 
@@ -48,8 +48,16 @@ function docToPost(id: string, data: Record<string, unknown>): PostDoc {
     slug: (data.slug as string) ?? "",
     thumbnail: (data.thumbnail as string) ?? "",
     content: (data.content as string) ?? "",
-    collectionId: (data.collectionId as string) ?? "",
-    topicId: (data.topicId as string) ?? "",
+    collectionIds: Array.isArray(data.collectionIds)
+      ? (data.collectionIds as string[])
+      : data.collectionId
+        ? [data.collectionId as string]
+        : [],
+    topicIds: Array.isArray(data.topicIds)
+      ? (data.topicIds as string[])
+      : data.topicId
+        ? [data.topicId as string]
+        : [],
     isPinned: (data.isPinned as boolean) ?? false,
     views: (data.views as number) ?? 0,
     createdAt: formatTimestamp(timestamps.createdAt ?? null),
@@ -71,7 +79,7 @@ export async function fetchPostsByCollection(
 ): Promise<PostDoc[]> {
   const q = query(
     collection(db, "posts"),
-    where("collectionId", "==", collectionId),
+    where("collectionIds", "array-contains", collectionId),
     orderBy("timestamps.createdAt", "desc"),
   );
   const snap = await getDocs(q);

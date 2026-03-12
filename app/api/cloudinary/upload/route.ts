@@ -5,6 +5,14 @@ const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const API_KEY = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY!;
 const API_SECRET = process.env.CLOUDINARY_API_SECRET!;
 
+type ResourceType = "image" | "video" | "raw";
+
+function getResourceType(mime: string): ResourceType {
+  if (mime.startsWith("video/") || mime.startsWith("audio/")) return "video";
+  if (mime.startsWith("image/")) return "image";
+  return "raw";
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -13,6 +21,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    const resourceType: ResourceType =
+      (formData.get("resource_type") as ResourceType) ||
+      getResourceType(file.type);
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const folder = "portfolio/posts";
 
@@ -30,7 +41,7 @@ export async function POST(req: NextRequest) {
     uploadForm.append("signature", signature);
 
     const res = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
       { method: "POST", body: uploadForm },
     );
 
@@ -46,6 +57,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       url: data.secure_url as string,
       publicId: data.public_id as string,
+      resourceType,
     });
   } catch (err) {
     return NextResponse.json(

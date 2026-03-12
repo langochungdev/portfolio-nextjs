@@ -15,8 +15,10 @@ import {
 import {
   fetchGlobalStats,
   fetchLast7Days,
+  fetchTopViewedPosts,
   type GlobalStats,
   type DailyStats,
+  type TopPost,
 } from "@/lib/firebase/analytics-queries";
 import styles from "@/app/style/admin/dashboard.module.css";
 
@@ -26,6 +28,7 @@ export default function AdminDashboardPage() {
 
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [dailyData, setDailyData] = useState<DailyStats[]>([]);
+  const [topPosts, setTopPosts] = useState<TopPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,12 +36,14 @@ export default function AdminDashboardPage() {
     try {
       setLoading(true);
       setError(null);
-      const [global, daily] = await Promise.all([
+      const [global, daily, top] = await Promise.all([
         fetchGlobalStats(),
         fetchLast7Days(),
+        fetchTopViewedPosts(10),
       ]);
       setGlobalStats(global);
       setDailyData(daily);
+      setTopPosts(top);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load analytics");
     } finally {
@@ -130,6 +135,25 @@ export default function AdminDashboardPage() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      <div className={styles.chartCard}>
+        <div className={styles.chartTitle}>{t.topPosts}</div>
+        {topPosts.length === 0 ? (
+          <div className={styles.topPostsEmpty}>{t.noData}</div>
+        ) : (
+          <div className={styles.topPostsList}>
+            {topPosts.map((post, idx) => (
+              <div key={post.id} className={styles.topPostItem}>
+                <span className={styles.topPostRank}>{idx + 1}</span>
+                <span className={styles.topPostTitle}>{post.title}</span>
+                <span className={styles.topPostViews}>
+                  {post.views.toLocaleString()} {t.views}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

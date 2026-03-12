@@ -84,27 +84,29 @@ export default function AdminPostsPage() {
 
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
-      if (selectedColId && p.collectionId !== selectedColId) return false;
-      if (selectedTopicId && p.topicId !== selectedTopicId) return false;
+      if (selectedColId && !p.collectionIds.includes(selectedColId)) return false;
+      if (selectedTopicId && !p.topicIds.includes(selectedTopicId)) return false;
       return true;
     });
   }, [posts, selectedColId, selectedTopicId]);
 
   const totalColPosts = useMemo(
-    () => posts.filter((p) => p.collectionId === selectedColId).length,
+    () => posts.filter((p) => selectedColId && p.collectionIds.includes(selectedColId)).length,
     [posts, selectedColId]
   );
 
   const colCounts = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const p of posts) map[p.collectionId] = (map[p.collectionId] ?? 0) + 1;
+    for (const p of posts) {
+      for (const cid of p.collectionIds) map[cid] = (map[cid] ?? 0) + 1;
+    }
     return map;
   }, [posts]);
 
   const topicCounts = useMemo(() => {
     const map: Record<string, number> = {};
     for (const p of posts) {
-      if (p.topicId) map[p.topicId] = (map[p.topicId] ?? 0) + 1;
+      for (const tid of p.topicIds) map[tid] = (map[tid] ?? 0) + 1;
     }
     return map;
   }, [posts]);
@@ -180,7 +182,7 @@ export default function AdminPostsPage() {
     const now = new Date().toISOString().split("T")[0];
     setEditingPost({
       id: "", title: "", slug: "", thumbnail: "", content: "",
-      collectionId: selectedColId ?? "", topicId: selectedTopicId ?? "",
+      collectionIds: selectedColId ? [selectedColId] : [], topicIds: selectedTopicId ? [selectedTopicId] : [],
       isPinned: false, views: 0, createdAt: now, updatedAt: now,
     });
     setIsNewPost(true);
@@ -190,6 +192,13 @@ export default function AdminPostsPage() {
     setEditingPost({ ...post });
     setIsNewPost(false);
   };
+
+  const handleCreateTopicForPost = useCallback(async (name: string) => {
+    const colId = selectedColId ?? "";
+    const id = await addTopicFb(name, colId, topics.length);
+    setTopics((prev) => [...prev, { id, name, collectionId: colId, order: prev.length }]);
+    return id;
+  }, [selectedColId, topics.length]);
 
   const handleSavePost = async (post: PostDoc, thumbnailFile?: File) => {
     const tempId = isNewPost ? `temp-${Date.now()}` : post.id;
@@ -230,15 +239,15 @@ export default function AdminPostsPage() {
       if (wasNew) {
         const id = await createPost({
           title: post.title, slug: post.slug, thumbnail: finalThumbnail,
-          content: processedHtml, collectionId: post.collectionId,
-          topicId: post.topicId, isPinned: post.isPinned,
+          content: processedHtml, collectionIds: post.collectionIds,
+          topicIds: post.topicIds, isPinned: post.isPinned,
         });
         setPosts((prev) => prev.map((p) => p.id === tempId ? { ...optimisticPost, id, thumbnail: finalThumbnail, content: processedHtml } : p));
       } else {
         await updatePost(post.id, {
           title: post.title, slug: post.slug, thumbnail: finalThumbnail,
-          content: processedHtml, collectionId: post.collectionId,
-          topicId: post.topicId, isPinned: post.isPinned,
+          content: processedHtml, collectionIds: post.collectionIds,
+          topicIds: post.topicIds, isPinned: post.isPinned,
         });
         setPosts((prev) => prev.map((p) => p.id === post.id ? { ...optimisticPost, thumbnail: finalThumbnail, content: processedHtml } : p));
       }
@@ -324,6 +333,7 @@ export default function AdminPostsPage() {
         onSave={handleSavePost}
         onDelete={handleDeletePost}
         onCancel={handleCancelEdit}
+        onCreateTopic={handleCreateTopicForPost}
         onAddHint={handleAddHint}
         onUpdateHint={handleUpdateHint}
         onDeleteHint={handleDeleteHint}

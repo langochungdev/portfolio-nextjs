@@ -1,13 +1,21 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 import { useRouter, useParams } from "next/navigation";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
+import { TagSelector } from "@/app/admin/_components/TagSelector";
 import dynamic from "next/dynamic";
 
 const TiptapEditor = dynamic(() => import("@/app/admin/_components/TiptapEditor").then(m => m.TiptapEditor), { ssr: false });
 import { fetchPost, updatePost } from "@/lib/firebase/posts";
+import {
+  fetchCollections,
+  fetchTopics,
+  addTopic as addTopicFb,
+  type CollectionDoc,
+  type TopicDoc,
+} from "@/lib/firebase/collections";
 import { processContentMedia } from "@/lib/cloudinary/client";
 import styles from "@/app/style/admin/editor.module.css";
 
@@ -30,8 +38,10 @@ export default function EditPostPage() {
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
-  const [collectionId, setCollectionId] = useState("");
-  const [topicId, setTopicId] = useState("");
+  const [collectionIds, setCollectionIds] = useState<string[]>([]);
+  const [topicIds, setTopicIds] = useState<string[]>([]);
+  const [collections, setCollections] = useState<CollectionDoc[]>([]);
+  const [topics, setTopics] = useState<TopicDoc[]>([]);
   const [thumbnail, setThumbnail] = useState("");
   const [content, setContent] = useState("");
   const [isPinned, setIsPinned] = useState(false);
@@ -46,12 +56,18 @@ export default function EditPostPage() {
   useEffect(() => {
     (async () => {
       try {
-        const post = await fetchPost(params.id);
+        const [post, cols, tps] = await Promise.all([
+          fetchPost(params.id),
+          fetchCollections(),
+          fetchTopics(),
+        ]);
         if (!post) { setError("Post not found"); setLoading(false); return; }
         setTitle(post.title);
         setSlug(post.slug);
-        setCollectionId(post.collectionId);
-        setTopicId(post.topicId);
+        setCollectionIds(post.collectionIds);
+        setTopicIds(post.topicIds);
+        setCollections(cols);
+        setTopics(tps);
         setThumbnail(post.thumbnail);
         setContent(post.content);
         setIsPinned(post.isPinned);
@@ -63,6 +79,13 @@ export default function EditPostPage() {
       }
     })();
   }, [params.id]);
+
+  const handleCreateTopic = useCallback(async (name: string) => {
+    const colId = collectionIds[0] ?? "";
+    const id = await addTopicFb(name, colId, topics.length);
+    setTopics((prev) => [...prev, { id, name, collectionId: colId, order: prev.length }]);
+    return id;
+  }, [collectionIds, topics.length]);
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
@@ -80,8 +103,8 @@ export default function EditPostPage() {
         slug: slug || generateSlug(title),
         thumbnail: thumbnail.trim(),
         content: processedHtml,
-        collectionId,
-        topicId,
+        collectionIds,
+        topicIds,
         isPinned,
       });
       originalContentRef.current = processedHtml;
@@ -161,6 +184,25 @@ export default function EditPostPage() {
               </div>
 
               <div className={styles.fieldRow}>
+                <TagSelector
+                  label={t.collectionLabel}
+                  options={collections}
+                  selected={collectionIds}
+                  onChange={setCollectionIds}
+                  required
+                  placeholder="Select collections..."
+                />
+                <TagSelector
+                  label={t.topicLabel ?? "Topic"}
+                  options={topics}
+                  selected={topicIds}
+                  onChange={setTopicIds}
+                  onCreate={handleCreateTopic}
+                  placeholder="Search or create topic..."
+                />
+              </div>
+
+              <div className={styles.fieldRow}>
                 <div className={styles.fieldGroup}>
                   <label className={styles.label}>{t.thumbnailLabel}</label>
                   <input
@@ -168,32 +210,6 @@ export default function EditPostPage() {
                     type="text"
                     value={thumbnail}
                     onChange={(e) => setThumbnail(e.target.value)}
-                  />
-                </div>
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>{t.collectionLabel}</label>
-                  <select
-                    className={styles.select}
-                    value={collectionId}
-                    onChange={(e) => setCollectionId(e.target.value)}
-                  >
-                    <option value="tech">Tech</option>
-                    <option value="code">Code</option>
-                    <option value="design">Design</option>
-                    <option value="life">Life</option>
-                    <option value="tutorial">Tutorial</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className={styles.fieldRow}>
-                <div className={styles.fieldGroup}>
-                  <label className={styles.label}>{t.topicLabel}</label>
-                  <input
-                    className={styles.input}
-                    type="text"
-                    value={topicId}
-                    onChange={(e) => setTopicId(e.target.value)}
                   />
                 </div>
                 <div className={styles.checkRow}>

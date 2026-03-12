@@ -20,15 +20,49 @@ import { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "reac
 function processContent(html: string): string {
   return html
     .replace(
-      /<img\s([^>]*data-align="(left|right|center)"[^>]*)>/g,
-      (_match, attrs, align) => {
-        const style =
+      /<img\s([^>]*)>/g,
+      (_match, attrs: string) => {
+        const alignMatch = (attrs as string).match(/data-align="(left|right|center)"/);
+        const widthMatch = (attrs as string).match(/width="(\d+)"/);
+        const altMatch = (attrs as string).match(/alt="([^"]*)"/);
+        const align = alignMatch?.[1] || "center";
+        const width = widthMatch?.[1];
+        const alt = altMatch?.[1];
+
+        const alignStyle =
           align === "left"
             ? "float:left;margin-right:1rem;margin-bottom:0.5rem"
             : align === "right"
               ? "float:right;margin-left:1rem;margin-bottom:0.5rem"
               : "display:flex;justify-content:center;width:100%";
-        return `<div style="${style}"><img ${attrs}></div>`;
+
+        if (alt || width) {
+          const figStyle = width ? ` style="max-width:${width}px;width:100%"` : "";
+          const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
+          return `<div style="${alignStyle}"><figure${figStyle}><img ${attrs}>${figcaption}</figure></div>`;
+        }
+        return `<div style="${alignStyle}"><img ${attrs}></div>`;
+      }
+    )
+    .replace(
+      /<video\s([^>]*)><\/video>/g,
+      (_match, attrs: string) => {
+        const altMatch = (attrs as string).match(/alt="([^"]*)"/);
+        const widthMatch = (attrs as string).match(/width="(\d+)"/);
+        const alt = altMatch?.[1];
+        const width = widthMatch?.[1];
+        const figStyle = width ? ` style="max-width:${width}px;width:100%"` : "";
+        const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
+        return `<figure class="media-figure"${figStyle}><video ${attrs}></video>${figcaption}</figure>`;
+      }
+    )
+    .replace(
+      /<audio\s([^>]*)><\/audio>/g,
+      (_match, attrs: string) => {
+        const altMatch = (attrs as string).match(/alt="([^"]*)"/);
+        const alt = altMatch?.[1];
+        const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
+        return `<figure class="media-figure audio-figure"><audio ${attrs}></audio>${figcaption}</figure>`;
       }
     )
     .replace(/<p><\/p>/g, "<p><br></p>");
@@ -48,17 +82,18 @@ export default function BlogDetailClient() {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const collection = post
-    ? collections.find((c) => c.id === post.collectionId)
+    ? collections.find((c) => post.collectionIds.includes(c.id))
     : null;
 
   const sidebarData = useMemo(() => {
     if (!post) return null;
-    const topic = post.topicId ? topics.find((t) => t.id === post.topicId) : null;
+    const topic = post.topicIds.length > 0 ? topics.find((t) => post.topicIds.includes(t.id)) : null;
     if (topic) {
-      const topicPosts = posts.filter((p) => p.topicId === topic.id);
+      const topicPosts = posts.filter((p) => p.topicIds.includes(topic.id));
       return { type: "topic" as const, topic, posts: topicPosts };
     }
-    const colPosts = posts.filter((p) => p.collectionId === post.collectionId);
+    const primaryColId = post.collectionIds[0];
+    const colPosts = primaryColId ? posts.filter((p) => p.collectionIds.includes(primaryColId)) : [];
     return { type: "collection" as const, posts: colPosts };
   }, [post, topics, posts]);
 
@@ -97,7 +132,7 @@ export default function BlogDetailClient() {
   const postColLabel = collection?.name ?? "";
   const color = collection?.color ?? "#1C1C1A";
 
-  const currentTopicId = post.topicId || undefined;
+  const currentTopicId = post.topicIds[0] || undefined;
   const tipsCount = currentTopicId
     ? hints.filter((h) => h.topicId === currentTopicId).length
     : hints.length;
@@ -105,7 +140,7 @@ export default function BlogDetailClient() {
   return (
     <>
       <aside className={styles.sidebar}>
-        <Link href={`/${locale}/blog?cat=${post.collectionId}`} className={styles.sidebarBack}>
+        <Link href={`/${locale}/blog?cat=${post.collectionIds[0] ?? ""}`} className={styles.sidebarBack}>
           ← {dict.blog.backToBlog}
         </Link>
 

@@ -6,6 +6,7 @@ import {
   where,
   getDocs,
   orderBy,
+  limit,
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/config";
 
@@ -97,5 +98,30 @@ export async function fetchLast7Days(): Promise<DailyStats[]> {
         certification: 0,
       }
     );
+  });
+}
+
+export interface TopPost {
+  id: string;
+  title: string;
+  slug: string;
+  views: number;
+}
+
+export async function fetchTopViewedPosts(count = 10): Promise<TopPost[]> {
+  const q = query(
+    collection(db, "posts"),
+    orderBy("views", "desc"),
+    limit(count),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      title: (data.title as string) ?? "",
+      slug: (data.slug as string) ?? "",
+      views: (data.views as number) ?? 0,
+    };
   });
 }

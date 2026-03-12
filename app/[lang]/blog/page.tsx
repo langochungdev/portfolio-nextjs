@@ -128,7 +128,7 @@ export default function BlogPage() {
               const color = colColor(activeCategory);
               const colTopics = topicsByCollection[activeCategory] ?? [];
               const pinnedPosts = colPosts.filter((p) => p.isPinned);
-              const inTopic = new Set(colPosts.filter((p) => p.topicId).map((p) => p.id));
+              const inTopic = new Set(colPosts.filter((p) => p.topicIds.length > 0).map((p) => p.id));
               const standalone = colPosts.filter((p) => !inTopic.has(p.id) && !p.isPinned);
               const combined = [...pinnedPosts, ...standalone];
               return (

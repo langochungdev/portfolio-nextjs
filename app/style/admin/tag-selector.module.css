@@ -1,0 +1,209 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+}
+
+.label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.triggerOpen {
+    border-color: var(--color-text);
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--color-border);
+    color: var(--color-text);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.tagRemove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border: none;
+    background: none;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 2px;
+    transition: color 0.15s;
+}
+
+.tagRemove:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.placeholder {
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    flex: 1;
+}
+
+.chevron {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    transition: transform 0.15s;
+}
+
+.triggerOpen .chevron {
+    transform: rotate(180deg);
+}
+
+.dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    margin-top: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    animation: dropIn 0.12s ease;
+}
+
+@keyframes dropIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.search {
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.8125rem;
+    font-family: inherit;
+    outline: none;
+    border-radius: 8px 8px 0 0;
+}
+
+.list {
+    max-height: 180px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.8125rem;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+}
+
+.optionSelected {
+    font-weight: 600;
+}
+
+.check {
+    width: 16px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+.empty {
+    padding: 12px 10px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+}
+
+.createBtn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-top: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s, color 0.1s;
+}
+
+.createBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (hover: hover) {
+    .tagRemove:not(:disabled):hover {
+        color: var(--color-text);
+    }
+
+    .option:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .createBtn:not(:disabled):hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--color-text);
+    }
+}

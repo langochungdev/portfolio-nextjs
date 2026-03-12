@@ -258,6 +258,94 @@ function LinkModal({ initialUrl, onInsert, onClose }: {
   );
 }
 
+interface MediaModalProps {
+  title: string;
+  accept: string;
+  onInsert: (src: string, alt: string) => void;
+  onClose: () => void;
+}
+
+function MediaModal({ title, accept, onInsert, onClose }: MediaModalProps) {
+  const [url, setUrl] = useState("");
+  const [alt, setAlt] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    setUrl("");
+  };
+
+  const handleUrlChange = (val: string) => {
+    setUrl(val);
+    setPreview(null);
+    setFileName(null);
+  };
+
+  const handleInsert = () => {
+    const src = preview ?? url.trim();
+    if (src) onInsert(src, alt.trim());
+  };
+
+  return (
+    <div className={styles.imageModalOverlay} onClick={onClose}>
+      <div className={styles.imageModal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.imageModalHeader}>
+          <span className={styles.imageModalTitle}>{title}</span>
+          <button type="button" className={styles.imageModalClose} onClick={onClose}>&#x2715;</button>
+        </div>
+        <div className={styles.imageModalBody}>
+          <label className={styles.label}>URL</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={url}
+            onChange={(e) => handleUrlChange(e.target.value)}
+            placeholder="https://example.com/file..."
+          />
+          <div className={styles.imageModalDivider}><span>hoặc</span></div>
+          <input ref={fileRef} type="file" accept={accept} onChange={handleFile} hidden />
+          <button
+            type="button"
+            className={styles.imageModalUploadBtn}
+            onClick={() => fileRef.current?.click()}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 3v7M5 6l3-3 3 3M3 11v1.5A1.5 1.5 0 004.5 14h7a1.5 1.5 0 001.5-1.5V11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Tải file từ máy
+          </button>
+          {fileName && <div className={styles.mediaFileName}>{fileName}</div>}
+          <label className={styles.label} style={{ marginTop: "0.75rem" }}>Alt text (SEO)</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={alt}
+            onChange={(e) => setAlt(e.target.value)}
+            placeholder="Mô tả ngắn gọn..."
+          />
+        </div>
+        <div className={styles.imageModalFooter}>
+          <button type="button" className={styles.cancelBtn} onClick={onClose}>Hủy</button>
+          <button
+            type="button"
+            className={styles.saveBtn}
+            onClick={handleInsert}
+            disabled={!preview && !url.trim()}
+          >
+            Chèn
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type Align = "left" | "center" | "right";
 
 function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
@@ -299,51 +387,32 @@ function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
 
   const setAlign = (a: Align) => updateAttributes({ textAlign: a });
 
-  const wrapStyle: React.CSSProperties = textAlign === "left"
-    ? { float: "left", marginRight: "1rem", marginBottom: "0.5rem" }
-    : textAlign === "right"
-      ? { float: "right", marginLeft: "1rem", marginBottom: "0.5rem" }
-      : { display: "flex", justifyContent: "center", width: "100%" };
-
   return (
     <NodeViewWrapper
       className={styles.imgNodeWrap}
-      style={wrapStyle}
+      style={getAlignStyle(textAlign)}
     >
       <div ref={wrapRef} className={styles.imgNodeOuter} style={{ width: width ? `${width}px` : "100%" }}>
-        {selected && (
-          <div className={styles.imgToolbar}>
-            {(["left", "center", "right"] as const).map((a) => (
-              <button
-                key={a}
-                type="button"
-                className={textAlign === a ? styles.imgToolBtnActive : styles.imgToolBtn}
-                onClick={() => setAlign(a)}
-              >
-                {a === "left" && <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M1 5h8M1 8h12M1 11h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>}
-                {a === "center" && <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M3 5h8M1 8h12M3 11h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>}
-                {a === "right" && <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M5 5h8M1 8h12M5 11h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>}
-              </button>
-            ))}
-          </div>
-        )}
+        {selected && <AlignToolbar current={textAlign} onChange={setAlign} />}
         <div
           className={`${styles.imgNodeInner} ${selected ? styles.imgNodeSelected : ""}`}
         >
           <img ref={imgRef} src={src} alt={alt ?? ""} draggable={false} className={styles.imgNodeImg} />
-        {selected && (
-            <input
-              className={styles.imgAltInput}
-              type="text"
-              value={altValue}
-              onChange={(e) => setAltValue(e.target.value)}
-              onBlur={() => updateAttributes({ alt: altValue })}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); updateAttributes({ alt: altValue }); (e.target as HTMLInputElement).blur(); } }}
-              placeholder="Alt text (SEO)..."
-              onClick={(e) => e.stopPropagation()}
-            />
-        )}
         </div>
+        {selected ? (
+          <input
+            className={styles.mediaCaptionInput}
+            type="text"
+            value={altValue}
+            onChange={(e) => setAltValue(e.target.value)}
+            onBlur={() => updateAttributes({ alt: altValue })}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); updateAttributes({ alt: altValue }); (e.target as HTMLInputElement).blur(); } }}
+            placeholder="Nhập mô tả ảnh..."
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : altValue ? (
+          <span className={styles.mediaCaption}>{altValue}</span>
+        ) : null}
         {selected && (
           <>
             <div className={`${styles.resizeHandle} ${styles.resizeHandleRight}`} onPointerDown={onPointerDown("right")} />
@@ -484,6 +553,373 @@ const CustomIframe = Node.create({
   },
 });
 
+const ALIGN_ICONS = {
+  left: <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M1 5h8M1 8h12M1 11h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+  center: <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M3 5h8M1 8h12M3 11h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+  right: <svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 2h12M5 5h8M1 8h12M5 11h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+} as const;
+
+function AlignToolbar({ current, onChange }: { current: Align; onChange: (a: Align) => void }) {
+  return (
+    <div className={styles.imgToolbar}>
+      {(["left", "center", "right"] as const).map((a) => (
+        <button
+          key={a}
+          type="button"
+          className={current === a ? styles.imgToolBtnActive : styles.imgToolBtn}
+          onClick={() => onChange(a)}
+        >
+          {ALIGN_ICONS[a]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function getAlignStyle(align: Align): React.CSSProperties {
+  if (align === "left") return { float: "left", marginRight: "1rem", marginBottom: "0.5rem" };
+  if (align === "right") return { float: "right", marginLeft: "1rem", marginBottom: "0.5rem" };
+  return { display: "flex", justifyContent: "center", width: "100%" };
+}
+
+function ResizableVideo({ node, updateAttributes, selected }: NodeViewProps) {
+  const { src, alt, width, height, textAlign } = node.attrs as { src: string; alt: string; width: number; height: number; textAlign: Align };
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const startW = useRef(0);
+  const startH = useRef(0);
+  const edgeRef = useRef<"right" | "bottom" | "corner">("corner");
+  const [altValue, setAltValue] = useState(alt ?? "");
+
+  const onPointerDown = useCallback((pos: "right" | "bottom" | "corner") => (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragging.current = true;
+    edgeRef.current = pos;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    startW.current = wrapRef.current?.offsetWidth ?? width ?? 560;
+    startH.current = wrapRef.current?.offsetHeight ?? height ?? 315;
+
+    const onMove = (ev: PointerEvent) => {
+      if (!dragging.current) return;
+      const dx = ev.clientX - startX.current;
+      const dy = ev.clientY - startY.current;
+      const updates: Record<string, number> = {};
+      if (pos === "right" || pos === "corner") updates.width = Math.max(200, startW.current + dx);
+      if (pos === "bottom" || pos === "corner") updates.height = Math.max(100, startH.current + dy);
+      updateAttributes(updates);
+    };
+    const onUp = () => {
+      dragging.current = false;
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  }, [width, height, updateAttributes]);
+
+  return (
+    <NodeViewWrapper className={styles.imgNodeWrap} style={getAlignStyle(textAlign || "center")}>
+      <div className={styles.mediaNodeColumn} style={{ width: width ? `${width}px` : "100%", maxWidth: "100%" }}>
+        {selected && <AlignToolbar current={textAlign || "center"} onChange={(a) => updateAttributes({ textAlign: a })} />}
+        <div
+          ref={wrapRef}
+          className={`${styles.iframeNodeInner} ${selected ? styles.iframeNodeSelected : ""}`}
+          style={{ width: "100%", height: height ? `${height}px` : "auto" }}
+        >
+          <video src={src} controls className={styles.mediaNodeMedia} />
+          {selected && (
+            <>
+              <div className={`${styles.resizeHandle} ${styles.resizeHandleRight}`} onPointerDown={onPointerDown("right")} />
+              <div className={`${styles.resizeHandle} ${styles.resizeHandleBottom}`} onPointerDown={onPointerDown("bottom")} />
+              <div className={`${styles.resizeHandle} ${styles.resizeHandleBottomRight}`} onPointerDown={onPointerDown("corner")} />
+            </>
+          )}
+          {!selected && <div className={styles.iframeOverlay} />}
+        </div>
+        {selected ? (
+          <input
+            className={styles.mediaCaptionInput}
+            type="text"
+            value={altValue}
+            onChange={(e) => setAltValue(e.target.value)}
+            onBlur={() => updateAttributes({ alt: altValue })}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); updateAttributes({ alt: altValue }); (e.target as HTMLInputElement).blur(); } }}
+            placeholder="Nhập mô tả video..."
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : altValue ? (
+          <span className={styles.mediaCaption}>{altValue}</span>
+        ) : null}
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
+const CustomVideo = Node.create({
+  name: "customVideo",
+  group: "block",
+  atom: true,
+  addAttributes() {
+    return {
+      src: { default: "" },
+      alt: { default: "" },
+      width: { default: null },
+      height: { default: null },
+      textAlign: {
+        default: "center",
+        parseHTML: (el) => el.getAttribute("data-align") || "center",
+        renderHTML: (attrs) => ({ "data-align": attrs.textAlign }),
+      },
+    };
+  },
+  parseHTML() {
+    return [{ tag: "video[src]" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["video", mergeAttributes(HTMLAttributes, { controls: true })];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableVideo);
+  },
+});
+
+function ResizableAudio({ node, updateAttributes, selected }: NodeViewProps) {
+  const { src, alt, textAlign } = node.attrs as { src: string; alt: string; textAlign: Align };
+  const [altValue, setAltValue] = useState(alt ?? "");
+
+  return (
+    <NodeViewWrapper className={styles.imgNodeWrap} style={getAlignStyle(textAlign || "center")}>
+      <div className={styles.mediaNodeColumn} style={{ maxWidth: 500, width: "100%" }}>
+        {selected && <AlignToolbar current={textAlign || "center"} onChange={(a) => updateAttributes({ textAlign: a })} />}
+        <div className={`${styles.audioNodeInner} ${selected ? styles.iframeNodeSelected : ""}`}>
+          <audio src={src} controls className={styles.audioNodePlayer} />
+        </div>
+        {selected ? (
+          <input
+            className={styles.mediaCaptionInput}
+            type="text"
+            value={altValue}
+            onChange={(e) => setAltValue(e.target.value)}
+            onBlur={() => updateAttributes({ alt: altValue })}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); updateAttributes({ alt: altValue }); (e.target as HTMLInputElement).blur(); } }}
+            placeholder="Nhập mô tả audio..."
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : altValue ? (
+          <span className={styles.mediaCaption}>{altValue}</span>
+        ) : null}
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
+const CustomAudio = Node.create({
+  name: "customAudio",
+  group: "block",
+  atom: true,
+  addAttributes() {
+    return {
+      src: { default: "" },
+      alt: { default: "" },
+      textAlign: {
+        default: "center",
+        parseHTML: (el) => el.getAttribute("data-align") || "center",
+        renderHTML: (attrs) => ({ "data-align": attrs.textAlign }),
+      },
+    };
+  },
+  parseHTML() {
+    return [{ tag: "audio[src]" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["audio", mergeAttributes(HTMLAttributes, { controls: true })];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableAudio);
+  },
+});
+
+function ResizableFilePreview({ node, updateAttributes, selected }: NodeViewProps) {
+  const { src, alt, width, height, displayMode, textAlign } = node.attrs as {
+    src: string; alt: string; width: number; height: number; displayMode: "preview" | "link"; textAlign: Align;
+  };
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const startW = useRef(0);
+  const startH = useRef(0);
+  const edgeRef = useRef<"right" | "bottom" | "corner">("corner");
+  const [altValue, setAltValue] = useState(alt ?? "");
+
+  const onPointerDown = useCallback((pos: "right" | "bottom" | "corner") => (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragging.current = true;
+    edgeRef.current = pos;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    startW.current = wrapRef.current?.offsetWidth ?? width ?? 560;
+    startH.current = wrapRef.current?.offsetHeight ?? height ?? 400;
+
+    const onMove = (ev: PointerEvent) => {
+      if (!dragging.current) return;
+      const dx = ev.clientX - startX.current;
+      const dy = ev.clientY - startY.current;
+      const updates: Record<string, number> = {};
+      if (pos === "right" || pos === "corner") updates.width = Math.max(200, startW.current + dx);
+      if (pos === "bottom" || pos === "corner") updates.height = Math.max(100, startH.current + dy);
+      updateAttributes(updates);
+    };
+    const onUp = () => {
+      dragging.current = false;
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  }, [width, height, updateAttributes]);
+
+  const toggleMode = () => {
+    updateAttributes({ displayMode: displayMode === "preview" ? "link" : "preview" });
+  };
+
+  const fileName = alt || src.split("/").pop() || "File";
+
+  if (displayMode === "link") {
+    return (
+      <NodeViewWrapper className={styles.imgNodeWrap} style={getAlignStyle(textAlign || "center")}>
+        <div className={styles.mediaNodeColumn} style={{ maxWidth: 400, width: "100%" }}>
+          {selected && <AlignToolbar current={textAlign || "center"} onChange={(a) => updateAttributes({ textAlign: a })} />}
+          <div className={`${styles.fileLinkNode} ${selected ? styles.iframeNodeSelected : ""}`}>
+          <a href={src} target="_blank" rel="noopener noreferrer" className={styles.fileLinkAnchor} data-file-src={src}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            {fileName}
+          </a>
+          {selected && (
+            <div className={styles.fileNodeToolbar}>
+              <button type="button" className={styles.imgToolBtn} onClick={toggleMode} title="Preview mode">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </button>
+              <input
+                className={styles.mediaAltInput}
+                type="text"
+                value={altValue}
+                onChange={(e) => setAltValue(e.target.value)}
+                onBlur={() => updateAttributes({ alt: altValue })}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); updateAttributes({ alt: altValue }); (e.target as HTMLInputElement).blur(); } }}
+                placeholder="Tên file..."
+                onClick={(e) => e.stopPropagation()}
+                style={{ position: "static", flex: 1 }}
+              />
+            </div>
+          )}
+          </div>
+        </div>
+      </NodeViewWrapper>
+    );
+  }
+
+  return (
+    <NodeViewWrapper className={styles.imgNodeWrap} style={getAlignStyle(textAlign || "center")}>
+      <div className={styles.mediaNodeColumn} style={{ width: width ? `${width}px` : "100%", maxWidth: "100%" }}>
+        {selected && <AlignToolbar current={textAlign || "center"} onChange={(a) => updateAttributes({ textAlign: a })} />}
+        <div
+          ref={wrapRef}
+          className={`${styles.iframeNodeInner} ${selected ? styles.iframeNodeSelected : ""}`}
+          style={{ width: "100%", height: height ? `${height}px` : "400px" }}
+        >
+          <iframe src={src} className={styles.iframeNodeFrame} />
+          {selected && (
+            <>
+              <div className={styles.filePreviewToolbar}>
+                <button type="button" className={styles.imgToolBtn} onClick={toggleMode} title="Link mode">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                  </svg>
+                </button>
+              </div>
+              <div className={`${styles.resizeHandle} ${styles.resizeHandleRight}`} onPointerDown={onPointerDown("right")} />
+              <div className={`${styles.resizeHandle} ${styles.resizeHandleBottom}`} onPointerDown={onPointerDown("bottom")} />
+              <div className={`${styles.resizeHandle} ${styles.resizeHandleBottomRight}`} onPointerDown={onPointerDown("corner")} />
+            </>
+          )}
+          {!selected && <div className={styles.iframeOverlay} />}
+        </div>
+        {selected ? (
+          <input
+            className={styles.mediaCaptionInput}
+            type="text"
+            value={altValue}
+            onChange={(e) => setAltValue(e.target.value)}
+            onBlur={() => updateAttributes({ alt: altValue })}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); updateAttributes({ alt: altValue }); (e.target as HTMLInputElement).blur(); } }}
+            placeholder="Nhập mô tả file..."
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : altValue ? (
+          <span className={styles.mediaCaption}>{altValue}</span>
+        ) : null}
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
+const CustomFilePreview = Node.create({
+  name: "customFilePreview",
+  group: "block",
+  atom: true,
+  addAttributes() {
+    return {
+      src: { default: "" },
+      alt: { default: "" },
+      width: { default: null },
+      height: { default: 400 },
+      displayMode: { default: "preview" },
+      textAlign: {
+        default: "center",
+        parseHTML: (el) => el.getAttribute("data-align") || "center",
+        renderHTML: (attrs) => ({ "data-align": attrs.textAlign }),
+      },
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "div.file-preview iframe",
+        getAttrs: (el) => {
+          const iframe = el instanceof HTMLIFrameElement ? el : null;
+          return { src: iframe?.getAttribute("src") ?? "", displayMode: "preview" };
+        },
+      },
+      {
+        tag: "a[data-file-src]",
+        getAttrs: (el) => {
+          const anchor = el instanceof HTMLAnchorElement ? el : null;
+          return { src: anchor?.getAttribute("data-file-src") ?? anchor?.href ?? "", displayMode: "link", alt: anchor?.textContent ?? "" };
+        },
+      },
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    const { src, alt, displayMode, ...rest } = HTMLAttributes;
+    if (displayMode === "link") {
+      return ["a", mergeAttributes({ href: src, target: "_blank", rel: "noopener noreferrer", "data-file-src": src }), alt || src.split("/").pop() || "File"];
+    }
+    return ["div", { class: "file-preview" }, ["iframe", mergeAttributes(rest, { src })]];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableFilePreview);
+  },
+});
+
 const Indent = Extension.create({
   name: "indent",
   addKeyboardShortcuts() {
@@ -602,6 +1038,9 @@ const COMMANDS: CommandItem[] = [
 
 const MODAL_COMMANDS: { title: string; description: string; icon: string; modal: string }[] = [
   { title: "Image", description: "Chèn ảnh từ URL hoặc máy", icon: "IMG", modal: "image" },
+  { title: "Video", description: "Chèn video từ URL hoặc máy", icon: "VID", modal: "video" },
+  { title: "Audio", description: "Chèn âm thanh", icon: "AUD", modal: "audio" },
+  { title: "File / PDF", description: "Chèn file (preview hoặc link)", icon: "PDF", modal: "file" },
   { title: "YouTube", description: "Nhúng video YouTube", icon: "YT", modal: "youtube" },
   { title: "Iframe", description: "Nhúng trang web / HTML", icon: "</>", modal: "iframe" },
   { title: "Link", description: "Chèn liên kết vào text", icon: "LNK", modal: "link" },
@@ -616,10 +1055,16 @@ const CommandList = forwardRef<
   { items: (CommandItem | typeof MODAL_COMMANDS[number])[]; command: (item: CommandItem | typeof MODAL_COMMANDS[number]) => void }
 >(({ items, command }, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setSelectedIndex(0);
   }, [items]);
+
+  useEffect(() => {
+    const el = listRef.current?.children[selectedIndex] as HTMLElement | undefined;
+    if (el) el.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
 
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
@@ -642,7 +1087,7 @@ const CommandList = forwardRef<
   if (items.length === 0) return null;
 
   return (
-    <div className={styles.slashMenu}>
+    <div className={styles.slashMenu} ref={listRef}>
       {items.map((item, index) => (
         <button
           key={item.title}
@@ -667,6 +1112,9 @@ type ModalState =
   | { type: "image" }
   | { type: "youtube" }
   | { type: "iframe" }
+  | { type: "video" }
+  | { type: "audio" }
+  | { type: "file" }
   | { type: "link"; from: number; to: number }
   | null;
 
@@ -755,7 +1203,7 @@ function createSlashCommands() {
               if (props.modal === "link") {
                 globalModalSetter?.({ type: "link", from: range.from, to: range.to });
               } else {
-                globalModalSetter?.({ type: props.modal as "image" | "youtube" | "iframe" });
+                globalModalSetter?.({ type: props.modal as "image" | "youtube" | "iframe" | "video" | "audio" | "file" });
               }
             } else {
               (props as CommandItem).command({ editor, range });
@@ -785,6 +1233,9 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
       LinkExt.configure({ openOnClick: false, HTMLAttributes: { rel: "noopener noreferrer nofollow", target: "_blank" } }),
       Youtube.configure({ inline: false, width: 640, height: 360, nocookie: true }),
       CustomIframe,
+      CustomVideo,
+      CustomAudio,
+      CustomFilePreview,
       Indent,
       ClearFloat,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
@@ -820,6 +1271,24 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
     setModal(null);
   };
 
+  const handleInsertVideo = (src: string, alt: string) => {
+    if (!editor) return;
+    editor.commands.insertContent({ type: "customVideo", attrs: { src, alt, width: 560, height: 315 } });
+    setModal(null);
+  };
+
+  const handleInsertAudio = (src: string, alt: string) => {
+    if (!editor) return;
+    editor.commands.insertContent({ type: "customAudio", attrs: { src, alt } });
+    setModal(null);
+  };
+
+  const handleInsertFile = (src: string, alt: string) => {
+    if (!editor) return;
+    editor.commands.insertContent({ type: "customFilePreview", attrs: { src, alt, displayMode: "preview" } });
+    setModal(null);
+  };
+
   if (!editor) return null;
 
   return (
@@ -831,7 +1300,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
           shouldShow={({ editor: e, state }) => {
             const { empty } = state.selection;
             if (empty) return false;
-            if (e.isActive("resizableImage") || e.isActive("image") || e.isActive("resizableIframe") || e.isActive("youtube")) return false;
+            if (e.isActive("image") || e.isActive("customIframe") || e.isActive("youtube") || e.isActive("customVideo") || e.isActive("customAudio") || e.isActive("customFilePreview")) return false;
             return true;
           }}
         >
@@ -934,6 +1403,30 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
         <LinkModal
           initialUrl={editor.getAttributes("link").href ?? ""}
           onInsert={handleInsertLink}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal?.type === "video" && (
+        <MediaModal
+          title="Chèn Video"
+          accept="video/*"
+          onInsert={handleInsertVideo}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal?.type === "audio" && (
+        <MediaModal
+          title="Chèn Audio"
+          accept="audio/*"
+          onInsert={handleInsertAudio}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal?.type === "file" && (
+        <MediaModal
+          title="Chèn File / PDF"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
+          onInsert={handleInsertFile}
           onClose={() => setModal(null)}
         />
       )}
