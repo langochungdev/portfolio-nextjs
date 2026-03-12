@@ -77,6 +77,23 @@ export async function fetchTopics(collectionId?: string): Promise<TopicDoc[]> {
   });
 }
 
+export async function fetchTopicBySlug(slug: string): Promise<TopicDoc | null> {
+  const q = query(collection(db, "topics"), where("slug", "==", slug));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  const data = d.data();
+  return {
+    id: d.id,
+    name: data.name ?? "",
+    slug: data.slug ?? "",
+    thumbnail: data.thumbnail ?? "",
+    description: data.description ?? "",
+    collectionId: data.collectionId ?? "",
+    order: data.order ?? 0,
+  };
+}
+
 export async function addTopic(
   name: string,
   collectionId: string,
