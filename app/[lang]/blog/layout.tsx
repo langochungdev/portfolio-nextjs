@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BlogShell } from "./_components/BlogShell";
 import { BlogDataProvider } from "./_lib/BlogDataProvider";
-import { fetchPosts } from "@/lib/firebase/posts";
+import { getBlogData } from "./_lib/getBlogData";
 import { JsonLd, blogListingSchema, breadcrumbSchema } from "@/lib/seo/schemas";
 
 export const metadata: Metadata = {
@@ -16,13 +16,22 @@ export default async function BlogLayout({
   params: Promise<{ lang: string }>;
 }) {
   const { lang } = await params;
-  let posts: Awaited<ReturnType<typeof fetchPosts>> = [];
+
+  let data: Awaited<ReturnType<typeof getBlogData>> = {
+    collections: [],
+    topics: [],
+    posts: [],
+    hints: [],
+  };
+
   try {
-    posts = await fetchPosts();
+    data = await getBlogData();
   } catch { /* Firestore unavailable */ }
 
+  const { collections, topics, posts, hints } = data;
+
   return (
-    <BlogDataProvider>
+    <BlogDataProvider initialData={{ collections, topics, posts, hints }}>
       <JsonLd data={blogListingSchema(posts, lang)} />
       <JsonLd
         data={breadcrumbSchema(

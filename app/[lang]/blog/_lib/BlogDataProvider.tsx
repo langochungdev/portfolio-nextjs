@@ -37,12 +37,39 @@ const CACHE_TTL = 5 * 60 * 1000;
 let cachedData: BlogData | null = null;
 let cachedAt = 0;
 
-export function BlogDataProvider({ children }: { children: ReactNode }) {
-  const isFresh = cachedData && Date.now() - cachedAt < CACHE_TTL;
-  const [data, setData] = useState<BlogData>(isFresh ? cachedData! : EMPTY);
+interface InitialData {
+  collections: Awaited<ReturnType<typeof fetchCollections>>;
+  topics: TopicDoc[];
+  posts: PostDoc[];
+  hints: HintDoc[];
+}
+
+export function BlogDataProvider({
+  children,
+  initialData,
+}: {
+  children: ReactNode;
+  initialData?: InitialData;
+}) {
+  const [data, setData] = useState<BlogData>(() => {
+    if (cachedData && Date.now() - cachedAt < CACHE_TTL) return cachedData;
+    if (initialData) {
+      const result: BlogData = {
+        collections: assignCollectionColors(initialData.collections),
+        topics: initialData.topics,
+        posts: initialData.posts,
+        hints: initialData.hints,
+        loading: false,
+      };
+      cachedData = result;
+      cachedAt = Date.now();
+      return result;
+    }
+    return EMPTY;
+  });
 
   useEffect(() => {
-    if (isFresh) return;
+    if (data !== EMPTY) return;
     let cancelled = false;
 
     async function load() {
@@ -73,7 +100,7 @@ export function BlogDataProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isFresh]);
+  }, [data]);
 
   return (
     <BlogDataContext.Provider value={data}>{children}</BlogDataContext.Provider>
