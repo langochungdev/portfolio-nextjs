@@ -44,6 +44,11 @@ Firestore Root
 │       ├── status: "unread" | "replied"
 │       ├── updatedAt: timestamp
 │       ├── fingerprint: string
+│       ├── visitCount: number — [Tăng +1 mỗi lần truy cập trang]
+│       ├── presence (map) — [Heartbeat mỗi 30s]
+│       │   ├── online: boolean
+│       │   ├── lastActive: timestamp
+│       │   └── currentPage: string — ["home" | "blog" | "certificates" | slug bài viết]
 │       ├── metadata (map)
 │       │   ├── os: string
 │       │   ├── browser: string

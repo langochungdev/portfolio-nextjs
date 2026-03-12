@@ -21,10 +21,38 @@ const BackIcon = (
   </svg>
 );
 
+const MoreIcon = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <circle cx="12" cy="5" r="2" />
+    <circle cx="12" cy="12" r="2" />
+    <circle cx="12" cy="19" r="2" />
+  </svg>
+);
+
+type FilterMode = "all" | "named" | "unnamed" | "recent" | "mostVisits";
+
 function formatTime(iso: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function formatRelativeTime(iso: string): string {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function isOnline(conv: ConversationDoc): boolean {
+  if (!conv.presence.online) return false;
+  if (!conv.presence.lastActive) return false;
+  return Date.now() - new Date(conv.presence.lastActive).getTime() < 60_000;
 }
 
 export default function AdminMessagesPage() {
@@ -40,8 +68,14 @@ export default function AdminMessagesPage() {
   const [editingName, setEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [listEditId, setListEditId] = useState<string | null>(null);
+  const [listEditValue, setListEditValue] = useState("");
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  const [filterOpen, setFilterOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listEditRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const unsub = subscribeConversations((convs) => {
@@ -66,6 +100,32 @@ export default function AdminMessagesPage() {
     if (activeId) inputRef.current?.focus();
   }, [activeId]);
 
+  useEffect(() => {
+    if (listEditId) listEditRef.current?.focus();
+  }, [listEditId]);
+
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest(`.${styles.itemMenu}`)) {
+        setMenuOpenId(null);
+      }
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [menuOpenId]);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest(`.${styles.filterWrapper}`)) {
+        setFilterOpen(false);
+      }
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [filterOpen]);
+
   const handleSend = useCallback(async () => {
     const text = reply.trim();
     if (!text || !activeId || sending) return;
@@ -73,10 +133,12 @@ export default function AdminMessagesPage() {
     try {
       await sendMessage(activeId, text, "admin");
       setReply("");
+      inputRef.current?.focus();
     } catch (err) {
       console.error("Send failed:", err);
     } finally {
       setSending(false);
+      inputRef.current?.focus();
     }
   }, [reply, activeId, sending]);
 
@@ -87,13 +149,15 @@ export default function AdminMessagesPage() {
     [handleSend],
   );
 
-  const handleDeleteConversation = useCallback(async () => {
-    if (!activeId) return;
+  const handleDeleteConversation = useCallback(async (id: string) => {
     try {
-      await deleteConversation(activeId);
-      setActiveId(null);
+      await deleteConversation(id);
+      if (activeId === id) {
+        setActiveId(null);
+        setShowInfo(false);
+      }
       setConfirmDelete(false);
-      setShowInfo(false);
+      setMenuOpenId(null);
     } catch (err) {
       console.error("Delete failed:", err);
     }
@@ -109,10 +173,55 @@ export default function AdminMessagesPage() {
     }
   }, [activeId, editNameValue]);
 
+  const handleListEditSave = useCallback(async (id: string) => {
+    const trimmed = listEditValue.trim();
+    if (!trimmed) { setListEditId(null); return; }
+    try {
+      await updateConversationUserName(id, trimmed);
+    } catch (err) {
+      console.error("Rename failed:", err);
+    }
+    setListEditId(null);
+  }, [listEditValue]);
+
   const activeConv = conversations.find((c) => c.id === activeId);
 
   const displayName = (conv: ConversationDoc) =>
     conv.userName || `${conv.metadata.browser} / ${conv.metadata.os}` || conv.id.slice(0, 8);
+
+  const namedCount = conversations.filter((c) => c.userName).length;
+  const unnamedCount = conversations.length - namedCount;
+
+  const filtered = (() => {
+    let list = [...conversations];
+    switch (filterMode) {
+      case "named":
+        list = list.filter((c) => c.userName);
+        break;
+      case "unnamed":
+        list = list.filter((c) => !c.userName);
+        break;
+      case "recent":
+        list.sort((a, b) => {
+          const ta = a.presence.lastActive ? new Date(a.presence.lastActive).getTime() : 0;
+          const tb = b.presence.lastActive ? new Date(b.presence.lastActive).getTime() : 0;
+          return tb - ta;
+        });
+        break;
+      case "mostVisits":
+        list.sort((a, b) => b.visitCount - a.visitCount);
+        break;
+    }
+    return list;
+  })();
+
+  const filterLabel: Record<FilterMode, string> = {
+    all: `All (${conversations.length})`,
+    named: `Named (${namedCount})`,
+    unnamed: `Unnamed (${unnamedCount})`,
+    recent: "Recent activity",
+    mostVisits: "Most visits",
+  };
 
   if (loading) {
     return <div className={styles.messagesPage}><div className={styles.emptyChat}>Loading...</div></div>;
@@ -121,24 +230,126 @@ export default function AdminMessagesPage() {
   return (
     <div className={`${styles.messagesPage} ${activeId ? styles.chatOpen : ""}`}>
       <div className={styles.convList}>
-        <div className={styles.convListHeader}>{t.title}</div>
-        {conversations.length === 0 && (
+        <div className={styles.convListHeader}>
+          <span>{t.title}</span>
+          <div className={styles.filterWrapper}>
+            <button
+              className={styles.filterToggle}
+              onClick={() => setFilterOpen((v) => !v)}
+            >
+              {filterLabel[filterMode]}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {filterOpen && (
+              <div className={styles.filterDropdown}>
+                {(Object.keys(filterLabel) as FilterMode[]).map((key) => (
+                  <button
+                    key={key}
+                    className={`${styles.filterOption} ${filterMode === key ? styles.filterOptionActive : ""}`}
+                    onClick={() => { setFilterMode(key); setFilterOpen(false); }}
+                  >
+                    {filterLabel[key]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        {filtered.length === 0 && (
           <div className={styles.emptyChat}>{t.noMessages}</div>
         )}
-        {conversations.map((conv) => (
-          <div
-            key={conv.id}
-            className={activeId === conv.id ? styles.convItemActive : styles.convItem}
-            onClick={() => setActiveId(conv.id)}
-          >
-            <div className={styles.convAvatar}>{displayName(conv)[0].toUpperCase()}</div>
-            <div className={styles.convInfo}>
-              <div className={styles.convName}>{displayName(conv)}</div>
-              <div className={styles.convLastMsg}>{conv.lastMessage}</div>
+        {filtered.map((conv) => {
+          const online = isOnline(conv);
+          return (
+            <div
+              key={conv.id}
+              className={activeId === conv.id ? styles.convItemActive : styles.convItem}
+              onClick={() => { setActiveId(conv.id); setMenuOpenId(null); }}
+            >
+              <div className={styles.convAvatarWrap}>
+                <div className={styles.convAvatar}>{displayName(conv)[0].toUpperCase()}</div>
+                {online && <span className={styles.onlineDot} />}
+              </div>
+              <div className={styles.convInfo}>
+                {listEditId === conv.id ? (
+                  <input
+                    ref={listEditRef}
+                    className={styles.listEditInput}
+                    value={listEditValue}
+                    onChange={(e) => setListEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleListEditSave(conv.id);
+                      if (e.key === "Escape") setListEditId(null);
+                    }}
+                    onBlur={() => handleListEditSave(conv.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    maxLength={50}
+                  />
+                ) : (
+                  <div
+                    className={styles.convName}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      setListEditId(conv.id);
+                      setListEditValue(conv.userName || "");
+                    }}
+                    title="Double-click to rename"
+                  >
+                    {displayName(conv)}
+                  </div>
+                )}
+                <div className={styles.convMeta}>
+                  {online ? (
+                    <span className={styles.convOnlineText}>
+                      {conv.presence.currentPage === "home"
+                        ? "Home"
+                        : conv.presence.currentPage === "blog"
+                          ? "Blog"
+                          : conv.presence.currentPage === "certificates"
+                            ? "Certificates"
+                            : conv.presence.currentPage
+                              ? `📄 ${conv.presence.currentPage}`
+                              : "Online"}
+                    </span>
+                  ) : (
+                    <span className={styles.convLastMsg}>
+                      {conv.presence.lastActive
+                        ? formatRelativeTime(conv.presence.lastActive)
+                        : conv.lastMessage}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {conv.status === "unread" && <div className={styles.convBadge} />}
+              <div className={styles.itemMenu} onClick={(e) => e.stopPropagation()}>
+                <button
+                  className={styles.itemMenuBtn}
+                  onClick={() => setMenuOpenId(menuOpenId === conv.id ? null : conv.id)}
+                >
+                  {MoreIcon}
+                </button>
+                {menuOpenId === conv.id && (
+                  <div className={styles.itemMenuDropdown}>
+                    <button
+                      className={styles.itemMenuOption}
+                      onClick={() => { setActiveId(conv.id); setShowInfo(true); setMenuOpenId(null); }}
+                    >
+                      View info
+                    </button>
+                    <button
+                      className={`${styles.itemMenuOption} ${styles.itemMenuDanger}`}
+                      onClick={() => handleDeleteConversation(conv.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-            {conv.status === "unread" && <div className={styles.convBadge} />}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className={styles.chatArea}>
@@ -236,13 +447,15 @@ export default function AdminMessagesPage() {
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Status</span>
-                  <span className={styles.infoValue}>{activeConv.status}</span>
+                  <span className={styles.infoValue}>
+                    {isOnline(activeConv)
+                      ? `🟢 Online — ${activeConv.presence.currentPage || "—"}`
+                      : `⚫ ${activeConv.presence.lastActive ? formatRelativeTime(activeConv.presence.lastActive) : "—"}`}
+                  </span>
                 </div>
                 <div className={styles.infoRow}>
-                  <span className={styles.infoLabel}>Last active</span>
-                  <span className={styles.infoValue}>
-                    {activeConv.updatedAt ? new Date(activeConv.updatedAt).toLocaleString() : "—"}
-                  </span>
+                  <span className={styles.infoLabel}>Visits</span>
+                  <span className={styles.infoValue}>{activeConv.visitCount}</span>
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Messages</span>
@@ -253,7 +466,7 @@ export default function AdminMessagesPage() {
             {confirmDelete && (
               <div className={styles.confirmBar}>
                 <span>Delete this conversation and all messages?</span>
-                <button className={styles.confirmYes} onClick={handleDeleteConversation}>Delete</button>
+                <button className={styles.confirmYes} onClick={() => handleDeleteConversation(activeId!)}>Delete</button>
                 <button className={styles.confirmNo} onClick={() => setConfirmDelete(false)}>Cancel</button>
               </div>
             )}

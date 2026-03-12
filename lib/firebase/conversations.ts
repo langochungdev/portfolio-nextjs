@@ -29,6 +29,12 @@ export interface ConversationDoc {
   status: "unread" | "replied";
   updatedAt: string;
   fingerprint: string;
+  visitCount: number;
+  presence: {
+    online: boolean;
+    lastActive: string;
+    currentPage: string;
+  };
   metadata: {
     os: string;
     browser: string;
@@ -45,29 +51,39 @@ function tsToStr(ts: unknown): string {
   return "";
 }
 
+function mapConversation(
+  d: import("firebase/firestore").QueryDocumentSnapshot,
+): ConversationDoc {
+  const data = d.data();
+  return {
+    id: d.id,
+    userName: data.userName ?? "",
+    lastMessage: data.lastMessage ?? "",
+    status: data.status ?? "unread",
+    updatedAt: tsToStr(data.updatedAt),
+    fingerprint: data.fingerprint ?? "",
+    visitCount: data.visitCount ?? 0,
+    presence: {
+      online: data.presence?.online ?? false,
+      lastActive: tsToStr(data.presence?.lastActive),
+      currentPage: data.presence?.currentPage ?? "",
+    },
+    metadata: data.metadata ?? {
+      os: "",
+      browser: "",
+      device: "",
+      lastIp: "",
+    },
+  };
+}
+
 export async function fetchConversations(): Promise<ConversationDoc[]> {
   const q = query(
     collection(db, "conversations"),
     orderBy("updatedAt", "desc"),
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      userName: data.userName ?? "",
-      lastMessage: data.lastMessage ?? "",
-      status: data.status ?? "unread",
-      updatedAt: tsToStr(data.updatedAt),
-      fingerprint: data.fingerprint ?? "",
-      metadata: data.metadata ?? {
-        os: "",
-        browser: "",
-        device: "",
-        lastIp: "",
-      },
-    };
-  });
+  return snap.docs.map(mapConversation);
 }
 
 export function subscribeConversations(
@@ -78,25 +94,7 @@ export function subscribeConversations(
     orderBy("updatedAt", "desc"),
   );
   return onSnapshot(q, (snap) => {
-    cb(
-      snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          userName: data.userName ?? "",
-          lastMessage: data.lastMessage ?? "",
-          status: data.status ?? "unread",
-          updatedAt: tsToStr(data.updatedAt),
-          fingerprint: data.fingerprint ?? "",
-          metadata: data.metadata ?? {
-            os: "",
-            browser: "",
-            device: "",
-            lastIp: "",
-          },
-        };
-      }),
-    );
+    cb(snap.docs.map(mapConversation));
   });
 }
 

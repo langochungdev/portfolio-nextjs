@@ -20,9 +20,66 @@
 .convListHeader {
     font-size: 1rem;
     font-weight: 700;
-    padding: 16px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--color-border);
     color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.filterWrapper {
+    position: relative;
+}
+
+.filterToggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 0.6875rem;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.filterDropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 150px;
+    background: var(--color-card-bg, var(--color-bg));
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.filterOption {
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.75rem;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.filterOptionActive {
+    color: #3b82f6;
+    font-weight: 600;
 }
 
 .convItem {
@@ -33,11 +90,17 @@
     border-bottom: 1px solid var(--color-border);
     cursor: pointer;
     transition: background 0.15s;
+    position: relative;
 }
 
 .convItemActive {
     composes: convItem;
     background: var(--color-border);
+}
+
+.convAvatarWrap {
+    position: relative;
+    flex-shrink: 0;
 }
 
 .convAvatar {
@@ -51,7 +114,17 @@
     font-size: 0.875rem;
     font-weight: 700;
     color: var(--color-text);
-    flex-shrink: 0;
+}
+
+.onlineDot {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid var(--color-bg);
 }
 
 .convInfo {
@@ -72,6 +145,87 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.convMeta {
+    min-width: 0;
+}
+
+.convOnlineText {
+    font-size: 0.75rem;
+    color: #22c55e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.listEditInput {
+    width: 100%;
+    padding: 2px 6px;
+    border: 1px solid #3b82f6;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+    font-family: inherit;
+    color: var(--color-text);
+    background: var(--color-bg);
+    outline: none;
+}
+
+.itemMenu {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.itemMenuBtn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    opacity: 0;
+}
+
+.convItem:hover .itemMenuBtn,
+.convItemActive .itemMenuBtn {
+    opacity: 1;
+}
+
+.itemMenuDropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    right: 0;
+    min-width: 120px;
+    background: var(--color-card-bg, var(--color-bg));
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.itemMenuOption {
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.75rem;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.itemMenuDanger {
+    color: #ef4444;
 }
 
 .convBadge {
@@ -324,6 +478,22 @@
     }
 
     .editNameCancel:hover {
+        background: var(--color-border);
+    }
+
+    .filterToggle:hover {
+        background: var(--color-border);
+    }
+
+    .filterOption:hover {
+        background: var(--color-border);
+    }
+
+    .itemMenuBtn:hover {
+        background: var(--color-border);
+    }
+
+    .itemMenuOption:hover {
         background: var(--color-border);
     }
 }
