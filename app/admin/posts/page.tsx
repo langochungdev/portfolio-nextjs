@@ -205,6 +205,11 @@ export default function AdminPostsPage() {
 
   const deleteTopic = async (id: string) => {
     try {
+      const topic = topics.find((t) => t.id === id);
+      if (topic?.thumbnail) {
+        const thumbId = extractPublicId(topic.thumbnail);
+        if (thumbId) deleteFromCloudinary([thumbId]).catch(console.error);
+      }
       await deleteTopicFb(id);
       setTopics((prev) => prev.filter((t) => t.id !== id));
       if (selectedTopicId === id) setSelectedTopicId(null);
