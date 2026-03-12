@@ -495,7 +495,6 @@
 :global([data-theme="dark"]) .content a[data-file-src] {
     border-color: rgba(232, 232, 227, 0.10);
 }
-}
 
 @media (hover: hover) {
     .sidebarBack:hover {
