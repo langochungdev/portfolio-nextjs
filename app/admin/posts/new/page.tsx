@@ -95,6 +95,7 @@ export default function NewPostPage() {
         collectionIds,
         topicIds,
         isPinned,
+        order: 0,
       });
       setSuccess(`Đã tạo bài viết! ID: ${id}`);
       setTimeout(() => router.push("/admin/posts"), 1500);

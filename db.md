@@ -17,9 +17,10 @@ Firestore Root
 │       ├── slug: string
 │       ├── thumbnail: string
 │       ├── content: string (Tiptap HTML)
-│       ├── collectionId: string
-│       ├── topicId: string
+│       ├── collectionIds: string[] (array of collection IDs)
+│       ├── topicIds: string[] (array of topic IDs)
 │       ├── isPinned: boolean
+│       ├── order: number
 │       ├── views: number
 │       └── timestamps (map)
 │           ├── createdAt: timestamp
@@ -30,8 +31,8 @@ Firestore Root
 │       ├── title: string (Tiêu đề ngắn)
 │       ├── content: string (Tiptap HTML - Rich text)
 │       ├── type: "tip" | "hint" | "note"
-│       ├── topicId: string (optional - để trống nếu là tip chung)
-│       ├── relatedPostId: string (optional - link tới bài viết dài)
+│       ├── collectionId: string (bắt buộc thuộc collection hoặc topic)
+│       ├── topicId: string (optional)
 │       ├── order: number
 │       └── timestamps (map)
 │           ├── createdAt: timestamp

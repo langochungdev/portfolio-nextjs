@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/config";
 
@@ -23,6 +24,7 @@ export interface PostInput {
   collectionIds: string[];
   topicIds: string[];
   isPinned: boolean;
+  order: number;
 }
 
 export interface PostDoc extends PostInput {
@@ -59,6 +61,7 @@ function docToPost(id: string, data: Record<string, unknown>): PostDoc {
         ? [data.topicId as string]
         : [],
     isPinned: (data.isPinned as boolean) ?? false,
+    order: (data.order as number) ?? 0,
     views: (data.views as number) ?? 0,
     createdAt: formatTimestamp(timestamps.createdAt ?? null),
     updatedAt: formatTimestamp(timestamps.updatedAt ?? null),
@@ -68,7 +71,7 @@ function docToPost(id: string, data: Record<string, unknown>): PostDoc {
 export async function fetchPosts(): Promise<PostDoc[]> {
   const q = query(
     collection(db, "posts"),
-    orderBy("timestamps.createdAt", "desc"),
+    orderBy("order"),
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => docToPost(d.id, d.data()));
@@ -124,4 +127,14 @@ export async function updatePost(
 
 export async function deletePost(id: string): Promise<void> {
   await deleteDoc(doc(db, "posts", id));
+}
+
+export async function updatePostOrders(
+  items: { id: string; order: number }[],
+): Promise<void> {
+  const batch = writeBatch(db);
+  for (const item of items) {
+    batch.update(doc(db, "posts", item.id), { order: item.order });
+  }
+  await batch.commit();
 }

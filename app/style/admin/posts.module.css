@@ -176,6 +176,12 @@
     gap: 8px;
 }
 
+.hintToolbarRight {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .hintFilters {
     display: flex;
     gap: 4px;
@@ -205,11 +211,13 @@
     gap: 10px;
     padding: 10px 14px;
     border-bottom: 1px solid var(--color-border);
+    transition: background 0.12s;
 }
 
 .hintItemInfo {
     flex: 1;
     min-width: 0;
+    cursor: pointer;
 }
 
 .hintItemTitle {
@@ -249,6 +257,40 @@
     transition: opacity 0.15s;
     flex-shrink: 0;
     padding-top: 2px;
+}
+
+.dragHandle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    color: var(--color-text-muted);
+    opacity: 0.4;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+    padding: 2px;
+}
+
+.dragHandle:active {
+    cursor: grabbing;
+}
+
+.dragOver {
+    border-top: 2px solid var(--color-text);
+}
+
+.saveOrderBtn {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: none;
+    background: #10B981;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
 }
 
 .hintForm {
@@ -614,6 +656,15 @@
 
     .hintItem:hover .hintItemActions {
         opacity: 1;
+    }
+
+    .hintItem:hover .dragHandle,
+    .postItem:hover .dragHandle {
+        opacity: 1;
+    }
+
+    .saveOrderBtn:hover {
+        opacity: 0.85;
     }
 
     .postItem:hover {

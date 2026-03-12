@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { CollectionPanel } from "@/app/admin/_components/CollectionPanel";
 import { TopicPanel } from "@/app/admin/_components/TopicPanel";
 import { PostPanel } from "@/app/admin/_components/PostPanel";
+import type { HintItem } from "@/app/admin/_components/HintList";
 import {
   fetchCollections,
   addCollection as addColFb,
@@ -21,8 +22,17 @@ import {
   createPost,
   updatePost,
   deletePost as deletePostFb,
+  updatePostOrders,
   type PostDoc,
 } from "@/lib/firebase/posts";
+import {
+  fetchHints,
+  createHint,
+  updateHint as updateHintFb,
+  deleteHint as deleteHintFb,
+  updateHintOrders,
+  type HintDoc,
+} from "@/lib/firebase/hints";
 import {
   processContentMedia,
   deleteContentMedia,
@@ -32,41 +42,37 @@ import {
 } from "@/lib/cloudinary/client";
 import styles from "@/app/style/admin/posts.module.css";
 
-interface HintItem {
-  id: string;
-  title: string;
-  content: string;
-  type: "tip" | "hint" | "note";
-  topicId: string;
-  relatedPostId: string;
-  order: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export default function AdminPostsPage() {
   const [collections, setCollections] = useState<CollectionDoc[]>([]);
   const [topics, setTopics] = useState<TopicDoc[]>([]);
   const [posts, setPosts] = useState<PostDoc[]>([]);
-  const [hints, setHints] = useState<HintItem[]>([]);
+  const [hints, setHints] = useState<HintDoc[]>([]);
   const [selectedColId, setSelectedColId] = useState<string | null>(null);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<PostDoc | null>(null);
+  const [editingHint, setEditingHint] = useState<HintItem | null>(null);
   const [isNewPost, setIsNewPost] = useState(false);
+  const [isNewHint, setIsNewHint] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [postOrderChanged, setPostOrderChanged] = useState(false);
+  const [hintOrderChanged, setHintOrderChanged] = useState(false);
+  const originalPostOrder = useRef<string[]>([]);
+  const originalHintOrder = useRef<string[]>([]);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [cols, tps, pts] = await Promise.all([
+      const [cols, tps, pts, hts] = await Promise.all([
         fetchCollections(),
         fetchTopics(),
         fetchPosts(),
+        fetchHints(),
       ]);
       setCollections(cols);
       setTopics(tps);
       setPosts(pts);
+      setHints(hts);
       if (cols.length > 0 && !selectedColId) setSelectedColId(cols[0].id);
     } catch (err) {
       console.error("Failed to load data:", err);
@@ -89,6 +95,27 @@ export default function AdminPostsPage() {
       return true;
     });
   }, [posts, selectedColId, selectedTopicId]);
+
+  const filteredHints = useMemo(() => {
+    if (selectedTopicId) return hints.filter((h) => h.topicId === selectedTopicId);
+    if (selectedColId) {
+      const topicIds = new Set(colTopics.map((t) => t.id));
+      return hints.filter((h) =>
+        h.collectionId === selectedColId || (h.topicId && topicIds.has(h.topicId))
+      );
+    }
+    return [];
+  }, [hints, selectedTopicId, selectedColId, colTopics]);
+
+  useEffect(() => {
+    originalPostOrder.current = filteredPosts.map((p) => p.id);
+    setPostOrderChanged(false);
+  }, [selectedColId, selectedTopicId]);
+
+  useEffect(() => {
+    originalHintOrder.current = filteredHints.map((h) => h.id);
+    setHintOrderChanged(false);
+  }, [selectedColId, selectedTopicId]);
 
   const totalColPosts = useMemo(
     () => posts.filter((p) => selectedColId && p.collectionIds.includes(selectedColId)).length,
@@ -115,13 +142,17 @@ export default function AdminPostsPage() {
     setSelectedColId(id);
     setSelectedTopicId(null);
     setEditingPost(null);
+    setEditingHint(null);
     setIsNewPost(false);
+    setIsNewHint(false);
   };
 
   const handleSelectTopic = (id: string | null) => {
     setSelectedTopicId(id === selectedTopicId ? null : id);
     setEditingPost(null);
+    setEditingHint(null);
     setIsNewPost(false);
+    setIsNewHint(false);
   };
 
   const addCol = async (name: string) => {
@@ -169,21 +200,12 @@ export default function AdminPostsPage() {
     } catch (err) { console.error(err); }
   };
 
-  const filteredHints = useMemo(() => {
-    if (selectedTopicId) return hints.filter((h) => h.topicId === selectedTopicId);
-    if (selectedColId) {
-      const topicIds = new Set(colTopics.map((t) => t.id));
-      return hints.filter((h) => h.topicId && topicIds.has(h.topicId));
-    }
-    return [];
-  }, [hints, selectedTopicId, selectedColId, colTopics]);
-
   const handleNewPost = () => {
     const now = new Date().toISOString().split("T")[0];
     setEditingPost({
       id: "", title: "", slug: "", thumbnail: "", content: "",
       collectionIds: selectedColId ? [selectedColId] : [], topicIds: selectedTopicId ? [selectedTopicId] : [],
-      isPinned: false, views: 0, createdAt: now, updatedAt: now,
+      isPinned: false, order: posts.length, views: 0, createdAt: now, updatedAt: now,
     });
     setIsNewPost(true);
   };
@@ -240,14 +262,14 @@ export default function AdminPostsPage() {
         const id = await createPost({
           title: post.title, slug: post.slug, thumbnail: finalThumbnail,
           content: processedHtml, collectionIds: post.collectionIds,
-          topicIds: post.topicIds, isPinned: post.isPinned,
+          topicIds: post.topicIds, isPinned: post.isPinned, order: post.order,
         });
         setPosts((prev) => prev.map((p) => p.id === tempId ? { ...optimisticPost, id, thumbnail: finalThumbnail, content: processedHtml } : p));
       } else {
         await updatePost(post.id, {
           title: post.title, slug: post.slug, thumbnail: finalThumbnail,
           content: processedHtml, collectionIds: post.collectionIds,
-          topicIds: post.topicIds, isPinned: post.isPinned,
+          topicIds: post.topicIds, isPinned: post.isPinned, order: post.order,
         });
         setPosts((prev) => prev.map((p) => p.id === post.id ? { ...optimisticPost, thumbnail: finalThumbnail, content: processedHtml } : p));
       }
@@ -279,16 +301,120 @@ export default function AdminPostsPage() {
     }
   };
 
-  const handleAddHint = (hint: Omit<HintItem, "id">) => {
-    setHints((prev) => [{ ...hint, id: `h${Date.now()}` }, ...prev]);
+  const handleNewHint = () => {
+    const now = new Date().toISOString().split("T")[0];
+    setEditingHint({
+      id: "", title: "", content: "", type: "tip",
+      collectionId: selectedColId ?? "", topicId: selectedTopicId ?? "",
+      order: hints.length, createdAt: now, updatedAt: now,
+    });
+    setIsNewHint(true);
   };
 
-  const handleUpdateHint = (hint: HintItem) => {
-    setHints((prev) => prev.map((h) => (h.id === hint.id ? hint : h)));
+  const handleEditHint = (hint: HintItem) => {
+    setEditingHint({ ...hint });
+    setIsNewHint(false);
   };
 
-  const handleDeleteHint = (id: string) => {
+  const handleSaveHint = async (hint: HintItem) => {
+    const tempId = isNewHint ? `temp-${Date.now()}` : hint.id;
+    const now = new Date().toISOString().split("T")[0];
+    const optimistic = { ...hint, id: tempId, updatedAt: now, ...(isNewHint ? { createdAt: now } : {}) };
+
+    const prevHints = [...hints];
+    if (isNewHint) {
+      setHints((prev) => [optimistic, ...prev]);
+    } else {
+      setHints((prev) => prev.map((h) => (h.id === hint.id ? optimistic : h)));
+    }
+    setEditingHint(null);
+    const wasNew = isNewHint;
+    setIsNewHint(false);
+
+    try {
+      const oldContent = wasNew ? "" : (prevHints.find((h) => h.id === hint.id)?.content ?? "");
+      const { processedHtml } = await processContentMedia(hint.content, oldContent);
+
+      if (wasNew) {
+        const id = await createHint({
+          title: hint.title, content: processedHtml, type: hint.type,
+          collectionId: hint.collectionId, topicId: hint.topicId, order: hint.order,
+        });
+        setHints((prev) => prev.map((h) => h.id === tempId ? { ...optimistic, id, content: processedHtml } : h));
+      } else {
+        await updateHintFb(hint.id, {
+          title: hint.title, content: processedHtml, type: hint.type,
+          collectionId: hint.collectionId, topicId: hint.topicId,
+        });
+        setHints((prev) => prev.map((h) => h.id === hint.id ? { ...optimistic, content: processedHtml } : h));
+      }
+    } catch (err) {
+      console.error("Save hint failed:", err);
+      setHints(prevHints);
+      alert(err instanceof Error ? err.message : "Lỗi khi lưu hint");
+    }
+  };
+
+  const handleDeleteHint = async (id: string) => {
+    const hint = hints.find((h) => h.id === id);
+    if (!hint) return;
+    const prevHints = [...hints];
     setHints((prev) => prev.filter((h) => h.id !== id));
+    if (editingHint?.id === id) { setEditingHint(null); setIsNewHint(false); }
+    try {
+      await Promise.all([
+        deleteContentMedia(hint.content),
+        deleteHintFb(id),
+      ]);
+    } catch (err) {
+      console.error("Delete hint failed:", err);
+      setHints(prevHints);
+      alert(err instanceof Error ? err.message : "Lỗi khi xóa hint");
+    }
+  };
+
+  const handleCancelHint = () => { setEditingHint(null); setIsNewHint(false); };
+
+  const handleReorderPosts = (reordered: PostDoc[]) => {
+    const reorderedIds = reordered.map((p) => p.id);
+    const idSet = new Set(reorderedIds);
+    const unchanged = posts.filter((p) => !idSet.has(p.id));
+    setPosts([...reordered, ...unchanged]);
+    const changed = reorderedIds.join(",") !== originalPostOrder.current.join(",");
+    setPostOrderChanged(changed);
+  };
+
+  const handleSavePostOrder = async () => {
+    try {
+      const updates = filteredPosts.map((p, i) => ({ id: p.id, order: i }));
+      await updatePostOrders(updates);
+      originalPostOrder.current = filteredPosts.map((p) => p.id);
+      setPostOrderChanged(false);
+    } catch (err) {
+      console.error("Save post order failed:", err);
+      alert("Lỗi khi lưu thứ tự bài viết");
+    }
+  };
+
+  const handleReorderHints = (reordered: HintItem[]) => {
+    const reorderedIds = reordered.map((h) => h.id);
+    const idSet = new Set(reorderedIds);
+    const unchanged = hints.filter((h) => !idSet.has(h.id));
+    setHints([...reordered, ...unchanged] as HintDoc[]);
+    const changed = reorderedIds.join(",") !== originalHintOrder.current.join(",");
+    setHintOrderChanged(changed);
+  };
+
+  const handleSaveHintOrder = async () => {
+    try {
+      const updates = filteredHints.map((h, i) => ({ id: h.id, order: i }));
+      await updateHintOrders(updates);
+      originalHintOrder.current = filteredHints.map((h) => h.id);
+      setHintOrderChanged(false);
+    } catch (err) {
+      console.error("Save hint order failed:", err);
+      alert("Lỗi khi lưu thứ tự hint");
+    }
   };
 
   const handleCancelEdit = () => { setEditingPost(null); setIsNewPost(false); };
@@ -324,7 +450,9 @@ export default function AdminPostsPage() {
         hints={filteredHints}
         selectedTopicId={selectedTopicId}
         editingPost={editingPost}
+        editingHint={editingHint}
         isNew={isNewPost}
+        isNewHint={isNewHint}
         collections={collections}
         topics={topics}
         saving={saving}
@@ -334,9 +462,17 @@ export default function AdminPostsPage() {
         onDelete={handleDeletePost}
         onCancel={handleCancelEdit}
         onCreateTopic={handleCreateTopicForPost}
-        onAddHint={handleAddHint}
-        onUpdateHint={handleUpdateHint}
+        onNewHint={handleNewHint}
+        onEditHint={handleEditHint}
+        onSaveHint={handleSaveHint}
         onDeleteHint={handleDeleteHint}
+        onCancelHint={handleCancelHint}
+        onReorderPosts={handleReorderPosts}
+        onSavePostOrder={handleSavePostOrder}
+        postOrderChanged={postOrderChanged}
+        onReorderHints={handleReorderHints}
+        onSaveHintOrder={handleSaveHintOrder}
+        hintOrderChanged={hintOrderChanged}
       />
     </div>
   );

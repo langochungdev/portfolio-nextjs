@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
-import { HintList } from "@/app/admin/_components/HintList";
+import { HintList, type HintItem } from "@/app/admin/_components/HintList";
 import { TagSelector } from "@/app/admin/_components/TagSelector";
 
 import dynamic from "next/dynamic";
@@ -23,19 +23,8 @@ interface PostItem {
   collectionIds: string[];
   topicIds: string[];
   isPinned: boolean;
-  views: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface HintItem {
-  id: string;
-  title: string;
-  content: string;
-  type: "tip" | "hint" | "note";
-  topicId: string;
-  relatedPostId: string;
   order: number;
+  views: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,7 +37,9 @@ interface Props {
   hints: HintItem[];
   selectedTopicId: string | null;
   editingPost: PostItem | null;
+  editingHint: HintItem | null;
   isNew: boolean;
+  isNewHint: boolean;
   collections: CollectionItem[];
   topics: TopicItem[];
   saving?: boolean;
@@ -58,9 +49,17 @@ interface Props {
   onDelete: (id: string) => void;
   onCancel: () => void;
   onCreateTopic?: (name: string) => Promise<string>;
-  onAddHint: (hint: Omit<HintItem, "id">) => void;
-  onUpdateHint: (hint: HintItem) => void;
+  onNewHint: () => void;
+  onEditHint: (hint: HintItem) => void;
+  onSaveHint: (hint: HintItem) => void;
   onDeleteHint: (id: string) => void;
+  onCancelHint: () => void;
+  onReorderPosts: (posts: PostItem[]) => void;
+  onSavePostOrder: () => void;
+  postOrderChanged: boolean;
+  onReorderHints: (hints: HintItem[]) => void;
+  onSaveHintOrder: () => void;
+  hintOrderChanged: boolean;
 }
 
 const TrashIcon = () => (
@@ -71,14 +70,30 @@ const TrashIcon = () => (
   </svg>
 );
 
+const DragHandle = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="4" y1="6" x2="20" y2="6" />
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <line x1="4" y1="18" x2="20" y2="18" />
+  </svg>
+);
+
 const generateSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
-export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, collections, topics, saving, onNew, onEdit, onSave, onDelete, onCancel, onCreateTopic, onAddHint, onUpdateHint, onDeleteHint }: Props) {
+export function PostPanel({
+  posts, hints, selectedTopicId, editingPost, editingHint, isNew, isNewHint,
+  collections, topics, saving, onNew, onEdit, onSave, onDelete, onCancel, onCreateTopic,
+  onNewHint, onEditHint, onSaveHint, onDeleteHint, onCancelHint,
+  onReorderPosts, onSavePostOrder, postOrderChanged,
+  onReorderHints, onSaveHintOrder, hintOrderChanged,
+}: Props) {
   const { dictionary: dict } = useDictionary();
   const t = dict.admin.posts;
   const [tab, setTab] = useState<"posts" | "hints">("posts");
   const [search, setSearch] = useState("");
+  const dragIdx = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   if (editingPost) {
     return (
@@ -99,6 +114,21 @@ export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, c
     ? posts.filter((p) => p.title.toLowerCase().includes(search.toLowerCase()))
     : posts;
 
+  const handleDragStart = (idx: number) => { dragIdx.current = idx; };
+  const handleDragOver = (e: React.DragEvent, idx: number) => { e.preventDefault(); setDragOverIdx(idx); };
+  const handleDragLeave = () => { setDragOverIdx(null); };
+  const handleDrop = (dropIdx: number) => {
+    const from = dragIdx.current;
+    if (from === null || from === dropIdx) { dragIdx.current = null; setDragOverIdx(null); return; }
+    const items = [...posts];
+    const [moved] = items.splice(from, 1);
+    items.splice(dropIdx, 0, moved);
+    onReorderPosts(items);
+    dragIdx.current = null;
+    setDragOverIdx(null);
+  };
+  const handleDragEnd = () => { dragIdx.current = null; setDragOverIdx(null); };
+
   return (
     <div className={styles.panel}>
       <div className={styles.panelHeader}>
@@ -111,9 +141,16 @@ export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, c
           </button>
         </div>
         {tab === "posts" && (
-          <button type="button" className={styles.postNewBtn} onClick={onNew}>
-            + {t.newPost}
-          </button>
+          <div className={styles.hintToolbarRight}>
+            {postOrderChanged && (
+              <button type="button" className={styles.saveOrderBtn} onClick={onSavePostOrder}>
+                Save Order
+              </button>
+            )}
+            <button type="button" className={styles.postNewBtn} onClick={onNew}>
+              + {t.newPost}
+            </button>
+          </div>
         )}
       </div>
       {tab === "posts" ? (
@@ -128,9 +165,19 @@ export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, c
             />
           </div>
           <div className={styles.panelList}>
-            {displayPosts.map((post) => (
-              <div key={post.id} className={styles.postItem} onClick={() => onEdit(post)}>
-                <div className={styles.postItemInfo}>
+            {displayPosts.map((post, idx) => (
+              <div
+                key={post.id}
+                className={`${styles.postItem} ${dragOverIdx === idx ? styles.dragOver : ""}`}
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDragLeave={handleDragLeave}
+                onDrop={() => handleDrop(idx)}
+                onDragEnd={handleDragEnd}
+              >
+                <span className={styles.dragHandle}><DragHandle /></span>
+                <div className={styles.postItemInfo} onClick={() => onEdit(post)}>
                   <div className={styles.postItemTitle}>
                     {post.isPinned && <span className={styles.pinBadge}>PIN</span>}
                     {post.title}
@@ -157,10 +204,19 @@ export function PostPanel({ posts, hints, selectedTopicId, editingPost, isNew, c
       ) : (
         <HintList
           hints={hints}
-          selectedTopicId={selectedTopicId}
-          onAdd={onAddHint}
-          onUpdate={onUpdateHint}
+          collections={collections}
+          topics={topics}
+          editingHint={editingHint}
+          isNewHint={isNewHint}
+          saving={saving}
+          onNew={onNewHint}
+          onEdit={onEditHint}
+          onSave={onSaveHint}
           onDelete={onDeleteHint}
+          onCancel={onCancelHint}
+          onReorder={onReorderHints}
+          onSaveOrder={onSaveHintOrder}
+          orderChanged={hintOrderChanged}
         />
       )}
     </div>
