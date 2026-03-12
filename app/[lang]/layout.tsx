@@ -2,7 +2,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { DictionaryProvider } from "./_shared/DictionaryProvider";
 import { NavBar } from "./_shared/NavBar";
 import { StableVh } from "./_shared/StableVh";
-import { LazyEyesCat, LazyAnimatedFavicon } from "./_shared/LazyComponents";
+import { LazyEyesCat, LazyAnimatedFavicon, LazyVisitorProvider } from "./_shared/LazyComponents";
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 import { cookies } from "next/headers";
@@ -58,13 +58,15 @@ export default async function LocaleLayout({
       <body>
         <LazyAnimatedFavicon />
         <StableVh />
-        <DictionaryProvider dictionary={dictionary} locale={locale} serverTheme={serverTheme}>
-          {children}
-          <div className="bottom-bar">
-            <NavBar />
-            <LazyEyesCat />
-          </div>
-        </DictionaryProvider>
+        <LazyVisitorProvider>
+          <DictionaryProvider dictionary={dictionary} locale={locale} serverTheme={serverTheme}>
+            {children}
+            <div className="bottom-bar">
+              <NavBar />
+              <LazyEyesCat />
+            </div>
+          </DictionaryProvider>
+        </LazyVisitorProvider>
       </body>
     </html>
   );

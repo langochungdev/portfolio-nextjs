@@ -74,6 +74,22 @@ function persistFingerprint(fp: string): void {
   }
 }
 
+function getStoredFingerprint(): string | null {
+  try {
+    return localStorage.getItem(FINGERPRINT_KEY);
+  } catch {
+    /* ignore */
+  }
+  try {
+    const match = document.cookie.match(
+      new RegExp(`(?:^|;\\s*)${FINGERPRINT_KEY}=([^;]+)`),
+    );
+    return match ? decodeURIComponent(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function recoverByFingerprint(
   fingerprint: string,
 ): Promise<string | null> {
@@ -140,20 +156,14 @@ export interface VisitorIdentity {
 export async function getOrCreateVisitorId(): Promise<VisitorIdentity> {
   const fingerprint = await generateFingerprint();
 
-  const localId = getFromLocalStorage();
-  if (localId) {
+  const localId = getFromLocalStorage() || getFromCookie();
+  const storedFp = getStoredFingerprint();
+
+  if (localId && storedFp === fingerprint) {
     persistId(localId);
     persistFingerprint(fingerprint);
     await ensureConversationDoc(localId, fingerprint);
     return { visitorId: localId, fingerprint, isRecovered: false };
-  }
-
-  const cookieId = getFromCookie();
-  if (cookieId) {
-    persistId(cookieId);
-    persistFingerprint(fingerprint);
-    await ensureConversationDoc(cookieId, fingerprint);
-    return { visitorId: cookieId, fingerprint, isRecovered: false };
   }
 
   const recoveredId = await recoverByFingerprint(fingerprint);
@@ -162,6 +172,13 @@ export async function getOrCreateVisitorId(): Promise<VisitorIdentity> {
     persistFingerprint(fingerprint);
     await ensureConversationDoc(recoveredId, fingerprint);
     return { visitorId: recoveredId, fingerprint, isRecovered: true };
+  }
+
+  if (localId) {
+    persistId(localId);
+    persistFingerprint(fingerprint);
+    await ensureConversationDoc(localId, fingerprint);
+    return { visitorId: localId, fingerprint, isRecovered: false };
   }
 
   const newId = generateId();

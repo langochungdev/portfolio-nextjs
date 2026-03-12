@@ -11,3 +11,9 @@ export const LazyAnimatedFavicon = dynamic(
   () => import("./AnimatedFavicon").then((m) => m.AnimatedFavicon),
   { ssr: false }
 );
+
+export const LazyVisitorProvider = dynamic(
+  () =>
+    import("@/lib/visitor/VisitorProvider").then((m) => m.VisitorProvider),
+  { ssr: false }
+);

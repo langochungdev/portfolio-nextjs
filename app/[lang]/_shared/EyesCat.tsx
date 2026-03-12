@@ -6,10 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { useTheme } from "@/app/[lang]/_shared/useTheme";
-import {
-  getOrCreateVisitorId,
-  type VisitorIdentity,
-} from "@/lib/visitor/identity";
+import { useVisitor } from "@/lib/visitor/VisitorProvider";
 import {
   sendMessage,
   subscribeMessages,
@@ -181,8 +178,9 @@ export function EyesCat() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [greeting, setGreeting] = useState<string | null>(null);
-  const [identity, setIdentity] = useState<VisitorIdentity | null>(null);
+  const { visitorId, loading: visitorLoading } = useVisitor();
   const [messages, setMessages] = useState<MessageDoc[]>([]);
+  const prevMsgCountRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   useVirtualKeyboard(overlayRef, open);
@@ -210,6 +208,19 @@ export function EyesCat() {
     const hideTimer = setTimeout(() => setGreeting(null), 6000);
     return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
   }, [name, dict.eyesCat.greetMorning, dict.eyesCat.greetAfternoon, dict.eyesCat.greetEvening, dict.eyesCat.greetMorningName, dict.eyesCat.greetAfternoonName, dict.eyesCat.greetEveningName]);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const prev = prevMsgCountRef.current;
+    prevMsgCountRef.current = messages.length;
+    if (prev === 0) return;
+    if (messages.length <= prev) return;
+    const latest = messages[messages.length - 1];
+    if (latest.sender !== "admin" || open) return;
+    setGreeting(latest.text);
+    const timer = setTimeout(() => setGreeting(null), 8000);
+    return () => clearTimeout(timer);
+  }, [messages.length, open]);
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (!catRef.current) return;
@@ -292,22 +303,16 @@ export function EyesCat() {
   }, []);
 
   useEffect(() => {
-    getOrCreateVisitorId()
-      .then(setIdentity)
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (!identity) return;
-    fetchConversationUserName(identity.visitorId)
+    if (!visitorId) return;
+    fetchConversationUserName(visitorId)
       .then((saved) => { if (saved) setName(saved); })
       .catch(() => {});
-  }, [identity]);
+  }, [visitorId]);
 
   useEffect(() => {
-    if (!identity) return;
-    return subscribeMessages(identity.visitorId, setMessages);
-  }, [identity]);
+    if (!visitorId) return;
+    return subscribeMessages(visitorId, setMessages);
+  }, [visitorId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -320,10 +325,10 @@ export function EyesCat() {
       return;
     }
     const text = message.trim();
-    if (!text || !identity || sending) return;
+    if (!text || !visitorId || sending) return;
     setSending(true);
     try {
-      await sendMessage(identity.visitorId, text, "user");
+      await sendMessage(visitorId, text, "user");
       setMessage("");
     } catch (err) {
       console.error("Send failed:", err);
@@ -398,16 +403,16 @@ export function EyesCat() {
                       if (e.key === "Enter") {
                         e.preventDefault();
                         const trimmed = name.trim();
-                        if (trimmed && identity) {
-                          updateConversationUserName(identity.visitorId, trimmed).catch(() => {});
+                        if (trimmed && visitorId) {
+                          updateConversationUserName(visitorId, trimmed).catch(() => {});
                         }
                         textareaRef.current?.focus();
                       }
                     }}
                     onBlur={() => {
                       const trimmed = name.trim();
-                      if (trimmed && identity) {
-                        updateConversationUserName(identity.visitorId, trimmed).catch(() => {});
+                      if (trimmed && visitorId) {
+                        updateConversationUserName(visitorId, trimmed).catch(() => {});
                       }
                     }}
                   />
