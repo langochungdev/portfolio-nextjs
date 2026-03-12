@@ -16,6 +16,7 @@ interface TagSelectorProps {
   onCreate?: (name: string) => Promise<string>;
   required?: boolean;
   placeholder?: string;
+  single?: boolean;
 }
 
 export function TagSelector({
@@ -26,6 +27,7 @@ export function TagSelector({
   onCreate,
   required,
   placeholder = "Search...",
+  single,
 }: TagSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -50,10 +52,10 @@ export function TagSelector({
         if (required && selected.length <= 1) return;
         onChange(selected.filter((s) => s !== id));
       } else {
-        onChange([...selected, id]);
+        onChange(single ? [id] : [...selected, id]);
       }
     },
-    [selected, onChange, required],
+    [selected, onChange, required, single],
   );
 
   const handleCreate = useCallback(async () => {

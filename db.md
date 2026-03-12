@@ -20,7 +20,7 @@ Firestore Root
 │       ├── collectionIds: string[] (array of collection IDs)
 │       ├── topicIds: string[] (array of topic IDs)
 │       ├── isPinned: boolean
-│       ├── order: number
+│       ├── orderMap: map { [contextId: string]: number }
 │       ├── views: number
 │       └── timestamps (map)
 │           ├── createdAt: timestamp

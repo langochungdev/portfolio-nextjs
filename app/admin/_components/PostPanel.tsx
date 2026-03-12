@@ -23,7 +23,7 @@ interface PostItem {
   collectionIds: string[];
   topicIds: string[];
   isPinned: boolean;
-  order: number;
+  orderMap: Record<string, number>;
   views: number;
   createdAt: string;
   updatedAt: string;

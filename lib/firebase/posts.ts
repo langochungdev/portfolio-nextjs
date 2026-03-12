@@ -24,7 +24,7 @@ export interface PostInput {
   collectionIds: string[];
   topicIds: string[];
   isPinned: boolean;
-  order: number;
+  orderMap: Record<string, number>;
 }
 
 export interface PostDoc extends PostInput {
@@ -61,7 +61,7 @@ function docToPost(id: string, data: Record<string, unknown>): PostDoc {
         ? [data.topicId as string]
         : [],
     isPinned: (data.isPinned as boolean) ?? false,
-    order: (data.order as number) ?? 0,
+    orderMap: (data.orderMap as Record<string, number>) ?? {},
     views: (data.views as number) ?? 0,
     createdAt: formatTimestamp(timestamps.createdAt ?? null),
     updatedAt: formatTimestamp(timestamps.updatedAt ?? null),
@@ -74,9 +74,7 @@ export async function fetchPosts(): Promise<PostDoc[]> {
     orderBy("timestamps.createdAt", "desc"),
   );
   const snap = await getDocs(q);
-  return snap.docs
-    .map((d) => docToPost(d.id, d.data()))
-    .sort((a, b) => a.order - b.order);
+  return snap.docs.map((d) => docToPost(d.id, d.data()));
 }
 
 export async function fetchPostsByCollection(
@@ -132,11 +130,11 @@ export async function deletePost(id: string): Promise<void> {
 }
 
 export async function updatePostOrders(
-  items: { id: string; order: number }[],
+  items: { id: string; orderMap: Record<string, number> }[],
 ): Promise<void> {
   const batch = writeBatch(db);
   for (const item of items) {
-    batch.update(doc(db, "posts", item.id), { order: item.order });
+    batch.update(doc(db, "posts", item.id), { orderMap: item.orderMap });
   }
   await batch.commit();
 }

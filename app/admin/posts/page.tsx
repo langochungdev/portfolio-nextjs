@@ -89,11 +89,14 @@ export default function AdminPostsPage() {
   );
 
   const filteredPosts = useMemo(() => {
-    return posts.filter((p) => {
-      if (selectedColId && !p.collectionIds.includes(selectedColId)) return false;
-      if (selectedTopicId && !p.topicIds.includes(selectedTopicId)) return false;
-      return true;
-    });
+    const contextKey = selectedTopicId ?? selectedColId ?? "";
+    return posts
+      .filter((p) => {
+        if (selectedColId && !p.collectionIds.includes(selectedColId)) return false;
+        if (selectedTopicId && !p.topicIds.includes(selectedTopicId)) return false;
+        return true;
+      })
+      .sort((a, b) => (a.orderMap[contextKey] ?? Infinity) - (b.orderMap[contextKey] ?? Infinity));
   }, [posts, selectedColId, selectedTopicId]);
 
   const filteredHints = useMemo(() => {
@@ -205,7 +208,7 @@ export default function AdminPostsPage() {
     setEditingPost({
       id: "", title: "", slug: "", thumbnail: "", content: "",
       collectionIds: selectedColId ? [selectedColId] : [], topicIds: selectedTopicId ? [selectedTopicId] : [],
-      isPinned: false, order: posts.length, views: 0, createdAt: now, updatedAt: now,
+      isPinned: false, orderMap: {}, views: 0, createdAt: now, updatedAt: now,
     });
     setIsNewPost(true);
   };
@@ -262,14 +265,14 @@ export default function AdminPostsPage() {
         const id = await createPost({
           title: post.title, slug: post.slug, thumbnail: finalThumbnail,
           content: processedHtml, collectionIds: post.collectionIds,
-          topicIds: post.topicIds, isPinned: post.isPinned, order: post.order,
+          topicIds: post.topicIds, isPinned: post.isPinned, orderMap: post.orderMap,
         });
         setPosts((prev) => prev.map((p) => p.id === tempId ? { ...optimisticPost, id, thumbnail: finalThumbnail, content: processedHtml } : p));
       } else {
         await updatePost(post.id, {
           title: post.title, slug: post.slug, thumbnail: finalThumbnail,
           content: processedHtml, collectionIds: post.collectionIds,
-          topicIds: post.topicIds, isPinned: post.isPinned, order: post.order,
+          topicIds: post.topicIds, isPinned: post.isPinned, orderMap: post.orderMap,
         });
         setPosts((prev) => prev.map((p) => p.id === post.id ? { ...optimisticPost, thumbnail: finalThumbnail, content: processedHtml } : p));
       }
@@ -376,17 +379,22 @@ export default function AdminPostsPage() {
   const handleCancelHint = () => { setEditingHint(null); setIsNewHint(false); };
 
   const handleReorderPosts = (reordered: PostDoc[]) => {
+    const contextKey = selectedTopicId ?? selectedColId ?? "";
     const reorderedIds = reordered.map((p) => p.id);
     const idSet = new Set(reorderedIds);
+    const updated = reordered.map((p, i) => ({
+      ...p,
+      orderMap: { ...p.orderMap, [contextKey]: i },
+    }));
     const unchanged = posts.filter((p) => !idSet.has(p.id));
-    setPosts([...reordered, ...unchanged]);
+    setPosts([...updated, ...unchanged]);
     const changed = reorderedIds.join(",") !== originalPostOrder.current.join(",");
     setPostOrderChanged(changed);
   };
 
   const handleSavePostOrder = async () => {
     try {
-      const updates = filteredPosts.map((p, i) => ({ id: p.id, order: i }));
+      const updates = filteredPosts.map((p) => ({ id: p.id, orderMap: p.orderMap }));
       await updatePostOrders(updates);
       originalPostOrder.current = filteredPosts.map((p) => p.id);
       setPostOrderChanged(false);

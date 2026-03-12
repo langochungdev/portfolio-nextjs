@@ -257,6 +257,7 @@ function HintEditor({ hint, isNew, collections, topics, saving, onSave, onCancel
               selected={collectionIds}
               onChange={setCollectionIds}
               placeholder="Select collection..."
+              single
             />
             <TagSelector
               label={dict.admin.posts.topicLabel ?? "Topic"}
@@ -264,6 +265,7 @@ function HintEditor({ hint, isNew, collections, topics, saving, onSave, onCancel
               selected={topicIds}
               onChange={setTopicIds}
               placeholder="Select topic..."
+              single
             />
           </div>
         </div>
