@@ -342,7 +342,7 @@ export function EyesCat() {
       <div
         ref={catRef}
         className={styles.cat}
-        onClick={() => { setOpen(true); setGreeting(null); }}
+        onClick={() => { if (!visitorId) return; setOpen(true); setGreeting(null); }}
         title={dict.eyesCat.title}
         role="button"
         aria-label={dict.eyesCat.title}
