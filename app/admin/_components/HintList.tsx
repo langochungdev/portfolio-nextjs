@@ -41,6 +41,7 @@ interface Props {
   onCancel: () => void;
   onReorder: (items: HintItem[]) => void;
   onSaveOrder: () => void;
+  onResetOrder: () => void;
   orderChanged: boolean;
 }
 
@@ -68,7 +69,7 @@ const DragHandle = () => (
 
 export function HintList({
   hints, collections, topics, editingHint, isNewHint, saving,
-  onNew, onEdit, onSave, onDelete, onCancel, onReorder, onSaveOrder, orderChanged,
+  onNew, onEdit, onSave, onDelete, onCancel, onReorder, onSaveOrder, onResetOrder, orderChanged,
 }: Props) {
   const { dictionary: dict } = useDictionary();
   const ht = dict.admin.hints;
@@ -125,9 +126,14 @@ export function HintList({
         </div>
         <div className={styles.hintToolbarRight}>
           {orderChanged && (
-            <button type="button" className={styles.saveOrderBtn} onClick={onSaveOrder}>
-              Save Order
-            </button>
+            <>
+              <button type="button" className={styles.resetOrderBtn} onClick={onResetOrder}>
+                Cancel
+              </button>
+              <button type="button" className={styles.saveOrderBtn} onClick={onSaveOrder}>
+                Save Order
+              </button>
+            </>
           )}
           <button type="button" className={styles.postNewBtn} onClick={onNew}>
             + {ht.newHint}
@@ -166,6 +172,14 @@ export function HintList({
             </div>
           </div>
         ))}
+        {filtered.length > 0 && (
+          <div
+            className={`${styles.bottomDropZone} ${dragOverIdx === filtered.length ? styles.dragOver : ""}`}
+            onDragOver={(e) => handleDragOver(e, filtered.length)}
+            onDragLeave={handleDragLeave}
+            onDrop={() => handleDrop(filtered.length)}
+          />
+        )}
         {filtered.length === 0 && <div className={styles.panelEmpty}>{ht.noHints}</div>}
       </div>
     </>

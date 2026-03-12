@@ -22,6 +22,9 @@ export interface CollectionDoc {
 export interface TopicDoc {
   id: string;
   name: string;
+  slug: string;
+  thumbnail: string;
+  description: string;
   collectionId: string;
   order: number;
 }
@@ -60,19 +63,33 @@ export async function fetchTopics(collectionId?: string): Promise<TopicDoc[]> {
     ? query(col, where("collectionId", "==", collectionId), orderBy("order"))
     : query(col, orderBy("order"));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({
-    id: d.id,
-    ...(d.data() as Omit<TopicDoc, "id">),
-  }));
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      name: data.name ?? "",
+      slug: data.slug ?? "",
+      thumbnail: data.thumbnail ?? "",
+      description: data.description ?? "",
+      collectionId: data.collectionId ?? "",
+      order: data.order ?? 0,
+    };
+  });
 }
 
 export async function addTopic(
   name: string,
   collectionId: string,
   order: number,
+  slug: string = "",
+  thumbnail: string = "",
+  description: string = "",
 ): Promise<string> {
   const ref = await addDoc(collection(db, "topics"), {
     name,
+    slug,
+    thumbnail,
+    description,
     collectionId,
     order,
   });
@@ -81,6 +98,13 @@ export async function addTopic(
 
 export async function renameTopic(id: string, name: string): Promise<void> {
   await updateDoc(doc(db, "topics", id), { name });
+}
+
+export async function updateTopic(
+  id: string,
+  data: Partial<Pick<TopicDoc, "name" | "slug" | "thumbnail" | "description">>,
+): Promise<void> {
+  await updateDoc(doc(db, "topics", id), data);
 }
 
 export async function deleteTopic(id: string): Promise<void> {

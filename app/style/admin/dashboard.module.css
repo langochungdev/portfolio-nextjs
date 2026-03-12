@@ -132,3 +132,35 @@
         height: 220px;
     }
 }
+
+@media (max-width: 480px) {
+    .dashboard {
+        gap: 16px;
+        padding: 12px;
+    }
+
+    .statCard {
+        padding: 14px;
+    }
+
+    .statValue {
+        font-size: 1.375rem;
+    }
+
+    .chartCard {
+        padding: 14px;
+    }
+
+    .chartWrap {
+        height: 180px;
+    }
+
+    .topPostItem {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .topPostTitle {
+        font-size: 0.75rem;
+    }
+}

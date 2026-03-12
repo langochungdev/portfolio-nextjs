@@ -54,8 +54,9 @@ export default function NewPostPage() {
 
   const handleCreateTopic = useCallback(async (name: string) => {
     const colId = collectionIds[0] ?? "";
-    const id = await addTopicFb(name, colId, topics.length);
-    setTopics((prev) => [...prev, { id, name, collectionId: colId, order: prev.length }]);
+    const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
+    const id = await addTopicFb(name, colId, topics.length, slug);
+    setTopics((prev) => [...prev, { id, name, slug, thumbnail: "", description: "", collectionId: colId, order: prev.length }]);
     return id;
   }, [collectionIds, topics.length]);
 

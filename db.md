@@ -8,6 +8,9 @@ Firestore Root
 ├── topics (collection)
 │   └── {topicId} (doc)
 │       ├── name: string
+│       ├── slug: string
+│       ├── thumbnail: string (URL ảnh — dùng làm og:image mặc định)
+│       ├── description: string (mô tả — dùng làm og:description mặc định)
 │       ├── collectionId: string (optional)
 │       └── order: number
 │

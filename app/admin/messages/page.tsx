@@ -76,6 +76,26 @@ export default function AdminMessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listEditRef = useRef<HTMLInputElement>(null);
+  const chatAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      document.documentElement.style.setProperty("--vv-height", `${vv.height}px`);
+      if (chatAreaRef.current) {
+        chatAreaRef.current.style.height = `${vv.height}px`;
+        chatAreaRef.current.style.top = `${vv.offsetTop}px`;
+      }
+    };
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+      document.documentElement.style.removeProperty("--vv-height");
+    };
+  }, [activeId]);
 
   useEffect(() => {
     const unsub = subscribeConversations((convs) => {
@@ -130,15 +150,13 @@ export default function AdminMessagesPage() {
     const text = reply.trim();
     if (!text || !activeId || sending) return;
     setSending(true);
+    setReply("");
     try {
       await sendMessage(activeId, text, "admin");
-      setReply("");
-      inputRef.current?.focus();
     } catch (err) {
       console.error("Send failed:", err);
     } finally {
       setSending(false);
-      inputRef.current?.focus();
     }
   }, [reply, activeId, sending]);
 
@@ -148,6 +166,13 @@ export default function AdminMessagesPage() {
     },
     [handleSend],
   );
+
+  const handleChatAreaMouseDown = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target === inputRef.current) return;
+    if (target.closest("input, textarea, [contenteditable]")) return;
+    e.preventDefault();
+  }, []);
 
   const handleDeleteConversation = useCallback(async (id: string) => {
     try {
@@ -352,7 +377,7 @@ export default function AdminMessagesPage() {
         })}
       </div>
 
-      <div className={styles.chatArea}>
+      <div className={styles.chatArea} ref={chatAreaRef} onMouseDown={handleChatAreaMouseDown}>
         {activeConv ? (
           <>
             <div className={styles.chatHeader}>
@@ -495,10 +520,10 @@ export default function AdminMessagesPage() {
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={sending}
               />
               <button
                 className={styles.chatSendBtn}
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={handleSend}
                 disabled={sending || !reply.trim()}
               >

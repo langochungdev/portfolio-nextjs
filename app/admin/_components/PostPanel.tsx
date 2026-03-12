@@ -56,9 +56,11 @@ interface Props {
   onCancelHint: () => void;
   onReorderPosts: (posts: PostItem[]) => void;
   onSavePostOrder: () => void;
+  onResetPostOrder: () => void;
   postOrderChanged: boolean;
   onReorderHints: (hints: HintItem[]) => void;
   onSaveHintOrder: () => void;
+  onResetHintOrder: () => void;
   hintOrderChanged: boolean;
 }
 
@@ -78,6 +80,13 @@ const DragHandle = () => (
   </svg>
 );
 
+const CopyIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+);
+
 const generateSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
@@ -85,8 +94,8 @@ export function PostPanel({
   posts, hints, selectedTopicId, editingPost, editingHint, isNew, isNewHint,
   collections, topics, saving, onNew, onEdit, onSave, onDelete, onCancel, onCreateTopic,
   onNewHint, onEditHint, onSaveHint, onDeleteHint, onCancelHint,
-  onReorderPosts, onSavePostOrder, postOrderChanged,
-  onReorderHints, onSaveHintOrder, hintOrderChanged,
+  onReorderPosts, onSavePostOrder, onResetPostOrder, postOrderChanged,
+  onReorderHints, onSaveHintOrder, onResetHintOrder, hintOrderChanged,
 }: Props) {
   const { dictionary: dict } = useDictionary();
   const t = dict.admin.posts;
@@ -94,6 +103,15 @@ export function PostPanel({
   const [search, setSearch] = useState("");
   const dragIdx = useRef<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyPostLink = (slug: string, id: string) => {
+    const url = `${window.location.origin}/vi/blog/${slug}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    });
+  };
 
   if (editingPost) {
     return (
@@ -143,9 +161,14 @@ export function PostPanel({
         {tab === "posts" && (
           <div className={styles.hintToolbarRight}>
             {postOrderChanged && (
-              <button type="button" className={styles.saveOrderBtn} onClick={onSavePostOrder}>
-                Save Order
-              </button>
+              <>
+                <button type="button" className={styles.resetOrderBtn} onClick={onResetPostOrder}>
+                  Cancel
+                </button>
+                <button type="button" className={styles.saveOrderBtn} onClick={onSavePostOrder}>
+                  Save Order
+                </button>
+              </>
             )}
             <button type="button" className={styles.postNewBtn} onClick={onNew}>
               + {t.newPost}
@@ -189,6 +212,14 @@ export function PostPanel({
                 </div>
                 <button
                   type="button"
+                  className={`${styles.iconBtn} ${copiedId === post.id ? styles.iconBtnCopied : ""}`}
+                  onClick={(e) => { e.stopPropagation(); copyPostLink(post.slug, post.id); }}
+                  title="Copy link"
+                >
+                  <CopyIcon />
+                </button>
+                <button
+                  type="button"
                   className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
                   onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
                 >
@@ -196,6 +227,14 @@ export function PostPanel({
                 </button>
               </div>
             ))}
+            {displayPosts.length > 0 && (
+              <div
+                className={`${styles.bottomDropZone} ${dragOverIdx === displayPosts.length ? styles.dragOver : ""}`}
+                onDragOver={(e) => handleDragOver(e, displayPosts.length)}
+                onDragLeave={handleDragLeave}
+                onDrop={() => handleDrop(displayPosts.length)}
+              />
+            )}
             {displayPosts.length === 0 && (
               <div className={styles.panelEmpty}>No posts found</div>
             )}
@@ -216,6 +255,7 @@ export function PostPanel({
           onCancel={onCancelHint}
           onReorder={onReorderHints}
           onSaveOrder={onSaveHintOrder}
+          onResetOrder={onResetHintOrder}
           orderChanged={hintOrderChanged}
         />
       )}
