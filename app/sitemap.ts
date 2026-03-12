@@ -4,6 +4,14 @@ import { i18nConfig } from "@/lib/i18n/config";
 
 const BASE_URL = "https://langochung.me";
 
+function buildAlternates(path: string) {
+  return {
+    languages: Object.fromEntries(
+      i18nConfig.locales.map((loc) => [loc, `${BASE_URL}/${loc}${path}`]),
+    ),
+  };
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const locales = i18nConfig.locales;
 
@@ -15,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency:
         route === "/blog" ? ("daily" as const) : ("weekly" as const),
       priority: route === "" ? 1.0 : 0.8,
+      alternates: buildAlternates(route),
     })),
   );
 
@@ -27,6 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(post.updatedAt || post.createdAt),
         changeFrequency: "weekly" as const,
         priority: 0.6,
+        alternates: buildAlternates(`/blog/${post.slug}`),
       })),
     );
   } catch {
