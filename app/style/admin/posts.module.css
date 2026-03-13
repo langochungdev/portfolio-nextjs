@@ -64,6 +64,15 @@
     border-bottom: 1px solid var(--color-border);
     cursor: pointer;
     transition: background 0.12s;
+    min-width: 0;
+}
+
+.panelItemMain {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .panelItemActive {
@@ -79,12 +88,31 @@
 
 .panelItemName {
     flex: 1;
+    min-width: 0;
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--color-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.panelItemSlug {
+    max-width: 56px;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 0 1 56px;
+}
+
+.topicRowMeta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    flex-shrink: 0;
 }
 
 .panelCount {
@@ -181,6 +209,11 @@
     transition: background 0.15s;
 }
 
+.topicDetailClose:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .topicDetailLabel {
     display: flex;
     flex-direction: column;
@@ -249,6 +282,20 @@
     flex-direction: column;
 }
 
+.topicModalStatusLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.topicModalHeaderRight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .topicModalHeader {
     display: flex;
     align-items: center;
@@ -260,11 +307,24 @@
     color: var(--color-text);
 }
 
+.topicModalTitle {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: 1.2;
+}
+
 .topicModalBody {
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
+}
+
+.topicModalRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
 }
 
 .topicModalFooter {
@@ -645,6 +705,29 @@
     letter-spacing: 0.04em;
 }
 
+.statusBadge {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.statusPublic {
+    color: #10B981;
+}
+
+.statusHidden {
+    color: #F59E0B;
+}
+
+.statusDraft {
+    color: #64748B;
+}
+
 .editorPanel {
     display: flex;
     flex-direction: column;
@@ -711,6 +794,13 @@
 .editorFieldRow {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: end;
+}
+
+.editorFieldRowThree {
+    display: grid;
+    grid-template-columns: 1fr 1fr minmax(140px, 180px);
     gap: 12px;
     align-items: end;
 }
@@ -875,7 +965,8 @@
     }
 
     .hintItem:hover .dragHandle,
-    .postItem:hover .dragHandle {
+    .postItem:hover .dragHandle,
+    .panelItem:hover .dragHandle {
         opacity: 1;
     }
 
@@ -940,6 +1031,10 @@
     .triPanel {
         grid-template-columns: 160px 180px 1fr;
     }
+
+    .panelItemSlug {
+        display: none;
+    }
 }
 
 @media (max-width: 768px) {
@@ -963,6 +1058,12 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 4px;
+    }
+
+    .editorFieldRow,
+    .editorFieldRowThree,
+    .topicModalRow {
+        grid-template-columns: 1fr;
     }
 }
 

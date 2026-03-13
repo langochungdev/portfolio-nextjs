@@ -12,6 +12,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/config";
+import type { VisibilityStatus } from "@/lib/firebase/collections";
 
 const db = getFirebaseDb();
 
@@ -19,9 +20,10 @@ export interface HintInput {
   title: string;
   content: string;
   type: "tip" | "hint" | "note";
-  collectionId: string;
   topicId: string;
+  postId: string;
   order: number;
+  visibility: VisibilityStatus;
 }
 
 export interface HintDoc extends HintInput {
@@ -45,28 +47,46 @@ function docToHint(id: string, data: Record<string, unknown>): HintDoc {
     title: (data.title as string) ?? "",
     content: (data.content as string) ?? "",
     type: (data.type as HintDoc["type"]) ?? "tip",
-    collectionId: (data.collectionId as string) ?? "",
     topicId: (data.topicId as string) ?? "",
+    postId: (data.postId as string) ?? (data.relatedPostId as string) ?? "",
     order: (data.order as number) ?? 0,
+    visibility: (data.visibility as VisibilityStatus) ?? "public",
     createdAt: formatTimestamp(timestamps.createdAt ?? null),
     updatedAt: formatTimestamp(timestamps.updatedAt ?? null),
   };
 }
 
-export async function fetchHints(): Promise<HintDoc[]> {
-  const q = query(collection(db, "hints"), orderBy("order"));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => docToHint(d.id, d.data()));
+interface FetchHintsOptions {
+  includeNonPublic?: boolean;
 }
 
-export async function fetchHintsByTopic(topicId: string): Promise<HintDoc[]> {
+export async function fetchHints(
+  options?: FetchHintsOptions,
+): Promise<HintDoc[]> {
+  const includeNonPublic = options?.includeNonPublic ?? false;
+  const q = query(collection(db, "hints"), orderBy("order"));
+  const snap = await getDocs(q);
+  const mapped = snap.docs.map((d) => docToHint(d.id, d.data()));
+  return includeNonPublic
+    ? mapped
+    : mapped.filter((hint) => hint.visibility === "public");
+}
+
+export async function fetchHintsByTopic(
+  topicId: string,
+  options?: FetchHintsOptions,
+): Promise<HintDoc[]> {
+  const includeNonPublic = options?.includeNonPublic ?? false;
   const q = query(
     collection(db, "hints"),
     where("topicId", "==", topicId),
     orderBy("order"),
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => docToHint(d.id, d.data()));
+  const mapped = snap.docs.map((d) => docToHint(d.id, d.data()));
+  return includeNonPublic
+    ? mapped
+    : mapped.filter((hint) => hint.visibility === "public");
 }
 
 export async function createHint(data: HintInput): Promise<string> {
@@ -74,9 +94,10 @@ export async function createHint(data: HintInput): Promise<string> {
     title: data.title,
     content: data.content,
     type: data.type,
-    collectionId: data.collectionId,
     topicId: data.topicId,
+    postId: data.postId,
     order: data.order,
+    visibility: data.visibility,
     timestamps: {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),

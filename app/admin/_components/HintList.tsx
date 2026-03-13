@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
-import { TagSelector } from "@/app/admin/_components/TagSelector";
 import dynamic from "next/dynamic";
 import styles from "@/app/style/admin/posts.module.css";
 import editorStyles from "@/app/style/admin/editor.module.css";
+
+type VisibilityStatus = "public" | "hidden" | "draft";
 
 const TiptapEditor = dynamic(
   () => import("@/app/admin/_components/TiptapEditor").then((m) => m.TiptapEditor),
@@ -17,19 +18,20 @@ export interface HintItem {
   title: string;
   content: string;
   type: "tip" | "hint" | "note";
-  collectionId: string;
   topicId: string;
+  postId: string;
   order: number;
+  visibility: VisibilityStatus;
   createdAt: string;
   updatedAt: string;
 }
 
-interface CollectionItem { id: string; name: string; order: number }
 interface TopicItem { id: string; name: string; collectionId: string; order: number }
+interface PostItem { id: string; title: string; topicIds: string[] }
 
 interface Props {
   hints: HintItem[];
-  collections: CollectionItem[];
+  posts: PostItem[];
   topics: TopicItem[];
   editingHint: HintItem | null;
   isNewHint: boolean;
@@ -68,7 +70,7 @@ const DragHandle = () => (
 );
 
 export function HintList({
-  hints, collections, topics, editingHint, isNewHint, saving,
+  hints, posts, topics, editingHint, saving,
   onNew, onEdit, onSave, onDelete, onCancel, onReorder, onSaveOrder, onResetOrder, orderChanged,
 }: Props) {
   const { dictionary: dict } = useDictionary();
@@ -81,8 +83,7 @@ export function HintList({
     return (
       <HintEditor
         hint={editingHint}
-        isNew={isNewHint}
-        collections={collections}
+        posts={posts}
         topics={topics}
         saving={saving}
         onSave={onSave}
@@ -161,6 +162,9 @@ export function HintList({
                 >
                   {hint.type.toUpperCase()}
                 </span>
+                <span className={`${styles.statusBadge} ${styles[`status${hint.visibility.charAt(0).toUpperCase()}${hint.visibility.slice(1)}`]}`}>
+                  {hint.visibility}
+                </span>
                 {hint.title}
               </div>
               <div className={styles.hintItemContent}>{hint.content.replace(/<[^>]+>/g, "")}</div>
@@ -186,10 +190,9 @@ export function HintList({
   );
 }
 
-function HintEditor({ hint, isNew, collections, topics, saving, onSave, onCancel }: {
+function HintEditor({ hint, posts, topics, saving, onSave, onCancel }: {
   hint: HintItem;
-  isNew: boolean;
-  collections: CollectionItem[];
+  posts: PostItem[];
   topics: TopicItem[];
   saving?: boolean;
   onSave: (hint: HintItem) => void;
@@ -201,30 +204,43 @@ function HintEditor({ hint, isNew, collections, topics, saving, onSave, onCancel
   const [title, setTitle] = useState(hint.title);
   const [content, setContent] = useState(hint.content);
   const [type, setType] = useState<HintItem["type"]>(hint.type);
-  const [collectionIds, setCollectionIds] = useState(hint.collectionId ? [hint.collectionId] : []);
-  const [topicIds, setTopicIds] = useState(hint.topicId ? [hint.topicId] : []);
+  const [topicId, setTopicId] = useState(hint.topicId ?? "");
+  const [postId, setPostId] = useState(hint.postId ?? "");
+  const [visibility, setVisibility] = useState<VisibilityStatus>(hint.visibility ?? "public");
   const [showFields, setShowFields] = useState(true);
 
-  const onSaveRef = useRef(onSave);
-  const onCancelRef = useRef(onCancel);
-  onSaveRef.current = onSave;
-  onCancelRef.current = onCancel;
+  const postsForTopic = useMemo(
+    () => (topicId ? posts.filter((post) => post.topicIds.includes(topicId)) : posts),
+    [posts, topicId],
+  );
+
+  const handleTopicChange = useCallback((nextTopicId: string) => {
+    setTopicId(nextTopicId);
+    if (!postId) return;
+    if (!nextTopicId) return;
+    const stillValid = posts.some((post) => post.id === postId && post.topicIds.includes(nextTopicId));
+    if (!stillValid) setPostId("");
+  }, [postId, posts]);
+
+  const handlePostChange = useCallback((nextPostId: string) => {
+    setPostId(nextPostId);
+  }, []);
 
   const handleSave = useCallback(() => {
     if (!title.trim()) return;
-    if (!collectionIds.length && !topicIds.length) return;
-    onSaveRef.current({
+    onSave({
       ...hint,
       title: title.trim(),
       content,
       type,
-      collectionId: collectionIds[0] ?? "",
-      topicId: topicIds[0] ?? "",
+      topicId,
+      postId,
+      visibility,
       updatedAt: new Date().toISOString().split("T")[0],
     });
-  }, [title, content, type, collectionIds, topicIds, hint]);
+  }, [title, content, type, topicId, postId, visibility, hint, onSave]);
 
-  const handleCancel = useCallback(() => { onCancelRef.current(); }, []);
+  const handleCancel = useCallback(() => { onCancel(); }, [onCancel]);
 
   return (
     <div className={styles.editorPanel}>
@@ -264,23 +280,42 @@ function HintEditor({ hint, isNew, collections, topics, saving, onSave, onCancel
               </select>
             </div>
           </div>
-          <div className={styles.editorFieldRow}>
-            <TagSelector
-              label={dict.admin.posts.collectionLabel}
-              options={collections}
-              selected={collectionIds}
-              onChange={setCollectionIds}
-              placeholder="Select collection..."
-              single
-            />
-            <TagSelector
-              label={dict.admin.posts.topicLabel ?? "Topic"}
-              options={topics}
-              selected={topicIds}
-              onChange={setTopicIds}
-              placeholder="Select topic..."
-              single
-            />
+          <div className={styles.editorFieldRowThree}>
+            <div className={editorStyles.fieldGroup} style={{ flex: 1 }}>
+              <label className={editorStyles.label}>{dict.admin.posts.topicLabel ?? "Topic"}</label>
+              <select
+                className={editorStyles.input}
+                value={topicId}
+                onChange={(e) => handleTopicChange(e.target.value)}
+              >
+                <option value="">No topic</option>
+                {topics.map((topic) => (
+                  <option key={topic.id} value={topic.id}>{topic.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className={editorStyles.fieldGroup} style={{ flex: 1 }}>
+              <label className={editorStyles.label}>Post</label>
+              <select
+                className={editorStyles.input}
+                value={postId}
+                onChange={(e) => handlePostChange(e.target.value)}
+                disabled={postsForTopic.length === 0}
+              >
+                <option value="">No post</option>
+                {postsForTopic.map((post) => (
+                  <option key={post.id} value={post.id}>{post.title}</option>
+                ))}
+              </select>
+            </div>
+            <div className={editorStyles.fieldGroup} style={{ minWidth: 160 }}>
+              <label className={editorStyles.label}>Status</label>
+              <select className={editorStyles.input} value={visibility} onChange={(e) => setVisibility(e.target.value as VisibilityStatus)}>
+                <option value="public">Public</option>
+                <option value="hidden">Hidden</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
           </div>
         </div>
       )}

@@ -19,6 +19,8 @@ import {
 import { processContentMedia } from "@/lib/cloudinary/client";
 import styles from "@/app/style/admin/editor.module.css";
 
+type VisibilityStatus = "public" | "hidden" | "draft";
+
 export default function NewPostPage() {
   const { dictionary: dict } = useDictionary();
   const router = useRouter();
@@ -33,6 +35,7 @@ export default function NewPostPage() {
   const [thumbnail, setThumbnail] = useState("");
   const [content, setContent] = useState("");
   const [isPinned, setIsPinned] = useState(false);
+  const [visibility, setVisibility] = useState<VisibilityStatus>("public");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -42,7 +45,7 @@ export default function NewPostPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [cols, tps] = await Promise.all([fetchCollections(), fetchTopics()]);
+        const [cols, tps] = await Promise.all([fetchCollections(), fetchTopics(undefined, { includeNonPublic: true })]);
         setCollections(cols);
         setTopics(tps);
         if (cols.length > 0) setCollectionIds([cols[0].id]);
@@ -55,8 +58,8 @@ export default function NewPostPage() {
   const handleCreateTopic = useCallback(async (name: string) => {
     const colId = collectionIds[0] ?? "";
     const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
-    const id = await addTopicFb(name, colId, topics.length, slug);
-    setTopics((prev) => [...prev, { id, name, slug, thumbnail: "", description: "", collectionId: colId, order: prev.length }]);
+    const id = await addTopicFb(name, colId, topics.length, slug, "", "", "public");
+    setTopics((prev) => [...prev, { id, name, slug, thumbnail: "", description: "", collectionId: colId, order: prev.length, visibility: "public" }]);
     return id;
   }, [collectionIds, topics.length]);
 
@@ -82,6 +85,20 @@ export default function NewPostPage() {
       return;
     }
 
+    const topicCollectionIds = topics
+      .filter((topic) => topicIds.includes(topic.id))
+      .map((topic) => topic.collectionId)
+      .filter((collectionId) => !!collectionId);
+
+    const finalCollectionIds = Array.from(
+      new Set([...collectionIds, ...topicCollectionIds]),
+    );
+
+    if (finalCollectionIds.length === 0) {
+      setError("Cần chọn ít nhất 1 collection hoặc topic thuộc collection");
+      return;
+    }
+
     setError("");
     setSuccess("");
     setSaving(true);
@@ -93,10 +110,11 @@ export default function NewPostPage() {
         slug: slug.trim(),
         thumbnail: thumbnail.trim(),
         content: processedHtml,
-        collectionIds,
+        collectionIds: finalCollectionIds,
         topicIds,
         isPinned,
         orderMap: {},
+        visibility,
       });
       setSuccess(`Đã tạo bài viết! ID: ${id}`);
       setTimeout(() => router.push("/admin/posts"), 1500);
@@ -210,6 +228,18 @@ export default function NewPostPage() {
                     onChange={(e) => setIsPinned(e.target.checked)}
                   />
                   <label htmlFor="pinned">{t.pinned}</label>
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>Status</label>
+                  <select
+                    className={styles.input}
+                    value={visibility}
+                    onChange={(e) => setVisibility(e.target.value as VisibilityStatus)}
+                  >
+                    <option value="public">Public</option>
+                    <option value="hidden">Hidden</option>
+                    <option value="draft">Draft</option>
+                  </select>
                 </div>
               </div>
             </div>

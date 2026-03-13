@@ -12,11 +12,12 @@ import {
   deleteCollection as deleteColFb,
   fetchTopics,
   addTopic as addTopicFb,
-  renameTopic as renameTopicFb,
   updateTopic as updateTopicFb,
   deleteTopic as deleteTopicFb,
+  updateTopicOrders,
   type CollectionDoc,
   type TopicDoc,
+  type VisibilityStatus,
 } from "@/lib/firebase/collections";
 import {
   fetchPosts,
@@ -58,17 +59,19 @@ export default function AdminPostsPage() {
   const [saving, setSaving] = useState(false);
   const [postOrderChanged, setPostOrderChanged] = useState(false);
   const [hintOrderChanged, setHintOrderChanged] = useState(false);
+  const [topicOrderChanged, setTopicOrderChanged] = useState(false);
   const originalPostOrder = useRef<string[]>([]);
   const originalHintOrder = useRef<string[]>([]);
+  const originalTopicOrder = useRef<string[]>([]);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [cols, tps, pts, hts] = await Promise.all([
         fetchCollections(),
-        fetchTopics(),
-        fetchPosts(),
-        fetchHints(),
+        fetchTopics(undefined, { includeNonPublic: true }),
+        fetchPosts({ includeNonPublic: true }),
+        fetchHints({ includeNonPublic: true }),
       ]);
       setCollections(cols);
       setTopics(tps);
@@ -85,7 +88,9 @@ export default function AdminPostsPage() {
   useEffect(() => { loadData(); }, []);
 
   const colTopics = useMemo(
-    () => topics.filter((t) => t.collectionId === selectedColId),
+    () => topics
+      .filter((t) => t.collectionId === selectedColId)
+      .sort((a, b) => a.order - b.order),
     [topics, selectedColId]
   );
 
@@ -101,15 +106,26 @@ export default function AdminPostsPage() {
   }, [posts, selectedColId, selectedTopicId]);
 
   const filteredHints = useMemo(() => {
-    if (selectedTopicId) return hints.filter((h) => h.topicId === selectedTopicId);
+    if (selectedTopicId) {
+      return hints
+        .filter((h) => h.topicId === selectedTopicId)
+        .sort((a, b) => a.order - b.order);
+    }
     if (selectedColId) {
       const topicIds = new Set(colTopics.map((t) => t.id));
-      return hints.filter((h) =>
-        h.collectionId === selectedColId || (h.topicId && topicIds.has(h.topicId))
+      const postIds = new Set(
+        posts
+          .filter((p) => p.collectionIds.includes(selectedColId))
+          .map((p) => p.id),
       );
+      return hints
+        .filter((h) =>
+          (h.topicId && topicIds.has(h.topicId)) || (h.postId && postIds.has(h.postId))
+        )
+        .sort((a, b) => a.order - b.order);
     }
     return [];
-  }, [hints, selectedTopicId, selectedColId, colTopics]);
+  }, [hints, selectedTopicId, selectedColId, colTopics, posts]);
 
   useEffect(() => {
     originalPostOrder.current = filteredPosts.map((p) => p.id);
@@ -120,6 +136,11 @@ export default function AdminPostsPage() {
     originalHintOrder.current = filteredHints.map((h) => h.id);
     setHintOrderChanged(false);
   }, [selectedColId, selectedTopicId]);
+
+  useEffect(() => {
+    originalTopicOrder.current = colTopics.map((topic) => topic.id);
+    setTopicOrderChanged(false);
+  }, [selectedColId, colTopics.length]);
 
   const totalColPosts = useMemo(
     () => posts.filter((p) => selectedColId && p.collectionIds.includes(selectedColId)).length,
@@ -181,25 +202,35 @@ export default function AdminPostsPage() {
     } catch (err) { console.error(err); }
   };
 
-  const addTopic = async (data: { name: string; slug: string; thumbnail: string; thumbnailFile?: File; description: string }) => {
+  const addTopic = async (data: { name: string; slug: string; thumbnail: string; thumbnailFile?: File; description: string; visibility: VisibilityStatus }) => {
     if (!selectedColId) return;
     try {
+      const normalizedName = data.name.trim();
+      const normalizedSlug = normalizedName
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\u0111/g, "d")
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .trim();
       let thumbnailUrl = data.thumbnail;
       if (data.thumbnailFile) {
         const result = await uploadToCloudinary(data.thumbnailFile);
         thumbnailUrl = result.url;
       }
-      const id = await addTopicFb(data.name, selectedColId, colTopics.length, data.slug, thumbnailUrl, data.description);
-      setTopics((prev) => [...prev, { id, name: data.name, slug: data.slug, thumbnail: thumbnailUrl, description: data.description, collectionId: selectedColId, order: colTopics.length }]);
+      const id = await addTopicFb(normalizedName, selectedColId, colTopics.length, normalizedSlug, thumbnailUrl, data.description, data.visibility);
+      setTopics((prev) => [...prev, { id, name: normalizedName, slug: normalizedSlug, thumbnail: thumbnailUrl, description: data.description, collectionId: selectedColId, order: colTopics.length, visibility: data.visibility }]);
     } catch (err) { console.error(err); }
   };
 
   const renameTopic = async (id: string, name: string) => {
     try {
-      await renameTopicFb(id, name);
-      const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
-      await updateTopicFb(id, { slug });
-      setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, name, slug } : t)));
+      const normalizedName = name.trim();
+      const slug = normalizedName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
+      await updateTopicFb(id, { name: normalizedName, slug });
+      setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, name: normalizedName, slug } : t)));
     } catch (err) { console.error(err); }
   };
 
@@ -221,7 +252,7 @@ export default function AdminPostsPage() {
     setEditingPost({
       id: "", title: "", slug: "", thumbnail: "", content: "",
       collectionIds: selectedColId ? [selectedColId] : [], topicIds: selectedTopicId ? [selectedTopicId] : [],
-      isPinned: false, orderMap: {}, views: 0, createdAt: now, updatedAt: now,
+      isPinned: false, orderMap: {}, views: 0, createdAt: now, updatedAt: now, visibility: "public",
     });
     setIsNewPost(true);
   };
@@ -234,10 +265,10 @@ export default function AdminPostsPage() {
   const handleCreateTopicForPost = useCallback(async (name: string) => {
     const colId = selectedColId ?? "";
     const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
-    const id = await addTopicFb(name, colId, topics.length, slug);
-    setTopics((prev) => [...prev, { id, name, slug, thumbnail: "", description: "", collectionId: colId, order: prev.length }]);
+    const id = await addTopicFb(name, colId, colTopics.length, slug, "", "", "public");
+    setTopics((prev) => [...prev, { id, name, slug, thumbnail: "", description: "", collectionId: colId, order: colTopics.length, visibility: "public" }]);
     return id;
-  }, [selectedColId, topics.length]);
+  }, [selectedColId, colTopics.length]);
 
   const handleSavePost = async (post: PostDoc, thumbnailFile?: File) => {
     const tempId = isNewPost ? `temp-${Date.now()}` : post.id;
@@ -279,14 +310,14 @@ export default function AdminPostsPage() {
         const id = await createPost({
           title: post.title, slug: post.slug, thumbnail: finalThumbnail,
           content: processedHtml, collectionIds: post.collectionIds,
-          topicIds: post.topicIds, isPinned: post.isPinned, orderMap: post.orderMap,
+          topicIds: post.topicIds, isPinned: post.isPinned, orderMap: post.orderMap, visibility: post.visibility,
         });
         setPosts((prev) => prev.map((p) => p.id === tempId ? { ...optimisticPost, id, thumbnail: finalThumbnail, content: processedHtml } : p));
       } else {
         await updatePost(post.id, {
           title: post.title, slug: post.slug, thumbnail: finalThumbnail,
           content: processedHtml, collectionIds: post.collectionIds,
-          topicIds: post.topicIds, isPinned: post.isPinned, orderMap: post.orderMap,
+          topicIds: post.topicIds, isPinned: post.isPinned, orderMap: post.orderMap, visibility: post.visibility,
         });
         setPosts((prev) => prev.map((p) => p.id === post.id ? { ...optimisticPost, thumbnail: finalThumbnail, content: processedHtml } : p));
       }
@@ -320,10 +351,14 @@ export default function AdminPostsPage() {
 
   const handleNewHint = () => {
     const now = new Date().toISOString().split("T")[0];
+    const initialTopicId = selectedTopicId ?? colTopics[0]?.id ?? "";
+    const initialPostId = filteredPosts.find((post) =>
+      initialTopicId ? post.topicIds.includes(initialTopicId) : true,
+    )?.id ?? "";
     setEditingHint({
       id: "", title: "", content: "", type: "tip",
-      collectionId: selectedColId ?? "", topicId: selectedTopicId ?? "",
-      order: hints.length, createdAt: now, updatedAt: now,
+      topicId: initialTopicId, postId: initialPostId,
+      order: hints.length, createdAt: now, updatedAt: now, visibility: "public",
     });
     setIsNewHint(true);
   };
@@ -355,13 +390,13 @@ export default function AdminPostsPage() {
       if (wasNew) {
         const id = await createHint({
           title: hint.title, content: processedHtml, type: hint.type,
-          collectionId: hint.collectionId, topicId: hint.topicId, order: hint.order,
+          topicId: hint.topicId, postId: hint.postId, order: hint.order, visibility: hint.visibility,
         });
         setHints((prev) => prev.map((h) => h.id === tempId ? { ...optimistic, id, content: processedHtml } : h));
       } else {
         await updateHintFb(hint.id, {
           title: hint.title, content: processedHtml, type: hint.type,
-          collectionId: hint.collectionId, topicId: hint.topicId,
+          topicId: hint.topicId, postId: hint.postId, visibility: hint.visibility,
         });
         setHints((prev) => prev.map((h) => h.id === hint.id ? { ...optimistic, content: processedHtml } : h));
       }
@@ -431,6 +466,40 @@ export default function AdminPostsPage() {
     setPostOrderChanged(false);
   };
 
+  const handleReorderTopics = (reordered: TopicDoc[]) => {
+    const reorderedIds = reordered.map((topic) => topic.id);
+    const idSet = new Set(reorderedIds);
+    const updated = reordered.map((topic, index) => ({ ...topic, order: index }));
+    const unchanged = topics.filter((topic) => !idSet.has(topic.id));
+    setTopics([...updated, ...unchanged]);
+    const changed = reorderedIds.join(",") !== originalTopicOrder.current.join(",");
+    setTopicOrderChanged(changed);
+  };
+
+  const handleSaveTopicOrder = async () => {
+    try {
+      const updates = colTopics.map((topic, index) => ({ id: topic.id, order: index }));
+      await updateTopicOrders(updates);
+      originalTopicOrder.current = colTopics.map((topic) => topic.id);
+      setTopicOrderChanged(false);
+    } catch (err) {
+      console.error("Save topic order failed:", err);
+      alert("Lỗi khi lưu thứ tự topic");
+    }
+  };
+
+  const handleResetTopicOrder = () => {
+    const originalIds = originalTopicOrder.current;
+    const idSet = new Set(colTopics.map((topic) => topic.id));
+    const sorted = originalIds
+      .map((id) => topics.find((topic) => topic.id === id))
+      .filter((topic): topic is TopicDoc => !!topic)
+      .map((topic, index) => ({ ...topic, order: index }));
+    const unchanged = topics.filter((topic) => !idSet.has(topic.id));
+    setTopics([...sorted, ...unchanged]);
+    setTopicOrderChanged(false);
+  };
+
   const handleReorderHints = (reordered: HintItem[]) => {
     const reorderedIds = reordered.map((h) => h.id);
     const idSet = new Set(reorderedIds);
@@ -491,9 +560,26 @@ export default function AdminPostsPage() {
         onAdd={addTopic}
         onRename={renameTopic}
         onDelete={deleteTopic}
+        onReorder={handleReorderTopics}
+        onSaveOrder={handleSaveTopicOrder}
+        onResetOrder={handleResetTopicOrder}
+        orderChanged={topicOrderChanged}
         onUpdateTopic={async (id, data, thumbnailFile) => {
           try {
             let updateData = { ...data };
+            if (updateData.name) {
+              const normalizedName = updateData.name.trim();
+              const normalizedSlug = normalizedName
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/\u0111/g, "d")
+                .replace(/[^\w\s-]/g, "")
+                .replace(/\s+/g, "-")
+                .replace(/-+/g, "-")
+                .trim();
+              updateData = { ...updateData, name: normalizedName, slug: normalizedSlug };
+            }
             if (thumbnailFile) {
               const result = await uploadToCloudinary(thumbnailFile);
               updateData = { ...updateData, thumbnail: result.url };

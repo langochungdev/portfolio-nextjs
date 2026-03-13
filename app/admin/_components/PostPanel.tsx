@@ -9,6 +9,8 @@ import dynamic from "next/dynamic";
 import styles from "@/app/style/admin/posts.module.css";
 import editorStyles from "@/app/style/admin/editor.module.css";
 
+type VisibilityStatus = "public" | "hidden" | "draft";
+
 const TiptapEditor = dynamic(
   () => import("@/app/admin/_components/TiptapEditor").then((m) => m.TiptapEditor),
   { ssr: false }
@@ -24,6 +26,7 @@ interface PostItem {
   topicIds: string[];
   isPinned: boolean;
   orderMap: Record<string, number>;
+  visibility: VisibilityStatus;
   views: number;
   createdAt: string;
   updatedAt: string;
@@ -91,7 +94,7 @@ const generateSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
 export function PostPanel({
-  posts, hints, selectedTopicId, editingPost, editingHint, isNew, isNewHint,
+  posts, hints, editingPost, editingHint, isNewHint,
   collections, topics, saving, onNew, onEdit, onSave, onDelete, onCancel, onCreateTopic,
   onNewHint, onEditHint, onSaveHint, onDeleteHint, onCancelHint,
   onReorderPosts, onSavePostOrder, onResetPostOrder, postOrderChanged,
@@ -117,7 +120,6 @@ export function PostPanel({
     return (
       <PostEditor
         post={editingPost}
-        isNew={isNew}
         collections={collections}
         topics={topics}
         saving={saving}
@@ -203,6 +205,9 @@ export function PostPanel({
                 <div className={styles.postItemInfo} onClick={() => onEdit(post)}>
                   <div className={styles.postItemTitle}>
                     {post.isPinned && <span className={styles.pinBadge}>PIN</span>}
+                    <span className={`${styles.statusBadge} ${styles[`status${post.visibility.charAt(0).toUpperCase()}${post.visibility.slice(1)}`]}`}>
+                      {post.visibility}
+                    </span>
                     {post.title}
                   </div>
                   <div className={styles.postItemMeta}>
@@ -243,7 +248,7 @@ export function PostPanel({
       ) : (
         <HintList
           hints={hints}
-          collections={collections}
+          posts={posts}
           topics={topics}
           editingHint={editingHint}
           isNewHint={isNewHint}
@@ -263,9 +268,8 @@ export function PostPanel({
   );
 }
 
-function PostEditor({ post, isNew, collections, topics, saving, onSave, onCancel, onCreateTopic }: {
+function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCreateTopic }: {
   post: PostItem;
-  isNew: boolean;
   collections: CollectionItem[];
   topics: TopicItem[];
   saving?: boolean;
@@ -286,6 +290,7 @@ function PostEditor({ post, isNew, collections, topics, saving, onSave, onCancel
   const [collectionIds, setCollectionIds] = useState(post.collectionIds);
   const [topicIds, setTopicIds] = useState(post.topicIds);
   const [isPinned, setIsPinned] = useState(post.isPinned);
+  const [visibility, setVisibility] = useState<VisibilityStatus>(post.visibility ?? "public");
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
@@ -305,29 +310,37 @@ function PostEditor({ post, isNew, collections, topics, saving, onSave, onCancel
     setThumbnail("");
   };
 
-  const onSaveRef = useRef(onSave);
-  const onCancelRef = useRef(onCancel);
-  onSaveRef.current = onSave;
-  onCancelRef.current = onCancel;
-
   const handleSave = useCallback(() => {
     if (!title.trim()) return;
-    onSaveRef.current({
+
+    const topicCollectionIds = topics
+      .filter((topic) => topicIds.includes(topic.id))
+      .map((topic) => topic.collectionId)
+      .filter((collectionId) => !!collectionId);
+
+    const finalCollectionIds = Array.from(
+      new Set([...collectionIds, ...topicCollectionIds]),
+    );
+
+    if (finalCollectionIds.length === 0) return;
+
+    onSave({
       ...post,
       title: title.trim(),
       slug: slug || generateSlug(title),
       thumbnail,
       content,
-      collectionIds,
+      collectionIds: finalCollectionIds,
       topicIds,
       isPinned,
+      visibility,
       updatedAt: new Date().toISOString().split("T")[0],
     }, thumbnailFile ?? undefined);
-  }, [title, slug, thumbnail, content, collectionIds, topicIds, isPinned, post, thumbnailFile]);
+  }, [title, slug, thumbnail, content, collectionIds, topicIds, isPinned, visibility, post, thumbnailFile, onSave, topics]);
 
   const handleCancel = useCallback(() => {
-    onCancelRef.current();
-  }, []);
+    onCancel();
+  }, [onCancel]);
 
   return (
     <div className={styles.editorPanel}>
@@ -366,7 +379,7 @@ function PostEditor({ post, isNew, collections, topics, saving, onSave, onCancel
             <input className={`${editorStyles.input} ${editorStyles.slugInput}`} type="text" value={slug} readOnly />
           </div>
         </div>
-        <div className={styles.editorFieldRow}>
+        <div className={styles.editorFieldRowThree}>
           <TagSelector
             label={t.collectionLabel}
             options={collections}
@@ -383,6 +396,14 @@ function PostEditor({ post, isNew, collections, topics, saving, onSave, onCancel
             onCreate={onCreateTopic}
             placeholder="Search or create topic..."
           />
+          <div className={editorStyles.fieldGroup} style={{ minWidth: 160 }}>
+            <label className={editorStyles.label}>Status</label>
+            <select className={editorStyles.input} value={visibility} onChange={(e) => setVisibility(e.target.value as VisibilityStatus)}>
+              <option value="public">Public</option>
+              <option value="hidden">Hidden</option>
+              <option value="draft">Draft</option>
+            </select>
+          </div>
         </div>
         <div className={styles.editorFieldRow}>
           <div className={editorStyles.fieldGroup} style={{ flex: 1 }}>

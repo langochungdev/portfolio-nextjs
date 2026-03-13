@@ -95,8 +95,8 @@ export function TagSelector({
         {selectedOptions.length > 0 ? (
           <div className={styles.tags}>
             {selectedOptions.map((o) => (
-              <span key={o.id} className={styles.tag}>
-                {o.name}
+              <span key={o.id} className={styles.tag} title={o.name}>
+                <span className={styles.tagText}>{o.name}</span>
                 <button
                   type="button"
                   className={styles.tagRemove}
@@ -141,9 +141,10 @@ export function TagSelector({
                 type="button"
                 className={`${styles.option} ${selected.includes(o.id) ? styles.optionSelected : ""}`}
                 onClick={() => toggle(o.id)}
+                title={o.name}
               >
                 <span className={styles.check}>{selected.includes(o.id) ? "✓" : ""}</span>
-                {o.name}
+                <span className={styles.optionText}>{o.name}</span>
               </button>
             ))}
             {filtered.length === 0 && !onCreate && (

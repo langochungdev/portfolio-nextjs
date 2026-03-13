@@ -10,10 +10,10 @@ import {
 import { fetchCollections, fetchTopics } from "@/lib/firebase/collections";
 import { fetchPosts } from "@/lib/firebase/posts";
 import { fetchHints } from "@/lib/firebase/hints";
+import { applyRelatedVisibility } from "./getBlogData";
 import {
   assignCollectionColors,
   type BlogData,
-  type CollectionWithColor,
   type PostDoc,
   type TopicDoc,
   type HintDoc,
@@ -54,11 +54,17 @@ export function BlogDataProvider({
   const [data, setData] = useState<BlogData>(() => {
     if (cachedData && Date.now() - cachedAt < CACHE_TTL) return cachedData;
     if (initialData) {
-      const result: BlogData = {
-        collections: assignCollectionColors(initialData.collections),
+      const relatedFiltered = applyRelatedVisibility({
         topics: initialData.topics,
         posts: initialData.posts,
         hints: initialData.hints,
+      });
+
+      const result: BlogData = {
+        collections: assignCollectionColors(initialData.collections),
+        topics: initialData.topics,
+        posts: relatedFiltered.posts,
+        hints: relatedFiltered.hints,
         loading: false,
       };
       cachedData = result;
@@ -84,7 +90,14 @@ export function BlogDataProvider({
         if (cancelled) return;
 
         const collections = assignCollectionColors(rawCollections);
-        const result: BlogData = { collections, topics, posts, hints, loading: false };
+        const relatedFiltered = applyRelatedVisibility({ topics, posts, hints });
+        const result: BlogData = {
+          collections,
+          topics,
+          posts: relatedFiltered.posts,
+          hints: relatedFiltered.hints,
+          loading: false,
+        };
         cachedData = result;
         cachedAt = Date.now();
         setData(result);

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { resizeImage } from "@/lib/cloudinary/resize";
 import styles from "@/app/style/admin/posts.module.css";
+
+type VisibilityStatus = "public" | "hidden" | "draft";
 
 interface TopicItem {
   id: string;
@@ -12,6 +14,7 @@ interface TopicItem {
   description: string;
   collectionId: string;
   order: number;
+  visibility: VisibilityStatus;
 }
 
 export interface TopicFormData {
@@ -20,6 +23,7 @@ export interface TopicFormData {
   thumbnail: string;
   thumbnailFile?: File;
   description: string;
+  visibility: VisibilityStatus;
 }
 
 interface Props {
@@ -32,7 +36,11 @@ interface Props {
   onAdd: (data: TopicFormData) => void;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
-  onUpdateTopic: (id: string, data: Partial<Pick<TopicItem, "slug" | "thumbnail" | "description">>, thumbnailFile?: File) => void;
+  onReorder: (items: TopicItem[]) => void;
+  onSaveOrder: () => void;
+  onResetOrder: () => void;
+  orderChanged: boolean;
+  onUpdateTopic: (id: string, data: Partial<Pick<TopicItem, "name" | "slug" | "thumbnail" | "description" | "visibility">>, thumbnailFile?: File) => void;
 }
 
 const PencilIcon = () => (
@@ -56,6 +64,14 @@ const CopyIcon = () => (
   </svg>
 );
 
+const DragHandle = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="4" y1="6" x2="20" y2="6" />
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <line x1="4" y1="18" x2="20" y2="18" />
+  </svg>
+);
+
 const generateSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
@@ -72,21 +88,60 @@ interface ModalProps {
   editingTopic?: TopicItem;
   onClose: () => void;
   onSubmit: (data: TopicFormData) => void;
-  onUpdate?: (id: string, data: Partial<Pick<TopicItem, "slug" | "thumbnail" | "description">>, file?: File) => void;
+  onUpdate?: (id: string, data: Partial<Pick<TopicItem, "name" | "slug" | "thumbnail" | "description" | "visibility">>, file?: File) => void;
 }
 
 function TopicModal({ editingTopic, onClose, onSubmit, onUpdate }: ModalProps) {
-  const [name, setName] = useState(editingTopic?.name ?? "");
-  const [slug, setSlug] = useState(editingTopic?.slug || (editingTopic ? generateSlug(editingTopic.name) : ""));
-  const [description, setDescription] = useState(editingTopic?.description ?? "");
-  const [thumbnail, setThumbnail] = useState(editingTopic?.thumbnail ?? "");
+  const initialName = editingTopic?.name ?? "";
+  const initialSlug = editingTopic?.slug || (editingTopic ? generateSlug(editingTopic.name) : "");
+  const initialDescription = editingTopic?.description ?? "";
+  const initialVisibility = editingTopic?.visibility ?? "public";
+  const initialThumbnail = editingTopic?.thumbnail ?? "";
+
+  const [name, setName] = useState(initialName);
+  const [slug, setSlug] = useState(initialSlug);
+  const [description, setDescription] = useState(initialDescription);
+  const [visibility, setVisibility] = useState<VisibilityStatus>(initialVisibility);
+  const [thumbnail, setThumbnail] = useState(initialThumbnail);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState(editingTopic?.thumbnail ?? "");
+  const [preview, setPreview] = useState(initialThumbnail);
   const [resizing, setResizing] = useState(false);
   const [ratioWarning, setRatioWarning] = useState("");
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const titleId = editingTopic ? "topic-modal-title-edit" : "topic-modal-title-new";
+
+  const hasChanges = useMemo(() => {
+    if (thumbnailFile) return true;
+
+    return (
+      name.trim() !== initialName.trim() ||
+      slug.trim() !== initialSlug.trim() ||
+      description !== initialDescription ||
+      visibility !== initialVisibility ||
+      thumbnail !== initialThumbnail
+    );
+  }, [
+    thumbnailFile,
+    name,
+    initialName,
+    slug,
+    initialSlug,
+    description,
+    initialDescription,
+    visibility,
+    initialVisibility,
+    thumbnail,
+    initialThumbnail,
+  ]);
+
+  const canSave = !!name.trim() && hasChanges && !saving;
+
+  const handleProtectedClose = useCallback(() => {
+    if (saving) return;
+    if (hasChanges) return;
+    onClose();
+  }, [saving, hasChanges, onClose]);
 
   useEffect(() => {
     return () => {
@@ -94,9 +149,20 @@ function TopicModal({ editingTopic, onClose, onSubmit, onUpdate }: ModalProps) {
     };
   }, [preview]);
 
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      handleProtectedClose();
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [handleProtectedClose]);
+
   const handleNameChange = (val: string) => {
     setName(val);
-    if (!editingTopic) setSlug(generateSlug(val));
+    setSlug(generateSlug(val));
   };
 
   const handleFile = useCallback(async (file: File) => {
@@ -132,22 +198,26 @@ function TopicModal({ editingTopic, onClose, onSubmit, onUpdate }: ModalProps) {
 
   const handleSave = async () => {
     const trimmedName = name.trim();
-    if (!trimmedName) return;
+    if (!trimmedName || !hasChanges) return;
+    const generatedSlug = generateSlug(trimmedName);
     setSaving(true);
     try {
       if (editingTopic && onUpdate) {
         onUpdate(editingTopic.id, {
-          slug: slug || generateSlug(trimmedName),
+          name: trimmedName,
+          slug: generatedSlug,
           thumbnail: thumbnailFile ? "" : (thumbnail || preview),
           description,
+          visibility,
         }, thumbnailFile ?? undefined);
       } else {
         onSubmit({
           name: trimmedName,
-          slug: slug || generateSlug(trimmedName),
+          slug: generatedSlug,
           thumbnail: thumbnail || preview,
           thumbnailFile: thumbnailFile ?? undefined,
           description,
+          visibility,
         });
       }
       onClose();
@@ -156,39 +226,68 @@ function TopicModal({ editingTopic, onClose, onSubmit, onUpdate }: ModalProps) {
     }
   };
 
+  const handleOverlayPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    if (e.target !== e.currentTarget) return;
+    handleProtectedClose();
+  };
+
   return (
     <div
       className={styles.topicModalOverlay}
-      ref={overlayRef}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      onPointerDown={handleOverlayPointerDown}
     >
-      <div className={styles.topicModalBox}>
+      <div className={styles.topicModalBox} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className={styles.topicModalHeader}>
-          <span>{editingTopic ? "Chỉnh sửa Topic" : "Tạo Topic mới"}</span>
-          <button type="button" className={styles.topicDetailClose} onClick={onClose}>✕</button>
+          <h2 id={titleId} className={styles.topicModalTitle}>{editingTopic ? "Chỉnh sửa Topic" : "Tạo Topic mới"}</h2>
+          <div className={styles.topicModalHeaderRight}>
+            <label className={styles.topicModalStatusLabel}>
+              Trạng thái
+              <select
+                className={styles.topicDetailInput}
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as VisibilityStatus)}
+              >
+                <option value="public">Public</option>
+                <option value="hidden">Hidden</option>
+                <option value="draft">Draft</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              className={styles.topicDetailClose}
+              onClick={handleProtectedClose}
+              disabled={saving || hasChanges}
+              title={hasChanges ? "Có thay đổi chưa lưu. Bấm Hủy để đóng." : "Đóng"}
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className={styles.topicModalBody}>
-          <label className={styles.topicDetailLabel}>
-            Tên topic
-            <input
-              className={styles.topicDetailInput}
-              value={name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Nhập tên topic..."
-              autoFocus
-            />
-          </label>
+          <div className={styles.topicModalRow}>
+            <label className={styles.topicDetailLabel}>
+              Tên topic
+              <input
+                className={styles.topicDetailInput}
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="Nhập tên topic..."
+                autoFocus
+              />
+            </label>
 
-          <label className={styles.topicDetailLabel}>
-            Slug
-            <input
-              className={`${styles.topicDetailInput} ${styles.slugReadonly}`}
-              value={slug}
-              readOnly
-              placeholder="tu-dong-tao-tu-ten"
-            />
-          </label>
+            <label className={styles.topicDetailLabel}>
+              Slug
+              <input
+                className={`${styles.topicDetailInput} ${styles.slugReadonly}`}
+                value={slug}
+                readOnly
+                placeholder="tu-dong-tao-tu-ten"
+              />
+            </label>
+          </div>
 
           <div className={styles.topicDetailLabel}>
             Thumbnail
@@ -235,11 +334,12 @@ function TopicModal({ editingTopic, onClose, onSubmit, onUpdate }: ModalProps) {
               placeholder="Mô tả topic cho SEO/OG..."
             />
           </label>
+
         </div>
 
         <div className={styles.topicModalFooter}>
           <button type="button" className={styles.resetOrderBtn} onClick={onClose}>Hủy</button>
-          <button type="button" className={styles.saveOrderBtn} onClick={handleSave} disabled={saving || !name.trim()}>
+          <button type="button" className={styles.saveOrderBtn} onClick={handleSave} disabled={!canSave}>
             {saving ? "..." : editingTopic ? "Lưu" : "Tạo"}
           </button>
         </div>
@@ -248,12 +348,29 @@ function TopicModal({ editingTopic, onClose, onSubmit, onUpdate }: ModalProps) {
   );
 }
 
-export function TopicPanel({ items, selectedId, totalCount, counts, disabled, onSelect, onAdd, onRename, onDelete, onUpdateTopic }: Props) {
+export function TopicPanel({
+  items,
+  selectedId,
+  totalCount,
+  counts,
+  disabled,
+  onSelect,
+  onAdd,
+  onRename,
+  onDelete,
+  onReorder,
+  onSaveOrder,
+  onResetOrder,
+  orderChanged,
+  onUpdateTopic,
+}: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTopic, setModalTopic] = useState<TopicItem | undefined>(undefined);
   const [copied, setCopied] = useState<string | null>(null);
+  const dragIdx = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const handleRename = (id: string) => {
     const name = editName.trim();
@@ -281,11 +398,42 @@ export function TopicPanel({ items, selectedId, totalCount, counts, disabled, on
     });
   };
 
+  const handleDragStart = (idx: number) => { dragIdx.current = idx; };
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDragOverIdx(idx);
+  };
+  const handleDragLeave = () => { setDragOverIdx(null); };
+  const handleDrop = (dropIdx: number) => {
+    const from = dragIdx.current;
+    if (from === null || from === dropIdx) {
+      dragIdx.current = null;
+      setDragOverIdx(null);
+      return;
+    }
+    const reordered = [...items];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(dropIdx, 0, moved);
+    onReorder(reordered);
+    dragIdx.current = null;
+    setDragOverIdx(null);
+  };
+  const handleDragEnd = () => {
+    dragIdx.current = null;
+    setDragOverIdx(null);
+  };
+
   if (disabled) {
     return (
       <div className={styles.panel}>
         <div className={styles.panelHeader}>
           <span className={styles.panelTitle}>Topics</span>
+          {orderChanged && (
+            <div className={styles.hintToolbarRight}>
+              <button type="button" className={styles.resetOrderBtn} onClick={onResetOrder}>Cancel</button>
+              <button type="button" className={styles.saveOrderBtn} onClick={onSaveOrder}>Save Order</button>
+            </div>
+          )}
         </div>
         <div className={styles.panelEmpty}>Select a collection</div>
       </div>
@@ -296,12 +444,20 @@ export function TopicPanel({ items, selectedId, totalCount, counts, disabled, on
     <div className={styles.panel}>
       <div className={styles.panelHeader}>
         <span className={styles.panelTitle}>Topics</span>
-        <button
-          type="button"
-          className={styles.panelAddBtn}
-          onClick={openCreateModal}
-          aria-label="Add topic"
-        >+</button>
+        <div className={styles.hintToolbarRight}>
+          {orderChanged && (
+            <>
+              <button type="button" className={styles.resetOrderBtn} onClick={onResetOrder}>Cancel</button>
+              <button type="button" className={styles.saveOrderBtn} onClick={onSaveOrder}>Save Order</button>
+            </>
+          )}
+          <button
+            type="button"
+            className={styles.panelAddBtn}
+            onClick={openCreateModal}
+            aria-label="Add topic"
+          >+</button>
+        </div>
       </div>
       <div className={styles.panelList}>
         <div
@@ -311,16 +467,23 @@ export function TopicPanel({ items, selectedId, totalCount, counts, disabled, on
           <span className={styles.panelItemName}>All</span>
           <span className={styles.panelCount}>{totalCount}</span>
         </div>
-        {items.map((topic) => {
+        {items.map((topic, idx) => {
           const isSelected = selectedId === topic.id;
           const isEditing = editingId === topic.id;
 
           return (
             <div
               key={topic.id}
-              className={`${styles.panelItem} ${isSelected ? styles.panelItemActive : ""}`}
+              className={`${styles.panelItem} ${isSelected ? styles.panelItemActive : ""} ${dragOverIdx === idx ? styles.dragOver : ""}`}
               onClick={() => !isEditing && onSelect(topic.id)}
+              draggable={!isEditing}
+              onDragStart={() => handleDragStart(idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDragLeave={handleDragLeave}
+              onDrop={() => handleDrop(idx)}
+              onDragEnd={handleDragEnd}
             >
+              {!isEditing && <span className={styles.dragHandle}><DragHandle /></span>}
               {isEditing ? (
                 <input
                   className={styles.panelInlineInput}
@@ -335,29 +498,45 @@ export function TopicPanel({ items, selectedId, totalCount, counts, disabled, on
                 />
               ) : (
                 <>
-                  <span className={styles.panelItemName}>{topic.name}</span>
-                  <span className={styles.panelCount}>{counts[topic.id] ?? 0}</span>
-                  <div className={styles.panelItemActions}>
-                    <button
-                      type="button"
-                      className={`${styles.iconBtn} ${copied === topic.id ? styles.iconBtnCopied : ""}`}
-                      onClick={(e) => { e.stopPropagation(); copyLink(topic); }}
-                      title="Copy link"
-                    >
-                      <CopyIcon />
-                    </button>
-                    <button type="button" className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); openEditModal(topic); }} title="Edit details">
-                      <PencilIcon />
-                    </button>
-                    <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={(e) => { e.stopPropagation(); onDelete(topic.id); }}>
-                      <TrashIcon />
-                    </button>
+                  <div className={styles.panelItemMain}>
+                    <span className={styles.panelItemName}>{topic.name}</span>
+                    <span className={styles.panelItemSlug}>/{topic.slug || generateSlug(topic.name)}</span>
+                  </div>
+                  <div className={styles.topicRowMeta}>
+                    <span className={`${styles.statusBadge} ${styles[`status${topic.visibility.charAt(0).toUpperCase()}${topic.visibility.slice(1)}`]}`}>
+                      {topic.visibility}
+                    </span>
+                    <span className={styles.panelCount}>{counts[topic.id] ?? 0}</span>
+                    <div className={styles.panelItemActions}>
+                      <button
+                        type="button"
+                        className={`${styles.iconBtn} ${copied === topic.id ? styles.iconBtnCopied : ""}`}
+                        onClick={(e) => { e.stopPropagation(); copyLink(topic); }}
+                        title="Copy link"
+                      >
+                        <CopyIcon />
+                      </button>
+                      <button type="button" className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); openEditModal(topic); }} title="Edit details">
+                        <PencilIcon />
+                      </button>
+                      <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={(e) => { e.stopPropagation(); onDelete(topic.id); }}>
+                        <TrashIcon />
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
             </div>
           );
         })}
+        {items.length > 0 && (
+          <div
+            className={`${styles.bottomDropZone} ${dragOverIdx === items.length ? styles.dragOver : ""}`}
+            onDragOver={(e) => handleDragOver(e, items.length)}
+            onDragLeave={handleDragLeave}
+            onDrop={() => handleDrop(items.length)}
+          />
+        )}
       </div>
       {modalOpen && (
         <TopicModal

@@ -13,6 +13,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/config";
+import type { VisibilityStatus } from "@/lib/firebase/collections";
 
 const db = getFirebaseDb();
 
@@ -25,6 +26,7 @@ export interface PostInput {
   topicIds: string[];
   isPinned: boolean;
   orderMap: Record<string, number>;
+  visibility: VisibilityStatus;
 }
 
 export interface PostDoc extends PostInput {
@@ -62,31 +64,47 @@ function docToPost(id: string, data: Record<string, unknown>): PostDoc {
         : [],
     isPinned: (data.isPinned as boolean) ?? false,
     orderMap: (data.orderMap as Record<string, number>) ?? {},
+    visibility: (data.visibility as VisibilityStatus) ?? "public",
     views: (data.views as number) ?? 0,
     createdAt: formatTimestamp(timestamps.createdAt ?? null),
     updatedAt: formatTimestamp(timestamps.updatedAt ?? null),
   };
 }
 
-export async function fetchPosts(): Promise<PostDoc[]> {
+interface FetchPostsOptions {
+  includeNonPublic?: boolean;
+}
+
+export async function fetchPosts(
+  options?: FetchPostsOptions,
+): Promise<PostDoc[]> {
+  const includeNonPublic = options?.includeNonPublic ?? false;
   const q = query(
     collection(db, "posts"),
     orderBy("timestamps.createdAt", "desc"),
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => docToPost(d.id, d.data()));
+  const mapped = snap.docs.map((d) => docToPost(d.id, d.data()));
+  return includeNonPublic
+    ? mapped
+    : mapped.filter((post) => post.visibility === "public");
 }
 
 export async function fetchPostsByCollection(
   collectionId: string,
+  options?: FetchPostsOptions,
 ): Promise<PostDoc[]> {
+  const includeNonPublic = options?.includeNonPublic ?? false;
   const q = query(
     collection(db, "posts"),
     where("collectionIds", "array-contains", collectionId),
     orderBy("timestamps.createdAt", "desc"),
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => docToPost(d.id, d.data()));
+  const mapped = snap.docs.map((d) => docToPost(d.id, d.data()));
+  return includeNonPublic
+    ? mapped
+    : mapped.filter((post) => post.visibility === "public");
 }
 
 export async function fetchPost(id: string): Promise<PostDoc | null> {
@@ -95,12 +113,17 @@ export async function fetchPost(id: string): Promise<PostDoc | null> {
   return docToPost(snap.id, snap.data());
 }
 
-export async function fetchPostBySlug(slug: string): Promise<PostDoc | null> {
+export async function fetchPostBySlug(
+  slug: string,
+  includeNonPublic = false,
+): Promise<PostDoc | null> {
   const q = query(collection(db, "posts"), where("slug", "==", slug));
   const snap = await getDocs(q);
   if (snap.empty) return null;
   const d = snap.docs[0];
-  return docToPost(d.id, d.data());
+  const post = docToPost(d.id, d.data());
+  if (!includeNonPublic && post.visibility !== "public") return null;
+  return post;
 }
 
 export async function createPost(data: PostInput): Promise<string> {

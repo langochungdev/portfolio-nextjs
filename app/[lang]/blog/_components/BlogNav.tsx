@@ -30,10 +30,6 @@ export function BlogNav({
       allLabel="All Posts"
       allCount={totalPosts}
       items={items}
-      filters={[
-        { key: "recent", label: "Most Recent" },
-        { key: "oldest", label: "Oldest First" },
-      ]}
     />
   );
 }

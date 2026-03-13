@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
-import { fetchPosts } from "@/lib/firebase/posts";
 import { i18nConfig } from "@/lib/i18n/config";
+import { getBlogData } from "@/app/[lang]/blog/_lib/getBlogData";
 
 const BASE_URL = "https://langochung.me";
 
@@ -29,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let blogEntries: MetadataRoute.Sitemap = [];
   try {
-    const posts = await fetchPosts();
+    const { posts } = await getBlogData();
     blogEntries = locales.flatMap((locale) =>
       posts.map((post) => ({
         url: `${BASE_URL}/${locale}/blog/${post.slug}`,

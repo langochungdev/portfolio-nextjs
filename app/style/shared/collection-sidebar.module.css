@@ -92,28 +92,6 @@
     text-align: right;
 }
 
-.filterItem {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 7px 10px;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: #7A7A72;
-    background: transparent;
-    border: none;
-    width: 100%;
-    text-align: left;
-    transition: background 0.15s, color 0.15s;
-    cursor: pointer;
-}
-
-.filterItemActive {
-    color: #1C1C1A;
-    background: #EEEEE9;
-}
-
 .pillStrip {
     display: none;
 }
@@ -135,15 +113,6 @@
         background: rgba(232, 232, 227, 0.06);
     }
 
-    .filterItem:hover {
-        background: rgba(28, 28, 26, 0.06);
-        color: #1C1C1A;
-    }
-
-    :global([data-theme="dark"]) .filterItem:hover {
-        background: rgba(232, 232, 227, 0.06);
-        color: #E8E8E3;
-    }
 }
 
 :global([data-theme="dark"]) .sidebar {
@@ -170,15 +139,6 @@
 
 :global([data-theme="dark"]) .collectionBadge {
     color: #6a6a62;
-}
-
-:global([data-theme="dark"]) .filterItem {
-    color: #9a9a92;
-}
-
-:global([data-theme="dark"]) .filterItemActive {
-    color: #E8E8E3;
-    background: #2a2a28;
 }
 
 @media (max-width: 768px) {

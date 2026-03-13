@@ -59,10 +59,6 @@ export function BlogShell({ children }: { children: React.ReactNode }) {
         allLabel={dict.blog.categories?.allPosts ?? "All Posts"}
         allCount={posts.length}
         items={collectionItems}
-        filters={[
-          { key: "recent", label: "Most Recent" },
-          { key: "oldest", label: "Oldest First" },
-        ]}
       />
       {children}
     </div>

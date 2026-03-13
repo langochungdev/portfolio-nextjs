@@ -19,6 +19,8 @@ import {
 import { processContentMedia } from "@/lib/cloudinary/client";
 import styles from "@/app/style/admin/editor.module.css";
 
+type VisibilityStatus = "public" | "hidden" | "draft";
+
 export default function EditPostPage() {
   const { dictionary: dict } = useDictionary();
   const router = useRouter();
@@ -45,6 +47,7 @@ export default function EditPostPage() {
   const [thumbnail, setThumbnail] = useState("");
   const [content, setContent] = useState("");
   const [isPinned, setIsPinned] = useState(false);
+  const [visibility, setVisibility] = useState<VisibilityStatus>("public");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -59,7 +62,7 @@ export default function EditPostPage() {
         const [post, cols, tps] = await Promise.all([
           fetchPost(params.id),
           fetchCollections(),
-          fetchTopics(),
+          fetchTopics(undefined, { includeNonPublic: true }),
         ]);
         if (!post) { setError("Post not found"); setLoading(false); return; }
         setTitle(post.title);
@@ -71,6 +74,7 @@ export default function EditPostPage() {
         setThumbnail(post.thumbnail);
         setContent(post.content);
         setIsPinned(post.isPinned);
+        setVisibility(post.visibility ?? "public");
         originalContentRef.current = post.content;
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load post");
@@ -83,8 +87,8 @@ export default function EditPostPage() {
   const handleCreateTopic = useCallback(async (name: string) => {
     const colId = collectionIds[0] ?? "";
     const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
-    const id = await addTopicFb(name, colId, topics.length, slug);
-    setTopics((prev) => [...prev, { id, name, slug, thumbnail: "", description: "", collectionId: colId, order: prev.length }]);
+    const id = await addTopicFb(name, colId, topics.length, slug, "", "", "public");
+    setTopics((prev) => [...prev, { id, name, slug, thumbnail: "", description: "", collectionId: colId, order: prev.length, visibility: "public" }]);
     return id;
   }, [collectionIds, topics.length]);
 
@@ -95,6 +99,21 @@ export default function EditPostPage() {
 
   const handleSave = async () => {
     if (!title.trim()) return;
+
+    const topicCollectionIds = topics
+      .filter((topic) => topicIds.includes(topic.id))
+      .map((topic) => topic.collectionId)
+      .filter((collectionId) => !!collectionId);
+
+    const finalCollectionIds = Array.from(
+      new Set([...collectionIds, ...topicCollectionIds]),
+    );
+
+    if (finalCollectionIds.length === 0) {
+      setError("Cần chọn ít nhất 1 collection hoặc topic thuộc collection");
+      return;
+    }
+
     setSaving(true);
     setError("");
     try {
@@ -104,9 +123,10 @@ export default function EditPostPage() {
         slug: slug || generateSlug(title),
         thumbnail: thumbnail.trim(),
         content: processedHtml,
-        collectionIds,
+        collectionIds: finalCollectionIds,
         topicIds,
         isPinned,
+        visibility,
       });
       originalContentRef.current = processedHtml;
       router.push("/admin/posts");
@@ -221,6 +241,18 @@ export default function EditPostPage() {
                     onChange={(e) => setIsPinned(e.target.checked)}
                   />
                   <label htmlFor="pinned">{t.pinned}</label>
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>Status</label>
+                  <select
+                    className={styles.input}
+                    value={visibility}
+                    onChange={(e) => setVisibility(e.target.value as VisibilityStatus)}
+                  >
+                    <option value="public">Public</option>
+                    <option value="hidden">Hidden</option>
+                    <option value="draft">Draft</option>
+                  </select>
                 </div>
               </div>
             </div>

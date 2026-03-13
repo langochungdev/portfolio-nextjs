@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { fetchPostBySlug } from "@/lib/firebase/posts";
 import { getExcerpt } from "../_lib/helpers";
+import { getBlogData } from "../_lib/getBlogData";
 import BlogDetailClient from "./BlogDetailClient";
 import { JsonLd, articleSchema, breadcrumbSchema } from "@/lib/seo/schemas";
 
@@ -10,7 +10,8 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, slug } = await params;
-  const post = await fetchPostBySlug(slug);
+  const { posts } = await getBlogData();
+  const post = posts.find((item) => item.slug === slug);
   if (!post) return { title: "Not Found" };
 
   const description = getExcerpt(post.content, 160);
@@ -47,7 +48,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BlogDetailPage({ params }: Props) {
   const { lang, slug } = await params;
-  const post = await fetchPostBySlug(slug);
+  const { posts } = await getBlogData();
+  const post = posts.find((item) => item.slug === slug);
 
   return (
     <>

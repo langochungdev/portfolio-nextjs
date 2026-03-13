@@ -251,6 +251,10 @@
     gap: 12px;
 }
 
+.fieldRow>* {
+    min-width: 0;
+}
+
 .label {
     font-size: 0.75rem;
     font-weight: 600;
@@ -1161,4 +1165,5 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
 }

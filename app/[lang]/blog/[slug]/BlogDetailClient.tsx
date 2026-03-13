@@ -18,26 +18,46 @@ import tipsStyles from "@/app/style/blog/tips.module.css";
 import { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "react";
 
 function processContent(html: string): string {
+  const getAlign = (attrs: string): "left" | "right" | "center" => {
+    const match = attrs.match(/data-align="(left|right|center)"/);
+    if (match?.[1] === "left" || match?.[1] === "right" || match?.[1] === "center") {
+      return match[1];
+    }
+    return "center";
+  };
+
+  const getWidth = (attrs: string): string | null => {
+    const match = attrs.match(/width="(\d+)"/);
+    return match?.[1] ?? null;
+  };
+
+  const getFloatWrapStyle = (align: "left" | "right" | "center", width?: string | null): string => {
+    if (align === "left") {
+      return `display:block;float:left;margin-right:1rem;margin-bottom:0.5rem;${width ? `width:min(100%,${width}px);` : "max-width:100%;"}`;
+    }
+    if (align === "right") {
+      return `display:block;float:right;margin-left:1rem;margin-bottom:0.5rem;${width ? `width:min(100%,${width}px);` : "max-width:100%;"}`;
+    }
+    return "display:flex;justify-content:center;width:100%;margin:0.75rem 0;";
+  };
+
+  const getInnerWidthStyle = (width?: string | null): string => {
+    if (!width) return "";
+    return ` style=\"max-width:${width}px;width:min(100%,${width}px)\"`;
+  };
+
   return html
     .replace(
       /<img\s([^>]*)>/g,
       (_match, attrs: string) => {
-        const alignMatch = (attrs as string).match(/data-align="(left|right|center)"/);
-        const widthMatch = (attrs as string).match(/width="(\d+)"/);
-        const altMatch = (attrs as string).match(/alt="([^"]*)"/);
-        const align = alignMatch?.[1] || "center";
-        const width = widthMatch?.[1];
+        const align = getAlign(attrs);
+        const width = getWidth(attrs);
+        const altMatch = attrs.match(/alt="([^"]*)"/);
         const alt = altMatch?.[1];
-
-        const alignStyle =
-          align === "left"
-            ? "float:left;margin-right:1rem;margin-bottom:0.5rem"
-            : align === "right"
-              ? "float:right;margin-left:1rem;margin-bottom:0.5rem"
-              : "display:flex;justify-content:center;width:100%";
+        const alignStyle = getFloatWrapStyle(align, width);
 
         if (alt || width) {
-          const figStyle = width ? ` style="max-width:${width}px;width:100%"` : "";
+          const figStyle = getInnerWidthStyle(width);
           const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
           return `<div style="${alignStyle}"><figure${figStyle}><img ${attrs}>${figcaption}</figure></div>`;
         }
@@ -47,22 +67,51 @@ function processContent(html: string): string {
     .replace(
       /<video\s([^>]*)><\/video>/g,
       (_match, attrs: string) => {
-        const altMatch = (attrs as string).match(/alt="([^"]*)"/);
-        const widthMatch = (attrs as string).match(/width="(\d+)"/);
+        const align = getAlign(attrs);
+        const altMatch = attrs.match(/alt="([^"]*)"/);
+        const width = getWidth(attrs);
         const alt = altMatch?.[1];
-        const width = widthMatch?.[1];
-        const figStyle = width ? ` style="max-width:${width}px;width:100%"` : "";
+        const wrapStyle = getFloatWrapStyle(align, width);
+        const figStyle = getInnerWidthStyle(width);
         const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
-        return `<figure class="media-figure"${figStyle}><video ${attrs}></video>${figcaption}</figure>`;
+        return `<div style="${wrapStyle}"><figure class="media-figure"${figStyle}><video ${attrs}></video>${figcaption}</figure></div>`;
       }
     )
     .replace(
       /<audio\s([^>]*)><\/audio>/g,
       (_match, attrs: string) => {
-        const altMatch = (attrs as string).match(/alt="([^"]*)"/);
+        const align = getAlign(attrs);
+        const wrapStyle = getFloatWrapStyle(align, null);
+        const altMatch = attrs.match(/alt="([^"]*)"/);
         const alt = altMatch?.[1];
         const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
-        return `<figure class="media-figure audio-figure"><audio ${attrs}></audio>${figcaption}</figure>`;
+        return `<div style="${wrapStyle}"><figure class="media-figure audio-figure"><audio ${attrs}></audio>${figcaption}</figure></div>`;
+      }
+    )
+    .replace(
+      /<div class="iframe-wrapper">\s*<iframe\s([^>]*)><\/iframe>\s*<\/div>/g,
+      (_match, attrs: string) => {
+        const align = getAlign(attrs);
+        const width = getWidth(attrs);
+        const wrapStyle = getFloatWrapStyle(align, width);
+        return `<div class="iframe-wrapper" style="${wrapStyle}"><iframe ${attrs}></iframe></div>`;
+      }
+    )
+    .replace(
+      /<div class="file-preview">\s*<iframe\s([^>]*)><\/iframe>\s*<\/div>/g,
+      (_match, attrs: string) => {
+        const align = getAlign(attrs);
+        const width = getWidth(attrs);
+        const wrapStyle = getFloatWrapStyle(align, width);
+        return `<div class="file-preview" style="${wrapStyle}"><iframe ${attrs}></iframe></div>`;
+      }
+    )
+    .replace(
+      /<a\s([^>]*data-file-src[^>]*)>([\s\S]*?)<\/a>/g,
+      (_match, attrs: string, inner: string) => {
+        const align = getAlign(attrs);
+        const wrapStyle = getFloatWrapStyle(align, null);
+        return `<div style="${wrapStyle}"><a ${attrs}>${inner}</a></div>`;
       }
     )
     .replace(/<p><\/p>/g, "<p><br></p>");

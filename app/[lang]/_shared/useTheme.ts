@@ -17,8 +17,18 @@ export function useTheme() {
     () => {
       const attr = document.documentElement.getAttribute("data-theme");
       if (attr === "dark" || attr === "light") return attr;
+
+      const cookieTheme = document.cookie.match(
+        /(?:^|;)\s*theme=(light|dark)/,
+      )?.[1];
+      if (cookieTheme === "dark" || cookieTheme === "light") return cookieTheme;
+
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored === "dark" ? "dark" : "light";
+      if (stored === "dark" || stored === "light") return stored;
+
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
     },
     () => serverTheme,
   );

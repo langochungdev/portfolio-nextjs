@@ -17,7 +17,6 @@ interface CollectionSidebarProps {
   allLabel: string;
   allCount: number;
   items: CollectionItem[];
-  filters?: { key: string; label: string }[];
   className?: string;
 }
 
@@ -29,7 +28,6 @@ export function CollectionSidebar({
   allLabel,
   allCount,
   items,
-  filters,
   className,
 }: CollectionSidebarProps) {
   return (
@@ -64,17 +62,6 @@ export function CollectionSidebar({
             );
           })}
         </div>
-
-        {filters && (
-          <div className={styles.sidebarSection}>
-            <div className={styles.sidebarHeading}>Filter</div>
-            {filters.map((f) => (
-              <button key={f.key} className={styles.filterItem}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-        )}
       </aside>
 
       <nav className={styles.pillStrip}>

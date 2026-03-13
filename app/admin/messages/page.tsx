@@ -31,6 +31,8 @@ const MoreIcon = (
 
 type FilterMode = "all" | "named" | "unnamed" | "recent" | "mostVisits";
 
+type RangeSortMode = "newest" | "oldest";
+
 function formatTime(iso: string): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -47,6 +49,37 @@ function formatRelativeTime(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+}
+
+function formatDateTime(iso: string): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
+function getLastActiveIso(conv: ConversationDoc): string {
+  return conv.presence.lastActive || conv.updatedAt;
+}
+
+function getLastActiveTimestamp(conv: ConversationDoc): number {
+  const iso = getLastActiveIso(conv);
+  return iso ? new Date(iso).getTime() : 0;
+}
+
+function formatPageLabel(page: string): string {
+  if (!page) return "Unknown";
+  if (page === "home") return "Home";
+  if (page === "blog") return "Blog";
+  if (page === "certificates") return "Certificates";
+  if (page.startsWith("/")) return page;
+  if (page.includes("/")) return `/${page}`;
+  return `/blog/${page}`;
 }
 
 function isOnline(conv: ConversationDoc): boolean {
@@ -71,8 +104,12 @@ export default function AdminMessagesPage() {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [listEditId, setListEditId] = useState<string | null>(null);
   const [listEditValue, setListEditValue] = useState("");
-  const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  const [filterMode, setFilterMode] = useState<FilterMode>("named");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [rangeOpen, setRangeOpen] = useState(false);
+  const [rangeFromDate, setRangeFromDate] = useState("");
+  const [rangeToDate, setRangeToDate] = useState("");
+  const [rangeSortMode, setRangeSortMode] = useState<RangeSortMode>("newest");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listEditRef = useRef<HTMLInputElement>(null);
@@ -228,8 +265,8 @@ export default function AdminMessagesPage() {
         break;
       case "recent":
         list.sort((a, b) => {
-          const ta = a.presence.lastActive ? new Date(a.presence.lastActive).getTime() : 0;
-          const tb = b.presence.lastActive ? new Date(b.presence.lastActive).getTime() : 0;
+          const ta = getLastActiveTimestamp(a);
+          const tb = getLastActiveTimestamp(b);
           return tb - ta;
         });
         break;
@@ -237,6 +274,36 @@ export default function AdminMessagesPage() {
         list.sort((a, b) => b.visitCount - a.visitCount);
         break;
     }
+
+    const fromTsRaw = rangeFromDate ? new Date(`${rangeFromDate}T00:00:00`).getTime() : null;
+    const toTsRaw = rangeToDate ? new Date(`${rangeToDate}T23:59:59.999`).getTime() : null;
+    const hasFrom = typeof fromTsRaw === "number" && !Number.isNaN(fromTsRaw);
+    const hasTo = typeof toTsRaw === "number" && !Number.isNaN(toTsRaw);
+
+    if (hasFrom || hasTo) {
+      let fromTs = hasFrom ? fromTsRaw! : null;
+      let toTs = hasTo ? toTsRaw! : null;
+
+      if (fromTs !== null && toTs !== null && fromTs > toTs) {
+        const temp = fromTs;
+        fromTs = toTs;
+        toTs = temp;
+      }
+
+      list = list.filter((conv) => {
+        const lastActiveTs = getLastActiveTimestamp(conv);
+        if (!lastActiveTs) return false;
+        if (fromTs !== null && lastActiveTs < fromTs) return false;
+        if (toTs !== null && lastActiveTs > toTs) return false;
+        return true;
+      });
+
+      list.sort((a, b) => {
+        const delta = getLastActiveTimestamp(b) - getLastActiveTimestamp(a);
+        return rangeSortMode === "newest" ? delta : -delta;
+      });
+    }
+
     return list;
   })();
 
@@ -248,6 +315,17 @@ export default function AdminMessagesPage() {
     mostVisits: "Most visits",
   };
 
+  const hiddenUnreadCount = (() => {
+    switch (filterMode) {
+      case "named":
+        return conversations.filter((c) => c.status === "unread" && !c.userName).length;
+      case "unnamed":
+        return conversations.filter((c) => c.status === "unread" && !!c.userName).length;
+      default:
+        return 0;
+    }
+  })();
+
   if (loading) {
     return <div className={styles.messagesPage}><div className={styles.emptyChat}>Loading...</div></div>;
   }
@@ -257,31 +335,86 @@ export default function AdminMessagesPage() {
       <div className={styles.convList}>
         <div className={styles.convListHeader}>
           <span>{t.title}</span>
-          <div className={styles.filterWrapper}>
+          <div className={styles.convListHeaderControls}>
             <button
-              className={styles.filterToggle}
-              onClick={() => setFilterOpen((v) => !v)}
+              className={styles.rangeToggle}
+              onClick={() => setRangeOpen((v) => !v)}
             >
-              {filterLabel[filterMode]}
+              Sort fields
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
+                <polyline points={rangeOpen ? "18 15 12 9 6 15" : "6 9 12 15 18 9"} />
               </svg>
             </button>
-            {filterOpen && (
-              <div className={styles.filterDropdown}>
-                {(Object.keys(filterLabel) as FilterMode[]).map((key) => (
-                  <button
-                    key={key}
-                    className={`${styles.filterOption} ${filterMode === key ? styles.filterOptionActive : ""}`}
-                    onClick={() => { setFilterMode(key); setFilterOpen(false); }}
-                  >
-                    {filterLabel[key]}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className={styles.filterWrapper}>
+              <button
+                className={styles.filterToggle}
+                onClick={() => setFilterOpen((v) => !v)}
+              >
+                {filterLabel[filterMode]}
+                {hiddenUnreadCount > 0 && (
+                  <span className={styles.filterBadge}>{hiddenUnreadCount}</span>
+                )}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {filterOpen && (
+                <div className={styles.filterDropdown}>
+                  {(Object.keys(filterLabel) as FilterMode[]).map((key) => (
+                    <button
+                      key={key}
+                      className={`${styles.filterOption} ${filterMode === key ? styles.filterOptionActive : ""}`}
+                      onClick={() => { setFilterMode(key); setFilterOpen(false); }}
+                    >
+                      {filterLabel[key]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+        {rangeOpen && (
+          <div className={styles.rangeToolbar}>
+            <label className={styles.rangeField}>
+              <span>From</span>
+              <input
+                type="date"
+                value={rangeFromDate}
+                onChange={(e) => setRangeFromDate(e.target.value)}
+              />
+            </label>
+            <label className={styles.rangeField}>
+              <span>To</span>
+              <input
+                type="date"
+                value={rangeToDate}
+                onChange={(e) => setRangeToDate(e.target.value)}
+              />
+            </label>
+            <label className={styles.rangeFieldSelect}>
+              <span>Sort</span>
+              <select
+                value={rangeSortMode}
+                onChange={(e) => setRangeSortMode(e.target.value as RangeSortMode)}
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+              </select>
+            </label>
+            {(rangeFromDate || rangeToDate) && (
+              <button
+                className={styles.rangeClearBtn}
+                onClick={() => {
+                  setRangeFromDate("");
+                  setRangeToDate("");
+                }}
+              >
+                Clear range
+              </button>
+            )}
+          </div>
+        )}
         {filtered.length === 0 && (
           <div className={styles.emptyChat}>{t.noMessages}</div>
         )}
@@ -326,25 +459,19 @@ export default function AdminMessagesPage() {
                   </div>
                 )}
                 <div className={styles.convMeta}>
-                  {online ? (
-                    <span className={styles.convOnlineText}>
-                      {conv.presence.currentPage === "home"
-                        ? "Home"
-                        : conv.presence.currentPage === "blog"
-                          ? "Blog"
-                          : conv.presence.currentPage === "certificates"
-                            ? "Certificates"
-                            : conv.presence.currentPage
-                              ? `📄 ${conv.presence.currentPage}`
-                              : "Online"}
-                    </span>
-                  ) : (
-                    <span className={styles.convLastMsg}>
-                      {conv.presence.lastActive
-                        ? formatRelativeTime(conv.presence.lastActive)
-                        : conv.lastMessage}
-                    </span>
-                  )}
+                  <span className={online ? styles.convOnlineText : styles.convLastMsg}>
+                    {online
+                      ? `Online now · ${formatPageLabel(conv.presence.currentPage)}`
+                      : getLastActiveIso(conv)
+                        ? formatRelativeTime(getLastActiveIso(conv))
+                        : conv.lastMessage || "No activity"}
+                  </span>
+                  <span className={styles.convStatsText}>
+                    Visits {conv.visitCount} · Last page {formatPageLabel(conv.presence.currentPage)}
+                  </span>
+                  <span className={styles.convTimestampText}>
+                    {formatDateTime(getLastActiveIso(conv))}
+                  </span>
                 </div>
               </div>
               {conv.status === "unread" && <div className={styles.convBadge} />}

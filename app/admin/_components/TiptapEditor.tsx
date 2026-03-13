@@ -17,6 +17,7 @@ import Youtube from "@tiptap/extension-youtube";
 import TextAlign from "@tiptap/extension-text-align";
 import { Node, Extension, ReactNodeViewRenderer, mergeAttributes } from "@tiptap/react";
 import Suggestion, { type SuggestionProps } from "@tiptap/suggestion";
+import { Plugin } from "@tiptap/pm/state";
 import {
   useState,
   useEffect,
@@ -348,41 +349,100 @@ function MediaModal({ title, accept, onInsert, onClose }: MediaModalProps) {
 
 type Align = "left" | "center" | "right";
 
+function beginPointerResize(
+  event: React.PointerEvent<HTMLElement>,
+  onDelta: (dx: number, dy: number) => void,
+) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const pointerId = event.pointerId;
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const target = event.currentTarget;
+  const listenerOpts: AddEventListenerOptions = { capture: true };
+  let active = true;
+
+  const stop = () => {
+    if (!active) return;
+    active = false;
+    window.removeEventListener("pointermove", onMove, listenerOpts);
+    window.removeEventListener("pointerup", onUp, listenerOpts);
+    window.removeEventListener("pointercancel", onCancel, listenerOpts);
+    window.removeEventListener("blur", onBlur);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+    target.removeEventListener("lostpointercapture", onLostPointerCapture);
+
+    try {
+      if (target.hasPointerCapture(pointerId)) {
+        target.releasePointerCapture(pointerId);
+      }
+    } catch {
+      // no-op
+    }
+  };
+
+  const onMove = (ev: PointerEvent) => {
+    if (!active || ev.pointerId !== pointerId) return;
+    if (ev.buttons === 0) {
+      stop();
+      return;
+    }
+    onDelta(ev.clientX - startX, ev.clientY - startY);
+  };
+
+  const onUp = (ev: PointerEvent) => {
+    if (ev.pointerId !== pointerId) return;
+    stop();
+  };
+
+  const onCancel = (ev: PointerEvent) => {
+    if (ev.pointerId !== pointerId) return;
+    stop();
+  };
+
+  const onBlur = () => {
+    stop();
+  };
+
+  const onVisibilityChange = () => {
+    if (document.visibilityState !== "visible") {
+      stop();
+    }
+  };
+
+  const onLostPointerCapture = () => {
+    stop();
+  };
+
+  try {
+    target.setPointerCapture(pointerId);
+  } catch {
+    // no-op
+  }
+
+  target.addEventListener("lostpointercapture", onLostPointerCapture);
+  window.addEventListener("pointermove", onMove, listenerOpts);
+  window.addEventListener("pointerup", onUp, listenerOpts);
+  window.addEventListener("pointercancel", onCancel, listenerOpts);
+  window.addEventListener("blur", onBlur);
+  document.addEventListener("visibilitychange", onVisibilityChange);
+}
+
 function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
   const { src, alt, width, textAlign } = node.attrs as { src: string; alt: string; width: number; textAlign: Align };
   const imgRef = useRef<HTMLImageElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const startW = useRef(0);
-  const edge = useRef<"right" | "bottom-right" | "bottom">("right");
   const [altValue, setAltValue] = useState(alt ?? "");
 
-  const onPointerDown = useCallback((pos: "right" | "bottom-right" | "bottom") => (e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragging.current = true;
-    edge.current = pos;
-    startX.current = e.clientX;
-    startY.current = e.clientY;
-    startW.current = wrapRef.current?.offsetWidth ?? width ?? 400;
-
-    const onMove = (ev: PointerEvent) => {
-      if (!dragging.current) return;
-      const dx = ev.clientX - startX.current;
-      if (edge.current === "right" || edge.current === "bottom-right") {
-        const newW = Math.max(80, startW.current + dx);
-        updateAttributes({ width: newW });
+  const onPointerDown = useCallback((pos: "right" | "bottom-right" | "bottom") => (e: React.PointerEvent<HTMLDivElement>) => {
+    const startWidth = wrapRef.current?.offsetWidth ?? width ?? 400;
+    beginPointerResize(e, (dx) => {
+      if (pos === "right" || pos === "bottom-right") {
+        const newWidth = Math.max(80, startWidth + dx);
+        updateAttributes({ width: newWidth });
       }
-    };
-    const onUp = () => {
-      dragging.current = false;
-      document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup", onUp);
-    };
-    document.addEventListener("pointermove", onMove);
-    document.addEventListener("pointerup", onUp);
+    });
   }, [width, updateAttributes]);
 
   const setAlign = (a: Align) => updateAttributes({ textAlign: a });
@@ -459,63 +519,51 @@ const CustomImage = ImageExt.extend({
 });
 
 function ResizableIframe({ node, updateAttributes, selected }: NodeViewProps) {
-  const { htmlContent, width, height } = node.attrs as { htmlContent: string; width: number; height: number };
+  const { htmlContent, width, height, textAlign } = node.attrs as {
+    htmlContent: string;
+    width: number;
+    height: number;
+    textAlign: Align;
+  };
   const wrapRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const startW = useRef(0);
-  const startH = useRef(0);
-  const edgeRef = useRef<"right" | "bottom" | "corner">("corner");
 
-  const onPointerDown = useCallback((pos: "right" | "bottom" | "corner") => (e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragging.current = true;
-    edgeRef.current = pos;
-    startX.current = e.clientX;
-    startY.current = e.clientY;
-    startW.current = wrapRef.current?.offsetWidth ?? width ?? 560;
-    startH.current = wrapRef.current?.offsetHeight ?? height ?? 315;
+  const onPointerDown = useCallback((pos: "right" | "bottom" | "corner") => (e: React.PointerEvent<HTMLDivElement>) => {
+    const startWidth = wrapRef.current?.offsetWidth ?? width ?? 560;
+    const startHeight = wrapRef.current?.offsetHeight ?? height ?? 315;
 
-    const onMove = (ev: PointerEvent) => {
-      if (!dragging.current) return;
-      const dx = ev.clientX - startX.current;
-      const dy = ev.clientY - startY.current;
+    beginPointerResize(e, (dx, dy) => {
       const updates: Record<string, number> = {};
       if (pos === "right" || pos === "corner") {
-        updates.width = Math.max(200, startW.current + dx);
+        updates.width = Math.max(200, startWidth + dx);
       }
       if (pos === "bottom" || pos === "corner") {
-        updates.height = Math.max(100, startH.current + dy);
+        updates.height = Math.max(100, startHeight + dy);
       }
-      updateAttributes(updates);
-    };
-    const onUp = () => {
-      dragging.current = false;
-      document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup", onUp);
-    };
-    document.addEventListener("pointermove", onMove);
-    document.addEventListener("pointerup", onUp);
+      if (Object.keys(updates).length > 0) {
+        updateAttributes(updates);
+      }
+    });
   }, [width, height, updateAttributes]);
 
   return (
-    <NodeViewWrapper className={styles.iframeNodeWrap}>
-      <div
-        ref={wrapRef}
-        className={`${styles.iframeNodeInner} ${selected ? styles.iframeNodeSelected : ""}`}
-        style={{ width: width ? `${width}px` : "100%", height: height ? `${height}px` : "315px" }}
-      >
-        <iframe srcDoc={htmlContent} className={styles.iframeNodeFrame} sandbox="allow-scripts allow-same-origin" />
-        {selected && (
-          <>
-            <div className={`${styles.resizeHandle} ${styles.resizeHandleRight}`} onPointerDown={onPointerDown("right")} />
-            <div className={`${styles.resizeHandle} ${styles.resizeHandleBottom}`} onPointerDown={onPointerDown("bottom")} />
-            <div className={`${styles.resizeHandle} ${styles.resizeHandleBottomRight}`} onPointerDown={onPointerDown("corner")} />
-          </>
-        )}
-        {!selected && <div className={styles.iframeOverlay} />}
+    <NodeViewWrapper className={styles.imgNodeWrap} style={getAlignStyle(textAlign || "center")}>
+      <div className={styles.mediaNodeColumn} style={{ width: width ? `${width}px` : "100%", maxWidth: "100%" }}>
+        {selected && <AlignToolbar current={textAlign || "center"} onChange={(a) => updateAttributes({ textAlign: a })} />}
+        <div
+          ref={wrapRef}
+          className={`${styles.iframeNodeInner} ${selected ? styles.iframeNodeSelected : ""}`}
+          style={{ width: "100%", height: height ? `${height}px` : "315px" }}
+        >
+          <iframe srcDoc={htmlContent} className={styles.iframeNodeFrame} sandbox="allow-scripts allow-same-origin" />
+          {selected && (
+            <>
+              <div className={`${styles.resizeHandle} ${styles.resizeHandleRight}`} onPointerDown={onPointerDown("right")} />
+              <div className={`${styles.resizeHandle} ${styles.resizeHandleBottom}`} onPointerDown={onPointerDown("bottom")} />
+              <div className={`${styles.resizeHandle} ${styles.resizeHandleBottomRight}`} onPointerDown={onPointerDown("corner")} />
+            </>
+          )}
+          {!selected && <div className={styles.iframeOverlay} />}
+        </div>
       </div>
     </NodeViewWrapper>
   );
@@ -530,6 +578,11 @@ const CustomIframe = Node.create({
       htmlContent: { default: "" },
       width: { default: null },
       height: { default: 315 },
+      textAlign: {
+        default: "center",
+        parseHTML: (el) => el.getAttribute("data-align") || "center",
+        renderHTML: (attrs) => ({ "data-align": attrs.textAlign }),
+      },
     };
   },
   parseHTML() {
@@ -585,40 +638,24 @@ function getAlignStyle(align: Align): React.CSSProperties {
 function ResizableVideo({ node, updateAttributes, selected }: NodeViewProps) {
   const { src, alt, width, height, textAlign } = node.attrs as { src: string; alt: string; width: number; height: number; textAlign: Align };
   const wrapRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const startW = useRef(0);
-  const startH = useRef(0);
-  const edgeRef = useRef<"right" | "bottom" | "corner">("corner");
   const [altValue, setAltValue] = useState(alt ?? "");
 
-  const onPointerDown = useCallback((pos: "right" | "bottom" | "corner") => (e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragging.current = true;
-    edgeRef.current = pos;
-    startX.current = e.clientX;
-    startY.current = e.clientY;
-    startW.current = wrapRef.current?.offsetWidth ?? width ?? 560;
-    startH.current = wrapRef.current?.offsetHeight ?? height ?? 315;
+  const onPointerDown = useCallback((pos: "right" | "bottom" | "corner") => (e: React.PointerEvent<HTMLDivElement>) => {
+    const startWidth = wrapRef.current?.offsetWidth ?? width ?? 560;
+    const startHeight = wrapRef.current?.offsetHeight ?? height ?? 315;
 
-    const onMove = (ev: PointerEvent) => {
-      if (!dragging.current) return;
-      const dx = ev.clientX - startX.current;
-      const dy = ev.clientY - startY.current;
+    beginPointerResize(e, (dx, dy) => {
       const updates: Record<string, number> = {};
-      if (pos === "right" || pos === "corner") updates.width = Math.max(200, startW.current + dx);
-      if (pos === "bottom" || pos === "corner") updates.height = Math.max(100, startH.current + dy);
-      updateAttributes(updates);
-    };
-    const onUp = () => {
-      dragging.current = false;
-      document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup", onUp);
-    };
-    document.addEventListener("pointermove", onMove);
-    document.addEventListener("pointerup", onUp);
+      if (pos === "right" || pos === "corner") {
+        updates.width = Math.max(200, startWidth + dx);
+      }
+      if (pos === "bottom" || pos === "corner") {
+        updates.height = Math.max(100, startHeight + dy);
+      }
+      if (Object.keys(updates).length > 0) {
+        updateAttributes(updates);
+      }
+    });
   }, [width, height, updateAttributes]);
 
   return (
@@ -748,40 +785,24 @@ function ResizableFilePreview({ node, updateAttributes, selected }: NodeViewProp
     src: string; alt: string; width: number; height: number; displayMode: "preview" | "link"; textAlign: Align;
   };
   const wrapRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const startW = useRef(0);
-  const startH = useRef(0);
-  const edgeRef = useRef<"right" | "bottom" | "corner">("corner");
   const [altValue, setAltValue] = useState(alt ?? "");
 
-  const onPointerDown = useCallback((pos: "right" | "bottom" | "corner") => (e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragging.current = true;
-    edgeRef.current = pos;
-    startX.current = e.clientX;
-    startY.current = e.clientY;
-    startW.current = wrapRef.current?.offsetWidth ?? width ?? 560;
-    startH.current = wrapRef.current?.offsetHeight ?? height ?? 400;
+  const onPointerDown = useCallback((pos: "right" | "bottom" | "corner") => (e: React.PointerEvent<HTMLDivElement>) => {
+    const startWidth = wrapRef.current?.offsetWidth ?? width ?? 560;
+    const startHeight = wrapRef.current?.offsetHeight ?? height ?? 400;
 
-    const onMove = (ev: PointerEvent) => {
-      if (!dragging.current) return;
-      const dx = ev.clientX - startX.current;
-      const dy = ev.clientY - startY.current;
+    beginPointerResize(e, (dx, dy) => {
       const updates: Record<string, number> = {};
-      if (pos === "right" || pos === "corner") updates.width = Math.max(200, startW.current + dx);
-      if (pos === "bottom" || pos === "corner") updates.height = Math.max(100, startH.current + dy);
-      updateAttributes(updates);
-    };
-    const onUp = () => {
-      dragging.current = false;
-      document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup", onUp);
-    };
-    document.addEventListener("pointermove", onMove);
-    document.addEventListener("pointerup", onUp);
+      if (pos === "right" || pos === "corner") {
+        updates.width = Math.max(200, startWidth + dx);
+      }
+      if (pos === "bottom" || pos === "corner") {
+        updates.height = Math.max(100, startHeight + dy);
+      }
+      if (Object.keys(updates).length > 0) {
+        updateAttributes(updates);
+      }
+    });
   }, [width, height, updateAttributes]);
 
   const toggleMode = () => {
@@ -911,7 +932,11 @@ const CustomFilePreview = Node.create({
   renderHTML({ HTMLAttributes }) {
     const { src, alt, displayMode, ...rest } = HTMLAttributes;
     if (displayMode === "link") {
-      return ["a", mergeAttributes({ href: src, target: "_blank", rel: "noopener noreferrer", "data-file-src": src }), alt || src.split("/").pop() || "File"];
+      return [
+        "a",
+        mergeAttributes(rest, { href: src, target: "_blank", rel: "noopener noreferrer", "data-file-src": src }),
+        alt || src.split("/").pop() || "File",
+      ];
     }
     return ["div", { class: "file-preview" }, ["iframe", mergeAttributes(rest, { src })]];
   },
@@ -1121,6 +1146,35 @@ type ModalState =
 let globalModalSetter: ((m: ModalState) => void) | null = null;
 let globalEditorRange: { from: number; to: number } | null = null;
 
+const TOP_MEDIA_NODE_NAMES = new Set([
+  "image",
+  "youtube",
+  "customIframe",
+  "customVideo",
+  "customAudio",
+  "customFilePreview",
+]);
+
+const EnsureLeadingLineForTopMedia = Extension.create({
+  name: "ensureLeadingLineForTopMedia",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        appendTransaction: (_transactions, _oldState, newState) => {
+          const firstNode = newState.doc.firstChild;
+          if (!firstNode) return null;
+          if (!TOP_MEDIA_NODE_NAMES.has(firstNode.type.name)) return null;
+
+          const paragraph = newState.schema.nodes.paragraph;
+          if (!paragraph) return null;
+
+          return newState.tr.insert(0, paragraph.create());
+        },
+      }),
+    ];
+  },
+});
+
 function createSlashCommands() {
   const allItems = [
     ...COMMANDS.map((c) => ({ ...c, kind: "command" as const })),
@@ -1238,6 +1292,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
       CustomFilePreview,
       Indent,
       ClearFloat,
+      EnsureLeadingLineForTopMedia,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       createSlashCommands(),
     ],
