@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { getExcerpt } from "../_lib/helpers";
-import { getBlogData } from "../_lib/getBlogData";
+import { fetchPostBySlug } from "@/lib/firebase/posts";
 import BlogDetailClient from "./BlogDetailClient";
 import { JsonLd, articleSchema, breadcrumbSchema } from "@/lib/seo/schemas";
 
@@ -10,11 +9,10 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, slug } = await params;
-  const { posts } = await getBlogData();
-  const post = posts.find((item) => item.slug === slug);
+  const post = await fetchPostBySlug(slug);
   if (!post) return { title: "Not Found" };
 
-  const description = getExcerpt(post.content, 160);
+  const description = post.summary.trim();
   const url = `https://langochung.me/${lang}/blog/${slug}`;
 
   const meta: Metadata = {
@@ -48,8 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BlogDetailPage({ params }: Props) {
   const { lang, slug } = await params;
-  const { posts } = await getBlogData();
-  const post = posts.find((item) => item.slug === slug);
+  const post = await fetchPostBySlug(slug);
 
   return (
     <>
@@ -71,7 +68,7 @@ export default async function BlogDetailPage({ params }: Props) {
           />
         </>
       )}
-      <BlogDetailClient />
+      <BlogDetailClient initialPost={post} />
     </>
   );
 }

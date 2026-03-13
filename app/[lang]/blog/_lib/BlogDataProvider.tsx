@@ -8,22 +8,19 @@ import {
   type ReactNode,
 } from "react";
 import { fetchCollections, fetchTopics } from "@/lib/firebase/collections";
-import { fetchPosts } from "@/lib/firebase/posts";
-import { fetchHints } from "@/lib/firebase/hints";
+import { fetchPostSummaries } from "@/lib/firebase/posts";
 import { applyRelatedVisibility } from "./getBlogData";
 import {
   assignCollectionColors,
   type BlogData,
-  type PostDoc,
+  type PostSummaryDoc,
   type TopicDoc,
-  type HintDoc,
 } from "./types";
 
 const EMPTY: BlogData = {
   collections: [],
   topics: [],
   posts: [],
-  hints: [],
   loading: true,
 };
 
@@ -40,8 +37,7 @@ let cachedAt = 0;
 interface InitialData {
   collections: Awaited<ReturnType<typeof fetchCollections>>;
   topics: TopicDoc[];
-  posts: PostDoc[];
-  hints: HintDoc[];
+  posts: PostSummaryDoc[];
 }
 
 export function BlogDataProvider({
@@ -57,14 +53,12 @@ export function BlogDataProvider({
       const relatedFiltered = applyRelatedVisibility({
         topics: initialData.topics,
         posts: initialData.posts,
-        hints: initialData.hints,
       });
 
       const result: BlogData = {
         collections: assignCollectionColors(initialData.collections),
         topics: initialData.topics,
         posts: relatedFiltered.posts,
-        hints: relatedFiltered.hints,
         loading: false,
       };
       cachedData = result;
@@ -80,22 +74,20 @@ export function BlogDataProvider({
 
     async function load() {
       try {
-        const [rawCollections, topics, posts, hints] = await Promise.all([
+        const [rawCollections, topics, posts] = await Promise.all([
           fetchCollections(),
           fetchTopics(),
-          fetchPosts(),
-          fetchHints(),
+          fetchPostSummaries(),
         ]);
 
         if (cancelled) return;
 
         const collections = assignCollectionColors(rawCollections);
-        const relatedFiltered = applyRelatedVisibility({ topics, posts, hints });
+        const relatedFiltered = applyRelatedVisibility({ topics, posts });
         const result: BlogData = {
           collections,
           topics,
           posts: relatedFiltered.posts,
-          hints: relatedFiltered.hints,
           loading: false,
         };
         cachedData = result;

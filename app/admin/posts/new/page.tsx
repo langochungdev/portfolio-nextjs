@@ -28,6 +28,7 @@ export default function NewPostPage() {
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+  const [summary, setSummary] = useState("");
   const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const [topicIds, setTopicIds] = useState<string[]>([]);
   const [collections, setCollections] = useState<CollectionDoc[]>([]);
@@ -80,8 +81,8 @@ export default function NewPostPage() {
   };
 
   const handleSave = async () => {
-    if (!title.trim() || !slug.trim() || !content.trim()) {
-      setError("Tiêu đề, slug và nội dung là bắt buộc");
+    if (!title.trim() || !slug.trim() || !summary.trim() || !content.trim()) {
+      setError("Tiêu đề, slug, summary và nội dung là bắt buộc");
       return;
     }
 
@@ -108,6 +109,7 @@ export default function NewPostPage() {
       const id = await createPost({
         title: title.trim(),
         slug: slug.trim(),
+        summary: summary.trim(),
         thumbnail: thumbnail.trim(),
         content: processedHtml,
         collectionIds: finalCollectionIds,
@@ -241,6 +243,17 @@ export default function NewPostPage() {
                     <option value="draft">Draft</option>
                   </select>
                 </div>
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>Summary (OG description)</label>
+                <textarea
+                  className={styles.input}
+                  rows={3}
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="Mô tả ngắn sẽ dùng cho OG description"
+                />
               </div>
             </div>
           )}

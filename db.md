@@ -9,50 +9,75 @@ Firestore Root
 │   └── {topicId} (doc)
 │       ├── name: string
 │       ├── slug: string
-│       ├── thumbnail: string (URL ảnh — dùng làm og:image mặc định)
-│       ├── description: string (mô tả — dùng làm og:description mặc định)
-│       ├── collectionId: string (optional)
-│       └── order: number
+│       ├── thumbnail: string (URL, optional)
+│       ├── description: string (OG/SEO description, optional)
+│       ├── collectionId: string
+│       ├── order: number
+│       └── visibility: "public" | "hidden" | "draft"
 │
 ├── posts (collection)
 │   └── {postId} (doc)
 │       ├── title: string
 │       ├── slug: string
+│       ├── summary: string (OG description thủ công)
 │       ├── thumbnail: string
-│       ├── content: string (Tiptap HTML)
-│       ├── collectionIds: string[] (array of collection IDs)
-│       ├── topicIds: string[] (array of topic IDs)
+│       ├── content: string (Tiptap HTML - full content)
+│       ├── excerpt: string (plain text excerpt, precomputed)
+│       ├── readTime: number (minutes, precomputed)
+│       ├── collectionIds: string[]
+│       ├── topicIds: string[]
 │       ├── isPinned: boolean
 │       ├── orderMap: map { [contextId: string]: number }
 │       ├── views: number
+│       ├── visibility: "public" | "hidden" | "draft"
 │       └── timestamps (map)
 │           ├── createdAt: timestamp
 │           └── updatedAt: timestamp
 │
-├── hints (collection) — [Dành cho Tips/Short-form Content]
+├── post_summaries (collection)  [Nguồn dữ liệu list/blog shell, tránh tải content nặng]
+│   └── {postId} (doc)
+│       ├── postId: string
+│       ├── title: string
+│       ├── slug: string
+│       ├── summary: string
+│       ├── thumbnail: string
+│       ├── excerpt: string
+│       ├── readTime: number
+│       ├── collectionIds: string[]
+│       ├── topicIds: string[]
+│       ├── isPinned: boolean
+│       ├── orderMap: map { [contextId: string]: number }
+│       ├── views: number
+│       ├── visibility: "public" | "hidden" | "draft"
+│       └── timestamps (map)
+│           ├── createdAt: timestamp
+│           └── updatedAt: timestamp
+│
+├── hints (collection)
 │   └── {hintId} (doc)
-│       ├── title: string (Tiêu đề ngắn)
-│       ├── content: string (Tiptap HTML - Rich text)
+│       ├── title: string
+│       ├── content: string (Tiptap HTML)
 │       ├── type: "tip" | "hint" | "note"
-│       ├── collectionId: string (bắt buộc thuộc collection hoặc topic)
 │       ├── topicId: string (optional)
+│       ├── postId: string (optional)
 │       ├── order: number
+│       ├── visibility: "public" | "hidden" | "draft"
 │       └── timestamps (map)
 │           ├── createdAt: timestamp
 │           └── updatedAt: timestamp
 │
 ├── conversations (collection)
-│   └── {visitorId} (doc) — [ID từ Fingerprint/LocalStorage]
+│   └── {visitorId} (doc)
 │       ├── userName: string
 │       ├── lastMessage: string
 │       ├── status: "unread" | "replied"
 │       ├── updatedAt: timestamp
 │       ├── fingerprint: string
-│       ├── visitCount: number — [Tăng +1 mỗi lần truy cập trang]
-│       ├── presence (map) — [Heartbeat mỗi 30s]
+│       ├── visitCount: number
+│       ├── presence (map)
 │       │   ├── online: boolean
 │       │   ├── lastActive: timestamp
-│       │   └── currentPage: string — ["home" | "blog" | "certificates" | slug bài viết]
+│       │   └── currentPage: string
 │       ├── metadata (map)
 │       │   ├── os: string
 │       │   ├── browser: string
@@ -65,11 +90,11 @@ Firestore Root
 │               └── createdAt: timestamp
 │
 └── analytics (collection)
-    ├── global (doc) — [Thống kê tổng]
+    ├── global (doc)
     │   ├── home: number
     │   ├── blog: number
     │   └── certification: number
-    └── daily_stats (doc) — [Anchor cho subcollection]
+    └── daily_stats (doc)
         └── days (subcollection)
             └── {YYYYMMDD} (doc)
                 ├── date: string

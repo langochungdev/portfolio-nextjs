@@ -97,6 +97,15 @@ export function NavBar() {
     setPendingPath(null);
   }, [pathname]);
 
+  useEffect(() => {
+    const current = pathname;
+    for (const item of NAV_ITEMS) {
+      const href = `/${locale}${item.path}`;
+      if (href === current || `${href}/` === current) continue;
+      router.prefetch(href);
+    }
+  }, [locale, pathname, router]);
+
   const loader = pendingPath && mounted
     ? createPortal(<div className={styles.topLoader} />, document.body)
     : null;

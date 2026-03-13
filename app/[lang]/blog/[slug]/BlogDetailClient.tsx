@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import {
@@ -11,8 +10,9 @@ import {
   getRelatedServerSnapshot,
 } from "@/app/[lang]/_shared/blogDetailStore";
 import { useBlogData } from "@/app/[lang]/blog/_lib/BlogDataProvider";
-import { getReadTime } from "@/app/[lang]/blog/_lib/types";
+import type { PostDoc } from "@/app/[lang]/blog/_lib/types";
 import TipsFeed from "@/app/[lang]/blog/_components/TipsFeed";
+import { fetchHintsCount } from "@/lib/firebase/hints";
 import styles from "@/app/style/blog/detail.module.css";
 import tipsStyles from "@/app/style/blog/tips.module.css";
 import { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "react";
@@ -117,12 +117,12 @@ function processContent(html: string): string {
     .replace(/<p><\/p>/g, "<p><br></p>");
 }
 
-export default function BlogDetailClient() {
+export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc | null }) {
   const { locale, dictionary: dict } = useDictionary();
-  const params = useParams<{ slug: string }>();
-  const { collections, topics, posts, hints, loading } = useBlogData();
-  const post = posts.find((p) => p.slug === params.slug);
+  const { collections, topics, posts, loading } = useBlogData();
+  const post = initialPost;
   const [showTips, setShowTips] = useState(false);
+  const [tipsCount, setTipsCount] = useState(0);
   const showRelated = useSyncExternalStore(
     subscribeRelated,
     getRelatedSnapshot,
@@ -149,6 +149,27 @@ export default function BlogDetailClient() {
   useEffect(() => {
     return () => closeRelated();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!post) {
+      setTipsCount(0);
+      return;
+    }
+
+    const currentTopicId = post.topicIds[0] || undefined;
+    fetchHintsCount(currentTopicId)
+      .then((count) => {
+        if (!cancelled) setTipsCount(count);
+      })
+      .catch(() => {
+        if (!cancelled) setTipsCount(0);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [post]);
 
   useEffect(() => {
     if (!showRelated) return;
@@ -182,9 +203,6 @@ export default function BlogDetailClient() {
   const color = collection?.color ?? "#1C1C1A";
 
   const currentTopicId = post.topicIds[0] || undefined;
-  const tipsCount = currentTopicId
-    ? hints.filter((h) => h.topicId === currentTopicId).length
-    : hints.length;
 
   return (
     <>
@@ -244,7 +262,7 @@ export default function BlogDetailClient() {
             <span className={styles.tag}>{postColLabel}</span>
             <span className={styles.dot} style={{ background: color }} />
             <time className={styles.date}>{post.createdAt}</time>
-            <span className={styles.readTime}>· {getReadTime(post.content)} min read</span>
+            <span className={styles.readTime}>· {post.readTime} min read</span>
           </div>
 
           <h1 className={styles.title}>{post.title}</h1>

@@ -21,17 +21,16 @@ export default async function BlogLayout({
     collections: [],
     topics: [],
     posts: [],
-    hints: [],
   };
 
   try {
     data = await getBlogData();
   } catch { /* Firestore unavailable */ }
 
-  const { collections, topics, posts, hints } = data;
+  const { collections, topics, posts } = data;
 
   return (
-    <BlogDataProvider initialData={{ collections, topics, posts, hints }}>
+    <BlogDataProvider initialData={{ collections, topics, posts }}>
       <JsonLd data={blogListingSchema(posts, lang)} />
       <JsonLd
         data={breadcrumbSchema(

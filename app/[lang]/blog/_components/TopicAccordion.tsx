@@ -1,11 +1,11 @@
-import type { PostDoc, TopicDoc } from "@/app/[lang]/blog/_lib/types";
+import type { PostSummaryDoc, TopicDoc } from "@/app/[lang]/blog/_lib/types";
 import type { Locale } from "@/lib/i18n/config";
 import { PostCard } from "./PostCard";
 import styles from "@/app/style/blog/page.module.css";
 
 interface TopicAccordionProps {
   topic: TopicDoc;
-  posts: PostDoc[];
+  posts: PostSummaryDoc[];
   isOpen: boolean;
   isPinned?: boolean;
   locale: Locale;

@@ -20,8 +20,11 @@ interface PostItem {
   id: string;
   title: string;
   slug: string;
+  summary: string;
   thumbnail: string;
   content: string;
+  excerpt: string;
+  readTime: number;
   collectionIds: string[];
   topicIds: string[];
   isPinned: boolean;
@@ -282,6 +285,7 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
 
   const [title, setTitle] = useState(post.title);
   const [slug, setSlug] = useState(post.slug);
+  const [summary, setSummary] = useState(post.summary ?? "");
   const [showFields, setShowFields] = useState(true);
   const [thumbnail, setThumbnail] = useState(post.thumbnail);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -328,6 +332,7 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
       ...post,
       title: title.trim(),
       slug: slug || generateSlug(title),
+      summary: summary.trim(),
       thumbnail,
       content,
       collectionIds: finalCollectionIds,
@@ -336,7 +341,7 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
       visibility,
       updatedAt: new Date().toISOString().split("T")[0],
     }, thumbnailFile ?? undefined);
-  }, [title, slug, thumbnail, content, collectionIds, topicIds, isPinned, visibility, post, thumbnailFile, onSave, topics]);
+  }, [title, slug, summary, thumbnail, content, collectionIds, topicIds, isPinned, visibility, post, thumbnailFile, onSave, topics]);
 
   const handleCancel = useCallback(() => {
     onCancel();
@@ -404,6 +409,16 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
               <option value="draft">Draft</option>
             </select>
           </div>
+        </div>
+        <div className={editorStyles.fieldGroup}>
+          <label className={editorStyles.label}>Summary (OG description)</label>
+          <textarea
+            className={editorStyles.input}
+            rows={3}
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            placeholder="Nhập mô tả ngắn cho SEO/OG..."
+          />
         </div>
         <div className={styles.editorFieldRow}>
           <div className={editorStyles.fieldGroup} style={{ flex: 1 }}>

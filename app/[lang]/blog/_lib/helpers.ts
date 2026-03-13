@@ -1,8 +1,8 @@
-import type { PostDoc, TopicDoc } from "./types";
+import type { PostSummaryDoc, TopicDoc } from "./types";
 
 export type DisplayItem =
-  | { type: "post"; post: PostDoc }
-  | { type: "topic"; topic: TopicDoc; posts: PostDoc[] };
+  | { type: "post"; post: PostSummaryDoc }
+  | { type: "topic"; topic: TopicDoc; posts: PostSummaryDoc[] };
 
 export function stripHtml(html: string): string {
   return html
@@ -17,8 +17,8 @@ export function getExcerpt(html: string, maxLength = 160): string {
   return text.slice(0, maxLength).replace(/\s+\S*$/, "") + "…";
 }
 
-export function groupByCollection(posts: PostDoc[]) {
-  const groups: Record<string, PostDoc[]> = {};
+export function groupByCollection(posts: PostSummaryDoc[]) {
+  const groups: Record<string, PostSummaryDoc[]> = {};
   for (const p of posts) {
     for (const cid of p.collectionIds) (groups[cid] ??= []).push(p);
   }
@@ -26,7 +26,7 @@ export function groupByCollection(posts: PostDoc[]) {
 }
 
 export function buildDisplayItems(
-  posts: PostDoc[],
+  posts: PostSummaryDoc[],
   topics: TopicDoc[],
 ): DisplayItem[] {
   const items: DisplayItem[] = [];
@@ -44,7 +44,7 @@ export function buildDisplayItems(
   return items;
 }
 
-export function latestDate(posts: PostDoc[]) {
+export function latestDate(posts: PostSummaryDoc[]) {
   return posts.reduce(
     (l, p) => (p.updatedAt > l ? p.updatedAt : l),
     posts[0]?.updatedAt ?? "",

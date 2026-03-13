@@ -118,7 +118,7 @@ export function articleSchema(post: PostDoc, locale: string) {
 }
 
 export function blogListingSchema(
-  posts: PostDoc[],
+  posts: Array<Pick<PostDoc, "title" | "slug">>,
   locale: string,
 ) {
   const url = `${SITE_URL}/${locale}/blog`;

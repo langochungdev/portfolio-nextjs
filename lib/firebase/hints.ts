@@ -89,6 +89,26 @@ export async function fetchHintsByTopic(
     : mapped.filter((hint) => hint.visibility === "public");
 }
 
+export async function fetchHintsCount(topicId?: string): Promise<number> {
+  if (topicId) {
+    const q = query(collection(db, "hints"), where("topicId", "==", topicId));
+    const snap = await getDocs(q);
+    return snap.docs.reduce((count, d) => {
+      const visibility =
+        (d.data().visibility as VisibilityStatus | undefined) ?? "public";
+      return visibility === "public" ? count + 1 : count;
+    }, 0);
+  }
+
+  const q = query(collection(db, "hints"));
+  const snap = await getDocs(q);
+  return snap.docs.reduce((count, d) => {
+    const visibility =
+      (d.data().visibility as VisibilityStatus | undefined) ?? "public";
+    return visibility === "public" ? count + 1 : count;
+  }, 0);
+}
+
 export async function createHint(data: HintInput): Promise<string> {
   const ref = await addDoc(collection(db, "hints"), {
     title: data.title,

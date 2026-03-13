@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { PostDoc, TopicDoc } from "@/app/[lang]/blog/_lib/types";
+import type { PostSummaryDoc, TopicDoc } from "@/app/[lang]/blog/_lib/types";
 import type { Locale } from "@/lib/i18n/config";
 import { TopicAccordion } from "./TopicAccordion";
 
 interface Props {
   topics: TopicDoc[];
-  posts: PostDoc[];
+  posts: PostSummaryDoc[];
   locale: Locale;
   label: string;
   initialOpenId?: string;

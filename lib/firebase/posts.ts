@@ -4,6 +4,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  setDoc,
   getDoc,
   getDocs,
   query,
@@ -14,12 +15,14 @@ import {
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/config";
 import type { VisibilityStatus } from "@/lib/firebase/collections";
+import { calcReadTime } from "@/lib/firebase/post-summary";
 
 const db = getFirebaseDb();
 
 export interface PostInput {
   title: string;
   slug: string;
+  summary: string;
   thumbnail: string;
   content: string;
   collectionIds: string[];
@@ -31,6 +34,27 @@ export interface PostInput {
 
 export interface PostDoc extends PostInput {
   id: string;
+  views: number;
+  excerpt: string;
+  readTime: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PostSummaryDoc {
+  id: string;
+  postId: string;
+  title: string;
+  slug: string;
+  summary: string;
+  thumbnail: string;
+  excerpt: string;
+  readTime: number;
+  collectionIds: string[];
+  topicIds: string[];
+  isPinned: boolean;
+  orderMap: Record<string, number>;
+  visibility: VisibilityStatus;
   views: number;
   createdAt: string;
   updatedAt: string;
@@ -50,18 +74,45 @@ function docToPost(id: string, data: Record<string, unknown>): PostDoc {
     id,
     title: (data.title as string) ?? "",
     slug: (data.slug as string) ?? "",
+    summary: (data.summary as string) ?? "",
     thumbnail: (data.thumbnail as string) ?? "",
     content: (data.content as string) ?? "",
     collectionIds: Array.isArray(data.collectionIds)
       ? (data.collectionIds as string[])
-      : data.collectionId
-        ? [data.collectionId as string]
-        : [],
-    topicIds: Array.isArray(data.topicIds)
-      ? (data.topicIds as string[])
-      : data.topicId
-        ? [data.topicId as string]
-        : [],
+      : [],
+    topicIds: Array.isArray(data.topicIds) ? (data.topicIds as string[]) : [],
+    isPinned: (data.isPinned as boolean) ?? false,
+    orderMap: (data.orderMap as Record<string, number>) ?? {},
+    visibility: (data.visibility as VisibilityStatus) ?? "public",
+    views: (data.views as number) ?? 0,
+    excerpt: (data.excerpt as string) ?? "",
+    readTime: (data.readTime as number) ?? 1,
+    createdAt: formatTimestamp(timestamps.createdAt ?? null),
+    updatedAt: formatTimestamp(timestamps.updatedAt ?? null),
+  };
+}
+
+function docToPostSummary(
+  id: string,
+  data: Record<string, unknown>,
+): PostSummaryDoc {
+  const timestamps = (data.timestamps ?? {}) as Record<
+    string,
+    { seconds: number } | null
+  >;
+  return {
+    id,
+    postId: (data.postId as string) ?? id,
+    title: (data.title as string) ?? "",
+    slug: (data.slug as string) ?? "",
+    summary: (data.summary as string) ?? "",
+    thumbnail: (data.thumbnail as string) ?? "",
+    excerpt: (data.excerpt as string) ?? "",
+    readTime: (data.readTime as number) ?? 1,
+    collectionIds: Array.isArray(data.collectionIds)
+      ? (data.collectionIds as string[])
+      : [],
+    topicIds: Array.isArray(data.topicIds) ? (data.topicIds as string[]) : [],
     isPinned: (data.isPinned as boolean) ?? false,
     orderMap: (data.orderMap as Record<string, number>) ?? {},
     visibility: (data.visibility as VisibilityStatus) ?? "public",
@@ -75,6 +126,16 @@ interface FetchPostsOptions {
   includeNonPublic?: boolean;
 }
 
+function canIgnoreSummarySyncError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = (error as { code?: unknown }).code;
+  return (
+    code === "permission-denied" ||
+    code === "failed-precondition" ||
+    code === "not-found"
+  );
+}
+
 export async function fetchPosts(
   options?: FetchPostsOptions,
 ): Promise<PostDoc[]> {
@@ -85,6 +146,21 @@ export async function fetchPosts(
   );
   const snap = await getDocs(q);
   const mapped = snap.docs.map((d) => docToPost(d.id, d.data()));
+  return includeNonPublic
+    ? mapped
+    : mapped.filter((post) => post.visibility === "public");
+}
+
+export async function fetchPostSummaries(
+  options?: FetchPostsOptions,
+): Promise<PostSummaryDoc[]> {
+  const includeNonPublic = options?.includeNonPublic ?? false;
+  const q = query(
+    collection(db, "post_summaries"),
+    orderBy("timestamps.createdAt", "desc"),
+  );
+  const snap = await getDocs(q);
+  const mapped = snap.docs.map((d) => docToPostSummary(d.id, d.data()));
   return includeNonPublic
     ? mapped
     : mapped.filter((post) => post.visibility === "public");
@@ -127,14 +203,46 @@ export async function fetchPostBySlug(
 }
 
 export async function createPost(data: PostInput): Promise<string> {
+  const normalizedSummary = data.summary.trim();
+  const excerpt = normalizedSummary;
+  const readTime = calcReadTime(data.content);
+
   const ref = await addDoc(collection(db, "posts"), {
     ...data,
+    summary: normalizedSummary,
+    excerpt,
+    readTime,
     views: 0,
     timestamps: {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     },
   });
+
+  try {
+    await setDoc(doc(db, "post_summaries", ref.id), {
+      postId: ref.id,
+      title: data.title,
+      slug: data.slug,
+      summary: normalizedSummary,
+      thumbnail: data.thumbnail,
+      excerpt,
+      readTime,
+      collectionIds: data.collectionIds,
+      topicIds: data.topicIds,
+      isPinned: data.isPinned,
+      orderMap: data.orderMap,
+      visibility: data.visibility,
+      views: 0,
+      timestamps: {
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+    });
+  } catch (err) {
+    if (!canIgnoreSummarySyncError(err)) throw err;
+  }
+
   return ref.id;
 }
 
@@ -142,14 +250,71 @@ export async function updatePost(
   id: string,
   data: Partial<PostInput>,
 ): Promise<void> {
-  await updateDoc(doc(db, "posts", id), {
+  const updateData: Partial<PostInput> & {
+    excerpt?: string;
+    readTime?: number;
+  } = {
     ...data,
+  };
+
+  if (typeof data.summary === "string") {
+    const normalizedSummary = data.summary.trim();
+    updateData.summary = normalizedSummary;
+    updateData.excerpt = normalizedSummary;
+  }
+
+  if (typeof data.content === "string") {
+    updateData.readTime = calcReadTime(data.content);
+  }
+
+  await updateDoc(doc(db, "posts", id), {
+    ...updateData,
     "timestamps.updatedAt": serverTimestamp(),
   });
+
+  const summaryData: Record<string, unknown> = {
+    "timestamps.updatedAt": serverTimestamp(),
+  };
+
+  if (typeof updateData.title === "string")
+    summaryData.title = updateData.title;
+  if (typeof updateData.slug === "string") summaryData.slug = updateData.slug;
+  if (typeof updateData.summary === "string")
+    summaryData.summary = updateData.summary;
+  if (typeof updateData.thumbnail === "string")
+    summaryData.thumbnail = updateData.thumbnail;
+  if (Array.isArray(updateData.collectionIds))
+    summaryData.collectionIds = updateData.collectionIds;
+  if (Array.isArray(updateData.topicIds))
+    summaryData.topicIds = updateData.topicIds;
+  if (typeof updateData.isPinned === "boolean")
+    summaryData.isPinned = updateData.isPinned;
+  if (typeof updateData.visibility === "string")
+    summaryData.visibility = updateData.visibility;
+  if (updateData.orderMap) summaryData.orderMap = updateData.orderMap;
+  if (typeof updateData.excerpt === "string")
+    summaryData.excerpt = updateData.excerpt;
+  if (typeof updateData.readTime === "number")
+    summaryData.readTime = updateData.readTime;
+
+  try {
+    await setDoc(
+      doc(db, "post_summaries", id),
+      { postId: id, ...summaryData },
+      { merge: true },
+    );
+  } catch (err) {
+    if (!canIgnoreSummarySyncError(err)) throw err;
+  }
 }
 
 export async function deletePost(id: string): Promise<void> {
   await deleteDoc(doc(db, "posts", id));
+  try {
+    await deleteDoc(doc(db, "post_summaries", id));
+  } catch (err) {
+    if (!canIgnoreSummarySyncError(err)) throw err;
+  }
 }
 
 export async function updatePostOrders(
@@ -160,4 +325,18 @@ export async function updatePostOrders(
     batch.update(doc(db, "posts", item.id), { orderMap: item.orderMap });
   }
   await batch.commit();
+
+  try {
+    const summaryBatch = writeBatch(db);
+    for (const item of items) {
+      summaryBatch.set(
+        doc(db, "post_summaries", item.id),
+        { postId: item.id, orderMap: item.orderMap },
+        { merge: true },
+      );
+    }
+    await summaryBatch.commit();
+  } catch (err) {
+    if (!canIgnoreSummarySyncError(err)) throw err;
+  }
 }

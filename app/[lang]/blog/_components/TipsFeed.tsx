@@ -2,7 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useBlogData } from "@/app/[lang]/blog/_lib/BlogDataProvider";
-import type { HintDoc } from "@/app/[lang]/blog/_lib/types";
+import {
+  fetchHints,
+  fetchHintsByTopic,
+  type HintDoc,
+} from "@/lib/firebase/hints";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import styles from "@/app/style/blog/tips.module.css";
 
@@ -45,13 +49,38 @@ interface TipsFeedProps {
 
 export default function TipsFeed({ topicId, onBack }: TipsFeedProps) {
   const { locale } = useDictionary();
-  const { hints, topics } = useBlogData();
+  const { topics } = useBlogData();
+  const [hints, setHints] = useState<HintDoc[]>([]);
+  const [loadingHints, setLoadingHints] = useState(true);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const allHints = topicId
-    ? hints.filter((h) => h.topicId === topicId)
-    : hints;
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingHints(true);
+    setVisibleCount(ITEMS_PER_PAGE);
+
+    const load = async () => {
+      try {
+        const result = topicId
+          ? await fetchHintsByTopic(topicId)
+          : await fetchHints();
+        if (!cancelled) setHints(result);
+      } catch (err) {
+        console.error("Failed to load hints feed:", err);
+        if (!cancelled) setHints([]);
+      } finally {
+        if (!cancelled) setLoadingHints(false);
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [topicId]);
+
+  const allHints = hints;
 
   const topic = topicId ? topics.find((t) => t.id === topicId) : null;
   const visibleHints = allHints.slice(0, visibleCount);
@@ -96,6 +125,9 @@ export default function TipsFeed({ topicId, onBack }: TipsFeedProps) {
       </header>
 
       <div className={styles.feedList}>
+        {loadingHints && (
+          <div className={styles.feedEnd}>{locale === "vi" ? "Đang tải tips..." : "Loading tips..."}</div>
+        )}
         {visibleHints.map((hint) => (
           <article key={hint.id} className={styles.hintCard}>
             <div className={styles.hintTop}>
@@ -142,7 +174,7 @@ export default function TipsFeed({ topicId, onBack }: TipsFeedProps) {
 
         {hasMore && <div ref={sentinelRef} className={styles.sentinel} />}
 
-        {!hasMore && allHints.length > 0 && (
+        {!loadingHints && !hasMore && allHints.length > 0 && (
           <div className={styles.feedEnd}>
             {locale === "vi" ? "Đã hết tips" : "No more tips"}
           </div>

@@ -4,7 +4,7 @@ import { fetchTopicBySlug } from "@/lib/firebase/collections";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { i18nConfig, type Locale } from "@/lib/i18n/config";
 import { getBlogData } from "./_lib/getBlogData";
-import { assignCollectionColors, getExcerpt } from "./_lib/types";
+import { assignCollectionColors } from "./_lib/types";
 import { groupByCollection, buildDisplayItems, latestDate } from "./_lib/helpers";
 import { PostCard } from "./_components/PostCard";
 import { TopicAccordionGroup } from "./_components/TopicAccordionGroup";
@@ -112,7 +112,7 @@ export default async function BlogPage({ params, searchParams }: Props) {
                         const topicDate = latestDate(item.posts);
                         const topicExcerpt = item.topic.description?.trim()
                           ? item.topic.description.trim()
-                          : (item.posts[0] ? getExcerpt(item.posts[0].content) : "");
+                          : (item.posts[0]?.excerpt ?? "");
                         const hasThumbnail = !!item.topic.thumbnail?.trim();
 
                         if (hasThumbnail) {

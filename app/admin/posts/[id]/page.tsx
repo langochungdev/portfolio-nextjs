@@ -40,6 +40,7 @@ export default function EditPostPage() {
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+  const [summary, setSummary] = useState("");
   const [collectionIds, setCollectionIds] = useState<string[]>([]);
   const [topicIds, setTopicIds] = useState<string[]>([]);
   const [collections, setCollections] = useState<CollectionDoc[]>([]);
@@ -67,6 +68,7 @@ export default function EditPostPage() {
         if (!post) { setError("Post not found"); setLoading(false); return; }
         setTitle(post.title);
         setSlug(post.slug);
+        setSummary(post.summary ?? "");
         setCollectionIds(post.collectionIds);
         setTopicIds(post.topicIds);
         setCollections(cols);
@@ -98,7 +100,10 @@ export default function EditPostPage() {
   };
 
   const handleSave = async () => {
-    if (!title.trim()) return;
+    if (!title.trim() || !summary.trim()) {
+      setError("Tiêu đề và summary là bắt buộc");
+      return;
+    }
 
     const topicCollectionIds = topics
       .filter((topic) => topicIds.includes(topic.id))
@@ -121,6 +126,7 @@ export default function EditPostPage() {
       await updatePost(params.id, {
         title: title.trim(),
         slug: slug || generateSlug(title),
+        summary: summary.trim(),
         thumbnail: thumbnail.trim(),
         content: processedHtml,
         collectionIds: finalCollectionIds,
@@ -254,6 +260,17 @@ export default function EditPostPage() {
                     <option value="draft">Draft</option>
                   </select>
                 </div>
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>Summary (OG description)</label>
+                <textarea
+                  className={styles.input}
+                  rows={3}
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="Mô tả ngắn sẽ dùng cho OG description"
+                />
               </div>
             </div>
           )}

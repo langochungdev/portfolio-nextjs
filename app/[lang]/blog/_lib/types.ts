@@ -1,8 +1,7 @@
-import type { PostDoc } from "@/lib/firebase/posts";
+import type { PostDoc, PostSummaryDoc } from "@/lib/firebase/posts";
 import type { CollectionDoc, TopicDoc } from "@/lib/firebase/collections";
-import type { HintDoc } from "@/lib/firebase/hints";
 
-export type { PostDoc, CollectionDoc, TopicDoc, HintDoc };
+export type { PostDoc, PostSummaryDoc, CollectionDoc, TopicDoc };
 
 export interface CollectionWithColor extends CollectionDoc {
   color: string;
@@ -51,7 +50,6 @@ export function getReadTime(content: string): number {
 export interface BlogData {
   collections: CollectionWithColor[];
   topics: TopicDoc[];
-  posts: PostDoc[];
-  hints: HintDoc[];
+  posts: PostSummaryDoc[];
   loading: boolean;
 }

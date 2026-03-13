@@ -367,6 +367,8 @@ export default function AdminPostsPage() {
     const now = new Date().toISOString().split("T")[0];
     setEditingPost({
       id: "", title: "", slug: "", thumbnail: "", content: "",
+      summary: "",
+      excerpt: "", readTime: 1,
       collectionIds: selectedColId ? [selectedColId] : [], topicIds: selectedTopicId ? [selectedTopicId] : [],
       isPinned: false, orderMap: {}, views: 0, createdAt: now, updatedAt: now, visibility: "public",
     });
@@ -424,14 +426,14 @@ export default function AdminPostsPage() {
 
       if (wasNew) {
         const id = await createPost({
-          title: post.title, slug: post.slug, thumbnail: finalThumbnail,
+          title: post.title, slug: post.slug, summary: post.summary, thumbnail: finalThumbnail,
           content: processedHtml, collectionIds: post.collectionIds,
           topicIds: post.topicIds, isPinned: post.isPinned, orderMap: post.orderMap, visibility: post.visibility,
         });
         setPosts((prev) => prev.map((p) => p.id === tempId ? { ...optimisticPost, id, thumbnail: finalThumbnail, content: processedHtml } : p));
       } else {
         await updatePost(post.id, {
-          title: post.title, slug: post.slug, thumbnail: finalThumbnail,
+          title: post.title, slug: post.slug, summary: post.summary, thumbnail: finalThumbnail,
           content: processedHtml, collectionIds: post.collectionIds,
           topicIds: post.topicIds, isPinned: post.isPinned, orderMap: post.orderMap, visibility: post.visibility,
         });
