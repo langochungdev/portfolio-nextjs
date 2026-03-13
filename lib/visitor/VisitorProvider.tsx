@@ -50,6 +50,27 @@ function resolvePageKey(pathname: string): string {
   return "home";
 }
 
+function resolveInboundSource(): string {
+  if (typeof window === "undefined") return "";
+
+  const params = new URLSearchParams(window.location.search);
+  const sourceKeys = ["utm_source", "source", "src", "from"];
+  for (const key of sourceKeys) {
+    const value = params.get(key)?.trim();
+    if (value) return value.slice(0, 120);
+  }
+
+  const rawReferrer = document.referrer?.trim();
+  if (!rawReferrer) return "";
+  try {
+    const refUrl = new URL(rawReferrer);
+    if (refUrl.host === window.location.host) return "";
+    return refUrl.host.slice(0, 120);
+  } catch {
+    return rawReferrer.slice(0, 120);
+  }
+}
+
 function sendHeartbeat(visitorId: string, page: string): void {
   const db = getFirebaseDb();
   setDoc(
@@ -122,6 +143,19 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {});
   }, [identity.visitorId, identity.loading, notiStatus]);
+
+  useEffect(() => {
+    if (!identity.visitorId || identity.loading) return;
+    const inboundSource = resolveInboundSource();
+    if (!inboundSource) return;
+
+    const db = getFirebaseDb();
+    setDoc(
+      doc(db, "conversations", identity.visitorId),
+      { metadata: { lastReferrer: inboundSource } },
+      { merge: true },
+    ).catch(() => {});
+  }, [identity.visitorId, identity.loading]);
 
   const requestNotificationPermission = useCallback(async () => {
     if (!identity.visitorId) return;

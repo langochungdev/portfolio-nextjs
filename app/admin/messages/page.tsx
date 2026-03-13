@@ -461,7 +461,7 @@ export default function AdminMessagesPage() {
                 <div className={styles.convMeta}>
                   <span className={online ? styles.convOnlineText : styles.convLastMsg}>
                     {online
-                      ? `Online now · ${formatPageLabel(conv.presence.currentPage)}`
+                      ? formatPageLabel(conv.presence.currentPage)
                       : getLastActiveIso(conv)
                         ? formatRelativeTime(getLastActiveIso(conv))
                         : conv.lastMessage || "No activity"}
@@ -596,6 +596,10 @@ export default function AdminMessagesPage() {
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Device</span>
                   <span className={styles.infoValue}>{activeConv.metadata.device || "—"}</span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Last source</span>
+                  <span className={styles.infoValue}>{activeConv.metadata.lastReferrer || "—"}</span>
                 </div>
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Status</span>

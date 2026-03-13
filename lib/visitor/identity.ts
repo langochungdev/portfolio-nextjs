@@ -121,6 +121,7 @@ async function ensureConversationDoc(
       browser: getBrowser(ua),
       device: getDevice(),
       lastIp: "",
+      lastReferrer: "",
     };
     if (!snap.exists()) {
       await setDoc(ref, {

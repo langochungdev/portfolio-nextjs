@@ -82,7 +82,8 @@ Firestore Root
 │       │   ├── os: string
 │       │   ├── browser: string
 │       │   ├── device: string
-│       │   └── lastIp: string
+│       │   ├── lastIp: string
+│       │   └── lastReferrer: string
 │       └── messages (subcollection)
 │           └── {messageId} (doc)
 │               ├── text: string

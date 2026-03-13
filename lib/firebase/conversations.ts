@@ -40,6 +40,7 @@ export interface ConversationDoc {
     browser: string;
     device: string;
     lastIp: string;
+    lastReferrer: string;
   };
 }
 
@@ -73,6 +74,7 @@ function mapConversation(
       browser: "",
       device: "",
       lastIp: "",
+      lastReferrer: "",
     },
   };
 }
