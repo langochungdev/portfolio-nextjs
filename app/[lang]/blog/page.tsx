@@ -68,8 +68,9 @@ export default async function BlogPage({ params, searchParams }: Props) {
 
   const activeCategory = cat || "allPosts";
   const grouped = groupByCollection(posts);
+  const groupedCollections = collections.filter((c) => grouped[c.id]?.length);
 
-  const topicsByCollection: Record<string, typeof topics> = {};
+  const topicsByCollection: Record<string, (typeof topics)[number][]> = {};
   for (const t of topics) (topicsByCollection[t.collectionId] ??= []).push(t);
 
   const collectionMap: Record<string, (typeof collections)[0]> = {};
@@ -85,7 +86,8 @@ export default async function BlogPage({ params, searchParams }: Props) {
     <main className={styles.main}>
       <PageViewTracker page="blog" />
       {activeCategory === "allPosts"
-        ? collections.filter((c) => grouped[c.id]?.length).map((col) => {
+        ? groupedCollections.length > 0
+          ? groupedCollections.map((col) => {
             const colPosts = grouped[col.id];
             const items = buildDisplayItems(colPosts, topicsByCollection[col.id] ?? []).slice(0, 4);
             return (
@@ -173,6 +175,30 @@ export default async function BlogPage({ params, searchParams }: Props) {
               </section>
             );
           })
+          : posts.length > 0
+            ? (
+              <section className={styles.collectorBlock}>
+                <div className={styles.collectorHeader}>
+                  <span className={styles.collectorDot} style={{ background: "#1C1C1A" }} />
+                  <h2 className={styles.collectorTitle}>{locale === "vi" ? "Bài viết" : "Posts"}</h2>
+                  <span className={styles.collectorMeta}>
+                    {posts.length} posts · Updated {latestDate(posts)}
+                  </span>
+                </div>
+                <div className={styles.gridFive}>
+                  {posts.slice(0, 5).map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      locale={locale}
+                      label={locale === "vi" ? "Bài viết" : "Posts"}
+                      topicLabel={post.topicIds[0] ? topicNameById[post.topicIds[0]] : undefined}
+                    />
+                  ))}
+                </div>
+              </section>
+            )
+            : null
         : (() => {
             const colPosts = grouped[activeCategory] ?? [];
             if (!colPosts.length) return null;

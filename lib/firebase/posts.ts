@@ -126,6 +126,33 @@ interface FetchPostsOptions {
   includeNonPublic?: boolean;
 }
 
+function shouldFallbackToPosts(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = (error as { code?: unknown }).code;
+  return code === "permission-denied" || code === "failed-precondition";
+}
+
+function toSummaryFromPost(post: PostDoc): PostSummaryDoc {
+  return {
+    id: post.id,
+    postId: post.id,
+    title: post.title,
+    slug: post.slug,
+    summary: post.summary,
+    thumbnail: post.thumbnail,
+    excerpt: post.excerpt,
+    readTime: post.readTime,
+    collectionIds: post.collectionIds,
+    topicIds: post.topicIds,
+    isPinned: post.isPinned,
+    orderMap: post.orderMap,
+    visibility: post.visibility,
+    views: post.views,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+  };
+}
+
 function canIgnoreSummarySyncError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const code = (error as { code?: unknown }).code;
@@ -155,12 +182,25 @@ export async function fetchPostSummaries(
   options?: FetchPostsOptions,
 ): Promise<PostSummaryDoc[]> {
   const includeNonPublic = options?.includeNonPublic ?? false;
-  const q = query(
-    collection(db, "post_summaries"),
-    orderBy("timestamps.createdAt", "desc"),
-  );
-  const snap = await getDocs(q);
-  const mapped = snap.docs.map((d) => docToPostSummary(d.id, d.data()));
+  try {
+    const q = query(
+      collection(db, "post_summaries"),
+      orderBy("timestamps.createdAt", "desc"),
+    );
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+      const mapped = snap.docs.map((d) => docToPostSummary(d.id, d.data()));
+      return includeNonPublic
+        ? mapped
+        : mapped.filter((post) => post.visibility === "public");
+    }
+  } catch (err) {
+    if (!shouldFallbackToPosts(err)) throw err;
+  }
+
+  const posts = await fetchPosts({ includeNonPublic: true });
+  const mapped = posts.map(toSummaryFromPost);
   return includeNonPublic
     ? mapped
     : mapped.filter((post) => post.visibility === "public");

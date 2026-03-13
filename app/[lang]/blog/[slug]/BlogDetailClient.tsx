@@ -119,7 +119,7 @@ function processContent(html: string): string {
 
 export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc | null }) {
   const { locale, dictionary: dict } = useDictionary();
-  const { collections, topics, posts, loading } = useBlogData();
+  const { collections, topics, posts } = useBlogData();
   const post = initialPost;
   const [showTips, setShowTips] = useState(false);
   const [tipsCount, setTipsCount] = useState(0);
@@ -183,10 +183,6 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [showRelated]);
-
-  if (loading) {
-    return <main className={styles.main} />;
-  }
 
   if (!post) {
     return (

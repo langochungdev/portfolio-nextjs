@@ -48,7 +48,6 @@ export function BlogDataProvider({
   initialData?: InitialData;
 }) {
   const [data, setData] = useState<BlogData>(() => {
-    if (cachedData && Date.now() - cachedAt < CACHE_TTL) return cachedData;
     if (initialData) {
       const relatedFiltered = applyRelatedVisibility({
         topics: initialData.topics,
@@ -65,11 +64,11 @@ export function BlogDataProvider({
       cachedAt = Date.now();
       return result;
     }
+    if (cachedData && Date.now() - cachedAt < CACHE_TTL) return cachedData;
     return EMPTY;
   });
 
   useEffect(() => {
-    if (data !== EMPTY) return;
     let cancelled = false;
 
     async function load() {
@@ -105,7 +104,7 @@ export function BlogDataProvider({
     return () => {
       cancelled = true;
     };
-  }, [data]);
+  }, []);
 
   return (
     <BlogDataContext.Provider value={data}>{children}</BlogDataContext.Provider>

@@ -144,8 +144,13 @@ export default function AdminPostsPage() {
   useEffect(() => {
     return () => {
       clearPendingDeleteTimer();
+      const pendingAction = pendingDeleteRef.current;
+      pendingDeleteRef.current = null;
+      if (pendingAction) {
+        void runDeleteCommit(pendingAction);
+      }
     };
-  }, [clearPendingDeleteTimer]);
+  }, [clearPendingDeleteTimer, runDeleteCommit]);
 
   const loadData = useCallback(async () => {
     try {

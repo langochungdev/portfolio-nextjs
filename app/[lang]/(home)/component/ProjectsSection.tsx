@@ -10,6 +10,8 @@ export function ProjectsSection() {
         <ProjectCard
           key={project.id}
           title={project.title}
+          image={project.image}
+          touchDescription={project.touchDescription}
           tech={project.tech}
           color={project.color}
           link={project.link}

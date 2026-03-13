@@ -73,6 +73,25 @@ button {
     cursor: pointer;
 }
 
+html:not([data-admin="true"]),
+html:not([data-admin="true"]) * {
+    cursor: url("/cursor.cur"), auto;
+}
+
+html:not([data-admin="true"]) a,
+html:not([data-admin="true"]) button,
+html:not([data-admin="true"]) [role="button"],
+html:not([data-admin="true"]) summary,
+html:not([data-admin="true"]) label {
+    cursor: url("/cursor.cur"), pointer;
+}
+
+html:not([data-admin="true"]) input,
+html:not([data-admin="true"]) textarea,
+html:not([data-admin="true"]) [contenteditable="true"] {
+    cursor: text;
+}
+
 img {
     max-width: 100%;
     display: block;

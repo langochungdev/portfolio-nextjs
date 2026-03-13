@@ -15,14 +15,17 @@ const BADGE_POSITIONS = [
 
 interface ProjectCardProps {
   title: string;
+  image: string;
+  touchDescription: string;
   tech: string[];
   color: string;
   index: number;
   link: string;
 }
 
-export function ProjectCard({ title, tech, color, index, link }: ProjectCardProps) {
+export function ProjectCard({ title, image, touchDescription, tech, color, index, link }: ProjectCardProps) {
   const tilt = TILTS[index % TILTS.length];
+  const isProjectOne = index === 0;
 
   return (
     <a
@@ -33,7 +36,7 @@ export function ProjectCard({ title, tech, color, index, link }: ProjectCardProp
       style={{ transform: `rotate(${tilt})` }}
     >
       <Image
-        src="/img/project1.png"
+        src={image}
         alt={title}
         width={400}
         height={300}
@@ -41,8 +44,8 @@ export function ProjectCard({ title, tech, color, index, link }: ProjectCardProp
         draggable={false}
       />
       <div className={styles.titleGlass}>
-        <span className={styles.title}>{title}</span>
-        <span className={styles.mobileSubtitle}>{tech.join(", ")}</span>
+        <span className={`${styles.title} ${isProjectOne ? styles.titleProjectOne : ""}`}>{title}</span>
+        <span className={styles.mobileSubtitle}>{touchDescription}</span>
       </div>
       <div className={styles.projectTech}>
         {tech.map((t, i) => {

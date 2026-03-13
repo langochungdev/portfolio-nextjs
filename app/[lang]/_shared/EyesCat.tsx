@@ -131,6 +131,7 @@ interface EyeMove {
 
 const P = MAX_PUPIL;
 const CENTER: PupilOffset = { x: 0, y: 0 };
+const USER_NAME_CACHE_PREFIX = "conversation_user_name:";
 
 function rnd(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -192,6 +193,22 @@ function easeInOut(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
+function getCachedUserName(visitorId: string): string {
+  try {
+    return (localStorage.getItem(`${USER_NAME_CACHE_PREFIX}${visitorId}`) ?? "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function setCachedUserName(visitorId: string, userName: string): void {
+  try {
+    localStorage.setItem(`${USER_NAME_CACHE_PREFIX}${visitorId}`, userName.trim());
+  } catch {
+    return;
+  }
+}
+
 export function EyesCat() {
   const { dictionary: dict, locale } = useDictionary();
   const { theme, toggle: toggleTheme } = useTheme();
@@ -203,6 +220,7 @@ export function EyesCat() {
   const [rightPupil, setRightPupil] = useState<PupilOffset>({ x: 0, y: 0 });
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [nameResolved, setNameResolved] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [greeting, setGreeting] = useState<string | null>(null);
@@ -222,6 +240,11 @@ export function EyesCat() {
   }, [open]);
 
   useEffect(() => {
+    if (!nameResolved) {
+      setGreeting(null);
+      return;
+    }
+
     const hour = new Date().getHours();
     let msg: string;
     const trimmedName = name.trim();
@@ -235,7 +258,7 @@ export function EyesCat() {
     const showTimer = setTimeout(() => setGreeting(msg), 1500);
     const hideTimer = setTimeout(() => setGreeting(null), 6000);
     return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
-  }, [name, dict.eyesCat.greetMorning, dict.eyesCat.greetAfternoon, dict.eyesCat.greetEvening, dict.eyesCat.greetMorningName, dict.eyesCat.greetAfternoonName, dict.eyesCat.greetEveningName]);
+  }, [nameResolved, name, dict.eyesCat.greetMorning, dict.eyesCat.greetAfternoon, dict.eyesCat.greetEvening, dict.eyesCat.greetMorningName, dict.eyesCat.greetAfternoonName, dict.eyesCat.greetEveningName]);
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -331,11 +354,43 @@ export function EyesCat() {
   }, []);
 
   useEffect(() => {
-    if (!visitorId) return;
+    if (!visitorId) {
+      setNameResolved(!visitorLoading);
+      return;
+    }
+
+    setNameResolved(false);
+    setName("");
+
+    const cachedName = getCachedUserName(visitorId);
+    if (cachedName) {
+      setName(cachedName);
+      setNameResolved(true);
+      return;
+    }
+
+    let active = true;
+
     fetchConversationUserName(visitorId)
-      .then((saved) => { if (saved) setName(saved); })
-      .catch(() => {});
-  }, [visitorId]);
+      .then((saved) => {
+        if (!active) return;
+        const resolvedName = saved?.trim() ?? "";
+        if (resolvedName) {
+          setCachedUserName(visitorId, resolvedName);
+        }
+        setName(resolvedName);
+        setNameResolved(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setName("");
+        setNameResolved(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [visitorId, visitorLoading]);
 
   useEffect(() => {
     if (!visitorId) return;
@@ -432,6 +487,7 @@ export function EyesCat() {
                         e.preventDefault();
                         const trimmed = name.trim();
                         if (trimmed && visitorId) {
+                          setCachedUserName(visitorId, trimmed);
                           updateConversationUserName(visitorId, trimmed).catch(() => {});
                         }
                         textareaRef.current?.focus();
@@ -440,6 +496,7 @@ export function EyesCat() {
                     onBlur={() => {
                       const trimmed = name.trim();
                       if (trimmed && visitorId) {
+                        setCachedUserName(visitorId, trimmed);
                         updateConversationUserName(visitorId, trimmed).catch(() => {});
                       }
                     }}

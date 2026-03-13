@@ -47,7 +47,7 @@ export function proxy(request: NextRequest) {
     staticFiles.includes(pathname) ||
     pathname.startsWith("/icon-") ||
     pathname.startsWith("/img/") ||
-    /^\/[^/]+\.(png|svg|gif|ico|webp|jpg|jpeg)$/.test(pathname)
+    /^\/[^/]+\.(png|svg|gif|ico|webp|jpg|jpeg|cur)$/.test(pathname)
   )
     return;
 

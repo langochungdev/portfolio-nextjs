@@ -10,7 +10,7 @@ const DETAIL_RE = /^\/[a-z]{2}\/blog\/.+/;
 
 export function BlogShell({ children }: { children: React.ReactNode }) {
   const { locale, dictionary: dict } = useDictionary();
-  const { collections, posts, loading } = useBlogData();
+  const { collections, posts } = useBlogData();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -44,10 +44,6 @@ export function BlogShell({ children }: { children: React.ReactNode }) {
   ]
     .filter(Boolean)
     .join(" ");
-
-  if (loading) {
-    return <div className={shellClass}>{children}</div>;
-  }
 
   return (
     <div className={shellClass}>

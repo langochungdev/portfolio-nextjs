@@ -17,7 +17,7 @@ export default async function AdminLayout({
   const dictionary = await getDictionary("vi");
 
   return (
-    <html lang="vi" data-theme="dark" suppressHydrationWarning>
+    <html lang="vi" data-theme="dark" data-admin="true" suppressHydrationWarning>
       <head />
       <body className={lexend.variable}>
         <AdminShell locale="vi" dictionary={dictionary}>

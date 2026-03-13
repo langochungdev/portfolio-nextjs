@@ -27,6 +27,9 @@ export const projectsData = [
   {
     id: "1",
     title: "Tạo Thiệp Tương Tác",
+    image: "/img/project1.webp",
+    touchDescription:
+      "thay ảnh, nhạc và thông điệp trên các template gửi cho bạn bè lời chúc",
     description: {
       vi: "Nền tảng tạo thiệp tương tác trực tuyến.",
       en: "Interactive greeting card creation platform.",
@@ -38,31 +41,37 @@ export const projectsData = [
   },
   {
     id: "2",
-    title: "Task Manager",
+    title: "world chain game",
+    image: "/img/project2.webp",
+    touchDescription: "trò chơi nối từ bằng tiếng nha chat realtime",
     description: {
-      vi: "Ứng dụng quản lý công việc theo phong cách Kanban với tính năng kéo thả.",
-      en: "Kanban-style task management app with drag and drop.",
+      vi: "Trang giới thiệu chi nhánh Cơm Tấm Long Xuyên.",
+      en: "Landing page for Com Tam Long Xuyen branch.",
     },
-    tech: ["React", "Firebase", "CSS"],
+    tech: ["NuxtJS", "Firestore", "Cloudinary", "Vercel", "Cloudflare"],
     color: "#5a2727",
-    link: "#",
+    link: "https://wcg.langochung.me",
     source: "#",
   },
   {
     id: "3",
-    title: "Weather Dashboard",
+    title: "chi nhánh cơm tấm",
+    image: "/img/project3.webp",
+    touchDescription: "giới thiệu chuỗi chi nhánh cơm tấm của khách hàng",
     description: {
-      vi: "Bảng điều khiển thời tiết thời gian thực với biểu đồ tương tác.",
-      en: "Real-time weather dashboard with interactive charts.",
+      vi: "Website chính thức của World Chain Game.",
+      en: "Official website for World Chain Game.",
     },
-    tech: ["Vue.js", "Chart.js", "API"],
+    tech: ["NuxtJS", "Firestore", "Cloudinary", "Vercel", "Cloudflare"],
     color: "#27405a",
-    link: "#",
+    link: "https://comtamlongxuyen.com",
     source: "#",
   },
   {
     id: "4",
     title: "Chat Application",
+    image: "/img/project1.webp",
+    touchDescription: "ứng dụng chat realtime với websocket và thông báo đẩy",
     description: {
       vi: "Ứng dụng nhắn tin thời gian thực với WebSocket và thông báo đẩy.",
       en: "Real-time messaging app with WebSocket and push notifications.",
