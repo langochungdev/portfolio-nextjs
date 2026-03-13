@@ -64,14 +64,6 @@ const CopyIcon = () => (
   </svg>
 );
 
-const DragHandle = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <line x1="4" y1="6" x2="20" y2="6" />
-    <line x1="4" y1="12" x2="20" y2="12" />
-    <line x1="4" y1="18" x2="20" y2="18" />
-  </svg>
-);
-
 const generateSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
@@ -470,11 +462,18 @@ export function TopicPanel({
         {items.map((topic, idx) => {
           const isSelected = selectedId === topic.id;
           const isEditing = editingId === topic.id;
+          const topicPostCount = counts[topic.id] ?? 0;
+          const visibilityClass =
+            topic.visibility === "hidden"
+              ? styles.topicItemHidden
+              : topic.visibility === "draft"
+                ? styles.topicItemDraft
+                : styles.topicItemPublic;
 
           return (
             <div
               key={topic.id}
-              className={`${styles.panelItem} ${isSelected ? styles.panelItemActive : ""} ${dragOverIdx === idx ? styles.dragOver : ""}`}
+              className={`${styles.panelItem} ${styles.topicItem} ${visibilityClass} ${isSelected ? styles.topicItemActive : ""} ${dragOverIdx === idx ? styles.dragOver : ""}`}
               onClick={() => !isEditing && onSelect(topic.id)}
               draggable={!isEditing}
               onDragStart={() => handleDragStart(idx)}
@@ -483,7 +482,6 @@ export function TopicPanel({
               onDrop={() => handleDrop(idx)}
               onDragEnd={handleDragEnd}
             >
-              {!isEditing && <span className={styles.dragHandle}><DragHandle /></span>}
               {isEditing ? (
                 <input
                   className={styles.panelInlineInput}
@@ -499,14 +497,9 @@ export function TopicPanel({
               ) : (
                 <>
                   <div className={styles.panelItemMain}>
-                    <span className={styles.panelItemName}>{topic.name}</span>
-                    <span className={styles.panelItemSlug}>/{topic.slug || generateSlug(topic.name)}</span>
+                    <span className={styles.topicTitleWithCount}>{topicPostCount} • {topic.name}</span>
                   </div>
                   <div className={styles.topicRowMeta}>
-                    <span className={`${styles.statusBadge} ${styles[`status${topic.visibility.charAt(0).toUpperCase()}${topic.visibility.slice(1)}`]}`}>
-                      {topic.visibility}
-                    </span>
-                    <span className={styles.panelCount}>{counts[topic.id] ?? 0}</span>
                     <div className={styles.panelItemActions}>
                       <button
                         type="button"

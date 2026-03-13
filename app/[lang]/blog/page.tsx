@@ -75,6 +75,9 @@ export default async function BlogPage({ params, searchParams }: Props) {
   const collectionMap: Record<string, (typeof collections)[0]> = {};
   for (const c of collections) collectionMap[c.id] = c;
 
+  const topicNameById: Record<string, string> = {};
+  for (const topic of topics) topicNameById[topic.id] = topic.name;
+
   const colLabel = (id: string) => collectionMap[id]?.name ?? id;
   const colColor = (id: string) => collectionMap[id]?.color ?? "#1C1C1A";
 
@@ -97,26 +100,65 @@ export default async function BlogPage({ params, searchParams }: Props) {
                 <div className={styles.gridFive}>
                   {items.map((item) =>
                     item.type === "post" ? (
-                      <PostCard key={item.post.id} post={item.post} locale={locale} label={col.name} />
+                      <PostCard
+                        key={item.post.id}
+                        post={item.post}
+                        locale={locale}
+                        label={col.name}
+                        topicLabel={item.post.topicIds[0] ? topicNameById[item.post.topicIds[0]] : undefined}
+                      />
                     ) : (
-                      <Link
-                        key={item.topic.id}
-                        href={`/${locale}/blog?cat=${col.id}&open=${item.topic.id}`}
-                        className={`${styles.card} ${styles.topicWrapCard}`}
-                      >
-                        <div className={styles.cardTopRow}>
-                          <span className={`${styles.cardTag} ${styles.topicTag}`}>{dict.blog.topic}</span>
-                          <span className={styles.cardDate}>{latestDate(item.posts)}</span>
-                        </div>
-                        <h3 className={styles.cardTitle}>{item.topic.name}</h3>
-                        <p className={styles.cardExcerpt}>
-                          {item.posts[0] ? getExcerpt(item.posts[0].content) : ""}
-                        </p>
-                        <div className={styles.cardFooter}>
-                          <span className={styles.cardReadTime}>{item.posts.length} posts</span>
-                          <span className={styles.cardArrow}>→</span>
-                        </div>
-                      </Link>
+                      (() => {
+                        const topicDate = latestDate(item.posts);
+                        const topicExcerpt = item.topic.description?.trim()
+                          ? item.topic.description.trim()
+                          : (item.posts[0] ? getExcerpt(item.posts[0].content) : "");
+                        const hasThumbnail = !!item.topic.thumbnail?.trim();
+
+                        if (hasThumbnail) {
+                          return (
+                            <Link
+                              key={item.topic.id}
+                              href={`/${locale}/blog?cat=${col.id}&open=${item.topic.id}`}
+                              className={`${styles.card} ${styles.topicWrapCard} ${styles.cardWithMedia}`}
+                            >
+                              <div className={styles.cardMedia}>
+                                <img src={item.topic.thumbnail} alt={item.topic.name} className={styles.cardImage} loading="lazy" />
+                                <div className={styles.cardMediaMeta}>
+                                  <span className={styles.cardMediaDate}>{topicDate}</span>
+                                </div>
+                              </div>
+                              <div className={styles.cardGlassInfo}>
+                                <div className={styles.cardTopRow}>
+                                  <span className={`${styles.cardTag} ${styles.topicTag}`}>{dict.blog.topic}</span>
+                                  <span className={styles.cardCount}>{item.posts.length} posts</span>
+                                </div>
+                                <h3 className={styles.cardTitle}>{item.topic.name}</h3>
+                                <p className={styles.cardExcerpt}>{topicExcerpt}</p>
+                              </div>
+                            </Link>
+                          );
+                        }
+
+                        return (
+                          <Link
+                            key={item.topic.id}
+                            href={`/${locale}/blog?cat=${col.id}&open=${item.topic.id}`}
+                            className={`${styles.card} ${styles.topicWrapCard}`}
+                          >
+                            <div className={styles.cardTopRow}>
+                              <span className={`${styles.cardTag} ${styles.topicTag}`}>{dict.blog.topic}</span>
+                              <span className={styles.cardDate}>{topicDate}</span>
+                            </div>
+                            <h3 className={styles.cardTitle}>{item.topic.name}</h3>
+                            <p className={styles.cardExcerpt}>{topicExcerpt}</p>
+                            <div className={styles.cardFooter}>
+                              <span className={styles.cardReadTime}>{item.posts.length} posts</span>
+                              <span className={styles.cardArrow}>→</span>
+                            </div>
+                          </Link>
+                        );
+                      })()
                     ),
                   )}
                   <Link
@@ -152,7 +194,13 @@ export default async function BlogPage({ params, searchParams }: Props) {
                 {combined.length > 0 && (
                   <div className={styles.standaloneGrid}>
                     {combined.map((p) => (
-                      <PostCard key={p.id} post={p} locale={locale} label={colLabel(activeCategory)} />
+                      <PostCard
+                        key={p.id}
+                        post={p}
+                        locale={locale}
+                        label={colLabel(activeCategory)}
+                        topicLabel={p.topicIds[0] ? topicNameById[p.topicIds[0]] : undefined}
+                      />
                     ))}
                   </div>
                 )}

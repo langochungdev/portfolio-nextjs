@@ -1,11 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import { i18nConfig, localeCookieName } from "@/lib/i18n/config";
 
-const locales = ["vi", "en"];
-const defaultLocale = "vi";
+const locales = [...i18nConfig.locales];
+const defaultLocale = i18nConfig.defaultLocale;
 
 function getLocale(request: NextRequest): string {
+  const cookieLocale = request.cookies.get(localeCookieName)?.value;
+  if (
+    cookieLocale &&
+    locales.includes(cookieLocale as (typeof locales)[number])
+  ) {
+    return cookieLocale;
+  }
+
   const acceptLang = request.headers.get("accept-language");
-  if (acceptLang?.includes("en")) return "en";
+
+  if (acceptLang) {
+    const langs = acceptLang
+      .split(",")
+      .map((part) => part.split(";")[0]?.trim().toLowerCase())
+      .filter((part): part is string => !!part);
+
+    for (const lang of langs) {
+      if (lang.startsWith("en")) return "en";
+      if (lang.startsWith("vi")) return "vi";
+    }
+  }
+
   return defaultLocale;
 }
 
@@ -34,11 +55,33 @@ export function proxy(request: NextRequest) {
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   );
 
-  if (pathnameHasLocale) return;
+  if (pathnameHasLocale) {
+    const localeFromPath = locales.find(
+      (locale) =>
+        pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
+    );
+
+    const currentCookieLocale = request.cookies.get(localeCookieName)?.value;
+    if (!localeFromPath || currentCookieLocale === localeFromPath) return;
+
+    const response = NextResponse.next();
+    response.cookies.set(localeCookieName, localeFromPath, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+    return response;
+  }
 
   const locale = getLocale(request);
   request.nextUrl.pathname = `/${locale}${pathname}`;
-  return NextResponse.redirect(request.nextUrl);
+  const response = NextResponse.redirect(request.nextUrl);
+  response.cookies.set(localeCookieName, locale, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
+  return response;
 }
 
 export const config = {

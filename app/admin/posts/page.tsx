@@ -44,6 +44,18 @@ import {
 } from "@/lib/cloudinary/client";
 import styles from "@/app/style/admin/posts.module.css";
 
+type PendingDeleteKind = "post" | "topic" | "hint";
+
+interface PendingDeleteAction {
+  id: string;
+  kind: PendingDeleteKind;
+  label: string;
+  rollback: () => void;
+  commit: () => Promise<void>;
+}
+
+const DELETE_UNDO_MS = 3000;
+
 export default function AdminPostsPage() {
   const [collections, setCollections] = useState<CollectionDoc[]>([]);
   const [topics, setTopics] = useState<TopicDoc[]>([]);
@@ -60,9 +72,80 @@ export default function AdminPostsPage() {
   const [postOrderChanged, setPostOrderChanged] = useState(false);
   const [hintOrderChanged, setHintOrderChanged] = useState(false);
   const [topicOrderChanged, setTopicOrderChanged] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Pick<PendingDeleteAction, "id" | "kind" | "label"> | null>(null);
   const originalPostOrder = useRef<string[]>([]);
   const originalHintOrder = useRef<string[]>([]);
   const originalTopicOrder = useRef<string[]>([]);
+  const pendingDeleteRef = useRef<PendingDeleteAction | null>(null);
+  const pendingDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPendingDeleteTimer = useCallback(() => {
+    if (!pendingDeleteTimerRef.current) return;
+    clearTimeout(pendingDeleteTimerRef.current);
+    pendingDeleteTimerRef.current = null;
+  }, []);
+
+  const dismissPendingDelete = useCallback(() => {
+    clearPendingDeleteTimer();
+    setPendingDelete(null);
+    const current = pendingDeleteRef.current;
+    pendingDeleteRef.current = null;
+    return current;
+  }, [clearPendingDeleteTimer]);
+
+  const runDeleteCommit = useCallback(async (action: PendingDeleteAction) => {
+    try {
+      await action.commit();
+    } catch (err) {
+      console.error("Delete commit failed:", err);
+      alert(err instanceof Error ? err.message : `Lỗi khi xóa ${action.label}`);
+    }
+  }, []);
+
+  const finalizePendingDelete = useCallback(async () => {
+    const action = dismissPendingDelete();
+    if (!action) return;
+    await runDeleteCommit(action);
+  }, [dismissPendingDelete, runDeleteCommit]);
+
+  const startPendingDeleteTimer = useCallback(() => {
+    if (!pendingDeleteRef.current) return;
+    clearPendingDeleteTimer();
+    pendingDeleteTimerRef.current = setTimeout(() => {
+      void finalizePendingDelete();
+    }, DELETE_UNDO_MS);
+  }, [clearPendingDeleteTimer, finalizePendingDelete]);
+
+  const pausePendingDeleteTimer = useCallback(() => {
+    clearPendingDeleteTimer();
+  }, [clearPendingDeleteTimer]);
+
+  const restartPendingDeleteTimer = useCallback(() => {
+    startPendingDeleteTimer();
+  }, [startPendingDeleteTimer]);
+
+  const undoPendingDelete = useCallback(() => {
+    const action = dismissPendingDelete();
+    if (!action) return;
+    action.rollback();
+  }, [dismissPendingDelete]);
+
+  const stagePendingDelete = useCallback((action: PendingDeleteAction) => {
+    const previousAction = dismissPendingDelete();
+    if (previousAction) {
+      void runDeleteCommit(previousAction);
+    }
+
+    pendingDeleteRef.current = action;
+    setPendingDelete({ id: action.id, kind: action.kind, label: action.label });
+    startPendingDeleteTimer();
+  }, [dismissPendingDelete, runDeleteCommit, startPendingDeleteTimer]);
+
+  useEffect(() => {
+    return () => {
+      clearPendingDeleteTimer();
+    };
+  }, [clearPendingDeleteTimer]);
 
   const loadData = useCallback(async () => {
     try {
@@ -235,16 +318,49 @@ export default function AdminPostsPage() {
   };
 
   const deleteTopic = async (id: string) => {
-    try {
-      const topic = topics.find((t) => t.id === id);
-      if (topic?.thumbnail) {
-        const thumbId = extractPublicId(topic.thumbnail);
-        if (thumbId) deleteFromCloudinary([thumbId]).catch(console.error);
-      }
-      await deleteTopicFb(id);
-      setTopics((prev) => prev.filter((t) => t.id !== id));
-      if (selectedTopicId === id) setSelectedTopicId(null);
-    } catch (err) { console.error(err); }
+    const topic = topics.find((t) => t.id === id);
+    if (!topic) return;
+
+    const originalIndex = topics.findIndex((item) => item.id === id);
+    const wasSelected = selectedTopicId === id;
+
+    setTopics((prev) => prev.filter((item) => item.id !== id));
+    if (wasSelected) setSelectedTopicId(null);
+
+    stagePendingDelete({
+      id,
+      kind: "topic",
+      label: `topic \"${topic.name}\"`,
+      rollback: () => {
+        setTopics((current) => {
+          if (current.some((item) => item.id === id)) return current;
+          const next = [...current];
+          const insertIndex = Math.min(originalIndex, next.length);
+          next.splice(insertIndex, 0, topic);
+          return next;
+        });
+        if (wasSelected) setSelectedTopicId(id);
+      },
+      commit: async () => {
+        try {
+          if (topic.thumbnail) {
+            const thumbId = extractPublicId(topic.thumbnail);
+            if (thumbId) await deleteFromCloudinary([thumbId]).catch(console.error);
+          }
+          await deleteTopicFb(id);
+        } catch (err) {
+          setTopics((current) => {
+            if (current.some((item) => item.id === id)) return current;
+            const next = [...current];
+            const insertIndex = Math.min(originalIndex, next.length);
+            next.splice(insertIndex, 0, topic);
+            return next;
+          });
+          if (wasSelected) setSelectedTopicId(id);
+          throw err;
+        }
+      },
+    });
   };
 
   const handleNewPost = () => {
@@ -332,21 +448,54 @@ export default function AdminPostsPage() {
     const post = posts.find((p) => p.id === id);
     if (!post) return;
 
-    const prevPosts = [...posts];
+    const originalIndex = posts.findIndex((item) => item.id === id);
+    const wasEditingPost = editingPost?.id === id ? editingPost : null;
+    const wasNewEditingPost = editingPost?.id === id ? isNewPost : false;
+
     setPosts((prev) => prev.filter((p) => p.id !== id));
     if (editingPost?.id === id) { setEditingPost(null); setIsNewPost(false); }
 
-    try {
-      await Promise.all([
-        deleteContentMedia(post.content),
-        (() => { const tid = post.thumbnail ? extractPublicId(post.thumbnail) : null; return tid ? deleteFromCloudinary([tid]).catch(console.error) : Promise.resolve(); })(),
-        deletePostFb(id),
-      ]);
-    } catch (err) {
-      console.error("Delete failed:", err);
-      setPosts(prevPosts);
-      alert(err instanceof Error ? err.message : "Lỗi khi xóa bài viết");
-    }
+    stagePendingDelete({
+      id,
+      kind: "post",
+      label: `bài viết \"${post.title}\"`,
+      rollback: () => {
+        setPosts((current) => {
+          if (current.some((item) => item.id === id)) return current;
+          const next = [...current];
+          const insertIndex = Math.min(originalIndex, next.length);
+          next.splice(insertIndex, 0, post);
+          return next;
+        });
+        if (wasEditingPost) {
+          setEditingPost(wasEditingPost);
+          setIsNewPost(wasNewEditingPost);
+        }
+      },
+      commit: async () => {
+        try {
+          const thumbId = post.thumbnail ? extractPublicId(post.thumbnail) : null;
+          await Promise.all([
+            deleteContentMedia(post.content),
+            thumbId ? deleteFromCloudinary([thumbId]).catch(console.error) : Promise.resolve(),
+            deletePostFb(id),
+          ]);
+        } catch (err) {
+          setPosts((current) => {
+            if (current.some((item) => item.id === id)) return current;
+            const next = [...current];
+            const insertIndex = Math.min(originalIndex, next.length);
+            next.splice(insertIndex, 0, post);
+            return next;
+          });
+          if (wasEditingPost) {
+            setEditingPost(wasEditingPost);
+            setIsNewPost(wasNewEditingPost);
+          }
+          throw err;
+        }
+      },
+    });
   };
 
   const handleNewHint = () => {
@@ -410,19 +559,52 @@ export default function AdminPostsPage() {
   const handleDeleteHint = async (id: string) => {
     const hint = hints.find((h) => h.id === id);
     if (!hint) return;
-    const prevHints = [...hints];
+
+    const originalIndex = hints.findIndex((item) => item.id === id);
+    const wasEditingHint = editingHint?.id === id ? editingHint : null;
+
     setHints((prev) => prev.filter((h) => h.id !== id));
     if (editingHint?.id === id) { setEditingHint(null); setIsNewHint(false); }
-    try {
-      await Promise.all([
-        deleteContentMedia(hint.content),
-        deleteHintFb(id),
-      ]);
-    } catch (err) {
-      console.error("Delete hint failed:", err);
-      setHints(prevHints);
-      alert(err instanceof Error ? err.message : "Lỗi khi xóa hint");
-    }
+
+    stagePendingDelete({
+      id,
+      kind: "hint",
+      label: `hint \"${hint.title}\"`,
+      rollback: () => {
+        setHints((current) => {
+          if (current.some((item) => item.id === id)) return current;
+          const next = [...current];
+          const insertIndex = Math.min(originalIndex, next.length);
+          next.splice(insertIndex, 0, hint);
+          return next;
+        });
+        if (wasEditingHint) {
+          setEditingHint(wasEditingHint);
+          setIsNewHint(false);
+        }
+      },
+      commit: async () => {
+        try {
+          await Promise.all([
+            deleteContentMedia(hint.content),
+            deleteHintFb(id),
+          ]);
+        } catch (err) {
+          setHints((current) => {
+            if (current.some((item) => item.id === id)) return current;
+            const next = [...current];
+            const insertIndex = Math.min(originalIndex, next.length);
+            next.splice(insertIndex, 0, hint);
+            return next;
+          });
+          if (wasEditingHint) {
+            setEditingHint(wasEditingHint);
+            setIsNewHint(false);
+          }
+          throw err;
+        }
+      },
+    });
   };
 
   const handleCancelHint = () => { setEditingHint(null); setIsNewHint(false); };
@@ -540,86 +722,103 @@ export default function AdminPostsPage() {
   }
 
   return (
-    <div className={styles.triPanel}>
-      <CollectionPanel
-        items={collections}
-        selectedId={selectedColId}
-        counts={colCounts}
-        onSelect={handleSelectCol}
-        onAdd={addCol}
-        onRename={renameCol}
-        onDelete={deleteCol}
-      />
-      <TopicPanel
-        items={colTopics}
-        selectedId={selectedTopicId}
-        totalCount={totalColPosts}
-        counts={topicCounts}
-        disabled={!selectedColId}
-        onSelect={handleSelectTopic}
-        onAdd={addTopic}
-        onRename={renameTopic}
-        onDelete={deleteTopic}
-        onReorder={handleReorderTopics}
-        onSaveOrder={handleSaveTopicOrder}
-        onResetOrder={handleResetTopicOrder}
-        orderChanged={topicOrderChanged}
-        onUpdateTopic={async (id, data, thumbnailFile) => {
-          try {
-            let updateData = { ...data };
-            if (updateData.name) {
-              const normalizedName = updateData.name.trim();
-              const normalizedSlug = normalizedName
-                .toLowerCase()
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .replace(/\u0111/g, "d")
-                .replace(/[^\w\s-]/g, "")
-                .replace(/\s+/g, "-")
-                .replace(/-+/g, "-")
-                .trim();
-              updateData = { ...updateData, name: normalizedName, slug: normalizedSlug };
-            }
-            if (thumbnailFile) {
-              const result = await uploadToCloudinary(thumbnailFile);
-              updateData = { ...updateData, thumbnail: result.url };
-            }
-            await updateTopicFb(id, updateData);
-            setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, ...updateData } : t)));
-          } catch (err) { console.error(err); }
-        }}
-      />
-      <PostPanel
-        posts={filteredPosts}
-        hints={filteredHints}
-        selectedTopicId={selectedTopicId}
-        editingPost={editingPost}
-        editingHint={editingHint}
-        isNew={isNewPost}
-        isNewHint={isNewHint}
-        collections={collections}
-        topics={topics}
-        saving={saving}
-        onNew={handleNewPost}
-        onEdit={handleEditPost}
-        onSave={handleSavePost}
-        onDelete={handleDeletePost}
-        onCancel={handleCancelEdit}
-        onCreateTopic={handleCreateTopicForPost}
-        onNewHint={handleNewHint}
-        onEditHint={handleEditHint}
-        onSaveHint={handleSaveHint}
-        onDeleteHint={handleDeleteHint}
-        onCancelHint={handleCancelHint}
-        onReorderPosts={handleReorderPosts}
-        onSavePostOrder={handleSavePostOrder}
-        onResetPostOrder={handleResetPostOrder}
-        postOrderChanged={postOrderChanged}
-        onReorderHints={handleReorderHints}
-        onSaveHintOrder={handleSaveHintOrder}
-        onResetHintOrder={handleResetHintOrder}
-        hintOrderChanged={hintOrderChanged}
-      />
-    </div>
+    <>
+      <div className={styles.triPanel}>
+        <CollectionPanel
+          items={collections}
+          selectedId={selectedColId}
+          counts={colCounts}
+          onSelect={handleSelectCol}
+          onAdd={addCol}
+          onRename={renameCol}
+          onDelete={deleteCol}
+        />
+        <TopicPanel
+          items={colTopics}
+          selectedId={selectedTopicId}
+          totalCount={totalColPosts}
+          counts={topicCounts}
+          disabled={!selectedColId}
+          onSelect={handleSelectTopic}
+          onAdd={addTopic}
+          onRename={renameTopic}
+          onDelete={deleteTopic}
+          onReorder={handleReorderTopics}
+          onSaveOrder={handleSaveTopicOrder}
+          onResetOrder={handleResetTopicOrder}
+          orderChanged={topicOrderChanged}
+          onUpdateTopic={async (id, data, thumbnailFile) => {
+            try {
+              let updateData = { ...data };
+              if (updateData.name) {
+                const normalizedName = updateData.name.trim();
+                const normalizedSlug = normalizedName
+                  .toLowerCase()
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/\u0111/g, "d")
+                  .replace(/[^\w\s-]/g, "")
+                  .replace(/\s+/g, "-")
+                  .replace(/-+/g, "-")
+                  .trim();
+                updateData = { ...updateData, name: normalizedName, slug: normalizedSlug };
+              }
+              if (thumbnailFile) {
+                const result = await uploadToCloudinary(thumbnailFile);
+                updateData = { ...updateData, thumbnail: result.url };
+              }
+              await updateTopicFb(id, updateData);
+              setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, ...updateData } : t)));
+            } catch (err) { console.error(err); }
+          }}
+        />
+        <PostPanel
+          posts={filteredPosts}
+          hints={filteredHints}
+          selectedTopicId={selectedTopicId}
+          editingPost={editingPost}
+          editingHint={editingHint}
+          isNew={isNewPost}
+          isNewHint={isNewHint}
+          collections={collections}
+          topics={topics}
+          saving={saving}
+          onNew={handleNewPost}
+          onEdit={handleEditPost}
+          onSave={handleSavePost}
+          onDelete={handleDeletePost}
+          onCancel={handleCancelEdit}
+          onCreateTopic={handleCreateTopicForPost}
+          onNewHint={handleNewHint}
+          onEditHint={handleEditHint}
+          onSaveHint={handleSaveHint}
+          onDeleteHint={handleDeleteHint}
+          onCancelHint={handleCancelHint}
+          onReorderPosts={handleReorderPosts}
+          onSavePostOrder={handleSavePostOrder}
+          onResetPostOrder={handleResetPostOrder}
+          postOrderChanged={postOrderChanged}
+          onReorderHints={handleReorderHints}
+          onSaveHintOrder={handleSaveHintOrder}
+          onResetHintOrder={handleResetHintOrder}
+          hintOrderChanged={hintOrderChanged}
+        />
+      </div>
+      {pendingDelete && (
+        <div
+          className={styles.deleteUndoFloat}
+          role="status"
+          aria-live="polite"
+          onPointerEnter={pausePendingDeleteTimer}
+          onPointerLeave={restartPendingDeleteTimer}
+        >
+          <span className={styles.deleteUndoText}>Đã xóa tạm {pendingDelete.label}. Tự xóa sau 3 giây.</span>
+          <div className={styles.deleteUndoActions}>
+            <button type="button" className={styles.deleteUndoBtn} onClick={undoPendingDelete}>Hoàn tác</button>
+            <button type="button" className={styles.deleteAcceptBtn} onClick={() => { void finalizePendingDelete(); }}>Chấp nhận</button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
