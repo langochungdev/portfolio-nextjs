@@ -6,7 +6,7 @@ import { LazyEyesCat, LazyAnimatedFavicon, LazyVisitorProvider } from "./_shared
 import { i18nConfig } from "@/lib/i18n/config";
 import type { Locale } from "@/lib/i18n/config";
 import { cookies } from "next/headers";
-import { VT323, Lexend } from "next/font/google";
+import { VT323, Lexend, JetBrains_Mono } from "next/font/google";
 import { JsonLd, personSchema, webSiteSchema } from "@/lib/seo/schemas";
 
 const vt323 = VT323({
@@ -20,6 +20,12 @@ const lexend = Lexend({
   subsets: ["latin", "vietnamese"],
   display: "swap",
   variable: "--font-lexend",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin", "vietnamese"],
+  display: "swap",
+  variable: "--font-code",
 });
 
 const themeScript = `(function(){try{var t=document.cookie.match(/(?:^|;)\\s*theme=(light|dark)/);if(t){document.documentElement.setAttribute("data-theme",t[1]);return;}var s=localStorage.getItem("theme-preference");if(s==="dark"||s==="light"){document.documentElement.setAttribute("data-theme",s);document.cookie="theme="+s+";path=/;max-age=31536000;SameSite=Lax";return;}var m=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",m);localStorage.setItem("theme-preference",m);document.cookie="theme="+m+";path=/;max-age=31536000;SameSite=Lax";}catch(e){}})();`;
@@ -47,7 +53,7 @@ export default async function LocaleLayout({
   const serverTheme = themeCookie === "dark" ? "dark" : "light";
 
   return (
-    <html lang={locale} className={`${lexend.variable} ${vt323.variable}`} data-theme={serverTheme} suppressHydrationWarning>
+    <html lang={locale} className={`${lexend.variable} ${vt323.variable} ${jetbrainsMono.variable}`} data-theme={serverTheme} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: swScript }} defer />

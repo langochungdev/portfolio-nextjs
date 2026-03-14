@@ -71,7 +71,6 @@ export function CollectionPanel({ items, selectedId, counts, onSelect, onAdd, on
           const color = collectionColors[col.id] ?? "var(--color-text-muted)";
           const isSelected = selectedId === col.id;
           const isEditing = editingId === col.id;
-          const collectionPostCount = counts[col.id] ?? 0;
 
           return (
             <div
@@ -97,7 +96,7 @@ export function CollectionPanel({ items, selectedId, counts, onSelect, onAdd, on
                 <>
                   <div className={styles.panelItemMain}>
                     <span className={styles.collectionTitleWithCount} title={col.name}>
-                      {collectionPostCount} • {col.name}
+                      {col.name}
                     </span>
                   </div>
                   <div className={styles.collectionRowMeta}>

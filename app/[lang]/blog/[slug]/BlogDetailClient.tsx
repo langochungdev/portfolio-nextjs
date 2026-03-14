@@ -16,6 +16,69 @@ import { fetchHintsCount } from "@/lib/firebase/hints";
 import styles from "@/app/style/blog/detail.module.css";
 import tipsStyles from "@/app/style/blog/tips.module.css";
 import { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "react";
+import hljs from "highlight.js/lib/core";
+import plaintext from "highlight.js/lib/languages/plaintext";
+import javascript from "highlight.js/lib/languages/javascript";
+import typescript from "highlight.js/lib/languages/typescript";
+import xml from "highlight.js/lib/languages/xml";
+import css from "highlight.js/lib/languages/css";
+import json from "highlight.js/lib/languages/json";
+import bash from "highlight.js/lib/languages/bash";
+import java from "highlight.js/lib/languages/java";
+import python from "highlight.js/lib/languages/python";
+import go from "highlight.js/lib/languages/go";
+import sql from "highlight.js/lib/languages/sql";
+import markdown from "highlight.js/lib/languages/markdown";
+
+let highlightRegistered = false;
+
+function syncCodeBlockWidthParity(root: HTMLElement): void {
+  const wraps = root.querySelectorAll(".code-block-wrap");
+
+  wraps.forEach((wrap) => {
+    const wrapEl = wrap as HTMLElement;
+    const inner = wrapEl.firstElementChild;
+    if (!(inner instanceof HTMLElement)) return;
+
+    const pre = inner.querySelector("pre");
+    if (!(pre instanceof HTMLElement)) return;
+
+    const overflow = pre.scrollWidth - pre.clientWidth;
+    if (overflow <= 1) return;
+
+    const currentWidth = inner.getBoundingClientRect().width;
+    const maxWidth = wrapEl.getBoundingClientRect().width;
+    if (!Number.isFinite(currentWidth) || !Number.isFinite(maxWidth) || maxWidth <= 0) return;
+    if (currentWidth >= maxWidth - 1) return;
+
+    // Only patch small visual mismatches so intentional narrow code blocks keep their behavior.
+    const delta = Math.ceil(overflow + 2);
+    if (delta > 48) return;
+
+    const nextWidth = Math.min(Math.ceil(maxWidth), Math.ceil(currentWidth + delta));
+    if (nextWidth <= currentWidth + 0.5) return;
+
+    inner.style.width = `${nextWidth}px`;
+    inner.style.maxWidth = "100%";
+  });
+}
+
+function registerHighlightLanguages(): void {
+  if (highlightRegistered) return;
+  hljs.registerLanguage("plaintext", plaintext);
+  hljs.registerLanguage("javascript", javascript);
+  hljs.registerLanguage("typescript", typescript);
+  hljs.registerLanguage("xml", xml);
+  hljs.registerLanguage("css", css);
+  hljs.registerLanguage("json", json);
+  hljs.registerLanguage("bash", bash);
+  hljs.registerLanguage("java", java);
+  hljs.registerLanguage("python", python);
+  hljs.registerLanguage("go", go);
+  hljs.registerLanguage("sql", sql);
+  hljs.registerLanguage("markdown", markdown);
+  highlightRegistered = true;
+}
 
 function processContent(html: string): string {
   const getAlign = (attrs: string): "left" | "right" | "center" => {
@@ -46,6 +109,31 @@ function processContent(html: string): string {
       return `display:block;float:right;margin-left:1rem;margin-bottom:0.5rem;${width ? `width:min(100%,${width}px);` : "max-width:100%;"}`;
     }
     return "display:flex;justify-content:center;width:100%;margin:0.75rem 0;";
+  };
+
+  const getCodeBlockWrapStyle = (align: "left" | "right" | "center"): string => {
+    const justifyContent = align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center";
+    return `display:flex;justify-content:${justifyContent};width:100%;margin:0.75rem 0;clear:both;`;
+  };
+
+  const getCodeBlockInnerStyle = (width?: string | null): string => {
+    if (!width) {
+      return "position:relative;width:100%;max-width:100%;";
+    }
+    return `position:relative;width:min(100%,${width}px);max-width:100%;`;
+  };
+
+  const getCodeBlockWidth = (attrs: string): string | null => {
+    const dataWidth = getNumberAttr(attrs, "data-width", 0);
+    if (dataWidth > 0) return String(Math.round(dataWidth));
+
+    const widthAttr = attrs.match(/\bwidth="(\d+)"/);
+    if (widthAttr?.[1]) return widthAttr[1];
+
+    const styleWidth = attrs.match(/style="[^"]*\bwidth\s*:\s*(\d+)px[^"]*"/);
+    if (styleWidth?.[1]) return styleWidth[1];
+
+    return null;
   };
 
   const getInnerWidthStyle = (width?: string | null): string => {
@@ -134,7 +222,11 @@ function processContent(html: string): string {
     .replace(
       /<pre\b([^>]*)>([\s\S]*?)<\/pre>/g,
       (_match, attrs: string, inner: string) => {
-        return `<div class="code-block-wrap"><button type="button" class="code-copy-btn" data-copy-code>Copy</button><pre${attrs}>${inner}</pre></div>`;
+        const align = getAlign(attrs);
+        const width = getCodeBlockWidth(attrs);
+        const wrapStyle = getCodeBlockWrapStyle(align);
+        const innerStyle = getCodeBlockInnerStyle(width);
+        return `<div class="code-block-wrap" style="${wrapStyle}"><div style="${innerStyle}"><button type="button" class="code-copy-btn" data-copy-code>Copy</button><pre${attrs}>${inner}</pre></div></div>`;
       }
     )
     .replace(/<p><\/p>/g, "<p><br></p>");
@@ -177,7 +269,6 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
   useEffect(() => {
     let cancelled = false;
     if (!post) {
-      setTipsCount(0);
       return;
     }
 
@@ -247,6 +338,28 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
     root.addEventListener("click", handleCopyClick);
     return () => {
       root.removeEventListener("click", handleCopyClick);
+    };
+  }, [post?.id]);
+
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root) return;
+
+    registerHighlightLanguages();
+
+    const run = () => {
+      const blocks = root.querySelectorAll("pre code");
+      blocks.forEach((block) => {
+        hljs.highlightElement(block as HTMLElement);
+      });
+      syncCodeBlockWidthParity(root);
+    };
+
+    run();
+    window.addEventListener("resize", run);
+
+    return () => {
+      window.removeEventListener("resize", run);
     };
   }, [post?.id]);
 

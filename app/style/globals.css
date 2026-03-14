@@ -13,6 +13,7 @@
     --font-sans: var(--font-lexend), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --font-body: var(--font-lexend), system-ui, sans-serif;
     --font-display: var(--font-lexend), system-ui, sans-serif;
+    --font-code-family: var(--font-code), "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
 [data-theme="dark"] {

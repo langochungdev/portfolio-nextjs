@@ -11,7 +11,7 @@ import {
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
-import CodeBlock from "@tiptap/extension-code-block";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { Details, DetailsSummary, DetailsContent } from "@tiptap/extension-details";
@@ -31,7 +31,25 @@ import {
   useImperativeHandle,
 } from "react";
 import Cropper, { type ReactCropperElement } from "react-cropper";
+import { common, createLowlight } from "lowlight";
 import styles from "@/app/style/admin/editor.module.css";
+
+const lowlight = createLowlight(common);
+
+const CODE_LANGUAGE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "plaintext", label: "TXT" },
+  { value: "javascript", label: "JS" },
+  { value: "typescript", label: "TS" },
+  { value: "xml", label: "HTML" },
+  { value: "css", label: "CSS" },
+  { value: "json", label: "JSON" },
+  { value: "bash", label: "Bash" },
+  { value: "java", label: "Java" },
+  { value: "python", label: "Python" },
+  { value: "go", label: "Go" },
+  { value: "sql", label: "SQL" },
+  { value: "markdown", label: "MD" },
+];
 
 interface TiptapEditorProps {
   content: string;
@@ -44,6 +62,34 @@ interface CommandItem {
   description: string;
   icon: string;
   command: (props: { editor: ReturnType<typeof useEditor>; range: { from: number; to: number } }) => void;
+}
+
+function setSingleCodeBlockFromSelection(
+  editor: ReturnType<typeof useEditor>,
+  range?: { from: number; to: number }
+): boolean {
+  if (!editor) return false;
+
+  const from = range?.from ?? editor.state.selection.from;
+  const to = range?.to ?? editor.state.selection.to;
+
+  if (from >= to) {
+    return editor.chain().focus().toggleCodeBlock().run();
+  }
+
+  const selectedText = editor.state.doc.textBetween(from, to, "\n", "\n");
+  return editor
+    .chain()
+    .focus()
+    .insertContentAt(
+      { from, to },
+      {
+        type: "codeBlock",
+        attrs: { language: "plaintext", width: null, textAlign: "center" },
+        content: selectedText ? [{ type: "text", text: selectedText }] : [],
+      }
+    )
+    .run();
 }
 
 interface ImageInsertPayload {
@@ -926,7 +972,11 @@ function AlignToolbar({ current, onChange }: { current: Align; onChange: (a: Ali
           key={a}
           type="button"
           className={current === a ? styles.imgToolBtnActive : styles.imgToolBtn}
-          onClick={() => onChange(a)}
+          onMouseDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onChange(a);
+          }}
         >
           {ALIGN_ICONS[a]}
         </button>
@@ -939,6 +989,24 @@ function getAlignStyle(align: Align): React.CSSProperties {
   if (align === "left") return { float: "left", marginRight: "1rem", marginBottom: "0.5rem" };
   if (align === "right") return { float: "right", marginLeft: "1rem", marginBottom: "0.5rem" };
   return { display: "flex", justifyContent: "center", width: "100%" };
+}
+
+function getCodeBlockWrapStyle(align: Align): React.CSSProperties {
+  const base: React.CSSProperties = {
+    display: "flex",
+    width: "100%",
+    maxWidth: "100%",
+    clear: "both",
+    float: "none",
+  };
+
+  if (align === "left") {
+    return { ...base, justifyContent: "flex-start" };
+  }
+  if (align === "right") {
+    return { ...base, justifyContent: "flex-end" };
+  }
+  return { ...base, justifyContent: "center" };
 }
 
 function ResizableVideo({ node, updateAttributes, selected }: NodeViewProps) {
@@ -1199,40 +1267,152 @@ function ResizableFilePreview({ node, updateAttributes, selected }: NodeViewProp
   );
 }
 
-function CopyableCodeBlock({ node }: NodeViewProps) {
-  const [copied, setCopied] = useState(false);
+function CopyableCodeBlock({ node, updateAttributes, selected, editor }: NodeViewProps) {
+  const currentLanguage = typeof node.attrs.language === "string" && node.attrs.language
+    ? node.attrs.language
+    : "plaintext";
+  const textAlign = (node.attrs.textAlign as Align | undefined) ?? "center";
+  const width = typeof node.attrs.width === "number" && Number.isFinite(node.attrs.width)
+    ? node.attrs.width
+    : null;
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [isCursorInsideBlock, setIsCursorInsideBlock] = useState(false);
 
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(node.textContent);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1200);
-    } catch {
-      setCopied(false);
-    }
-  }, [node.textContent]);
+  useEffect(() => {
+    const updateActiveState = () => {
+      const root = wrapRef.current;
+      if (!root) {
+        setIsCursorInsideBlock(false);
+        return;
+      }
+      if (!editor.view.hasFocus()) {
+        setIsCursorInsideBlock(false);
+        return;
+      }
+
+      const selection = window.getSelection();
+      const anchorNode = selection?.anchorNode;
+      const inside = Boolean(anchorNode && root.contains(anchorNode));
+      setIsCursorInsideBlock(inside);
+    };
+
+    const editorDom = editor.view.dom;
+    updateActiveState();
+
+    document.addEventListener("selectionchange", updateActiveState);
+    editorDom.addEventListener("keyup", updateActiveState);
+    editorDom.addEventListener("mouseup", updateActiveState);
+    editorDom.addEventListener("focusin", updateActiveState);
+    editorDom.addEventListener("focusout", updateActiveState);
+
+    return () => {
+      document.removeEventListener("selectionchange", updateActiveState);
+      editorDom.removeEventListener("keyup", updateActiveState);
+      editorDom.removeEventListener("mouseup", updateActiveState);
+      editorDom.removeEventListener("focusin", updateActiveState);
+      editorDom.removeEventListener("focusout", updateActiveState);
+    };
+  }, [editor]);
+
+  const showResizeHandles = selected || isCursorInsideBlock;
+  const setAlign = (align: Align) => updateAttributes({ textAlign: align });
+
+  const onPointerDownRight = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const startWidth = wrapRef.current?.offsetWidth ?? width ?? 640;
+    beginPointerResize(e, (dx) => {
+      const nextWidth = clamp(startWidth + dx, 220, 1600);
+      updateAttributes({ width: nextWidth });
+    });
+  }, [width, updateAttributes]);
+
+  const onPointerDownLeft = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const startWidth = wrapRef.current?.offsetWidth ?? width ?? 640;
+    beginPointerResize(e, (dx) => {
+      const nextWidth = clamp(startWidth - dx, 220, 1600);
+      updateAttributes({ width: nextWidth });
+    });
+  }, [width, updateAttributes]);
 
   return (
-    <NodeViewWrapper className={styles.codeBlockWrap}>
-      <button
-        type="button"
-        className={`${styles.codeBlockCopyBtn} ${copied ? styles.codeBlockCopyBtnDone : ""}`}
-        onClick={handleCopy}
+    <NodeViewWrapper className={styles.codeBlockWrap} style={getCodeBlockWrapStyle(textAlign)}>
+      <div
+        ref={wrapRef}
+        style={{ width: width ? `${width}px` : "100%", maxWidth: "100%" }}
+        className={`${styles.codeBlockInner} ${selected ? styles.codeBlockSelected : ""} ${showResizeHandles ? styles.codeBlockActive : ""}`}
       >
-        {copied ? "Copied" : "Copy"}
-      </button>
-      <pre className={styles.codeBlockPre}>
-        <NodeViewContent className={styles.codeBlockContent} />
-      </pre>
+        {showResizeHandles && <AlignToolbar current={textAlign} onChange={setAlign} />}
+        <div className={styles.codeBlockActions}>
+        <select
+          className={styles.codeBlockLangSelect}
+          value={currentLanguage}
+          onChange={(event) => updateAttributes({ language: event.target.value })}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {CODE_LANGUAGE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        </div>
+        <pre className={styles.codeBlockPre}>
+          <NodeViewContent className={styles.codeBlockContent} />
+        </pre>
+        <>
+          <div
+            className={`${styles.resizeHandle} ${styles.codeBlockResizeHandle} ${styles.codeBlockResizeHandleTopRight}`}
+            onPointerDown={onPointerDownRight}
+          />
+          <div
+            className={`${styles.resizeHandle} ${styles.codeBlockResizeHandle} ${styles.codeBlockResizeHandleLeft}`}
+            onPointerDown={onPointerDownLeft}
+          />
+          <div
+            className={`${styles.resizeHandle} ${styles.resizeHandleRight} ${styles.codeBlockResizeHandle} ${styles.codeBlockResizeHandleRight}`}
+            onPointerDown={onPointerDownRight}
+          />
+          <div
+            className={`${styles.resizeHandle} ${styles.resizeHandleBottomRight} ${styles.codeBlockResizeHandle} ${styles.codeBlockResizeHandleCorner}`}
+            onPointerDown={onPointerDownRight}
+          />
+        </>
+      </div>
     </NodeViewWrapper>
   );
 }
 
-const CustomCodeBlock = CodeBlock.extend({
-  addNodeView() {
-    return ReactNodeViewRenderer(CopyableCodeBlock);
-  },
-});
+const CustomCodeBlock = CodeBlockLowlight
+  .configure({
+    lowlight,
+    defaultLanguage: "plaintext",
+  })
+  .extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        width: {
+          default: null,
+          parseHTML: (el) => {
+            const value = el.getAttribute("data-width");
+            return value ? Number(value) : null;
+          },
+          renderHTML: (attrs) => (
+            typeof attrs.width === "number" && Number.isFinite(attrs.width)
+              ? { "data-width": Math.round(attrs.width) }
+              : {}
+          ),
+        },
+        textAlign: {
+          default: "center",
+          parseHTML: (el) => el.getAttribute("data-align") || "center",
+          renderHTML: (attrs) => ({ "data-align": attrs.textAlign }),
+        },
+      };
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(CopyableCodeBlock);
+    },
+  });
 
 const CustomFilePreview = Node.create({
   name: "customFilePreview",
@@ -1408,7 +1588,7 @@ const COMMANDS: CommandItem[] = [
     description: "Khối mã",
     icon: "{ }",
     command: ({ editor, range }) => {
-      editor?.chain().focus().deleteRange(range).toggleCodeBlock().run();
+      setSingleCodeBlockFromSelection(editor, range);
     },
   },
   {
@@ -1647,6 +1827,9 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
 
   const editor = useEditor({
     immediatelyRender: false,
+    parseOptions: {
+      preserveWhitespace: "full",
+    },
     extensions: [
       StarterKit.configure({ codeBlock: false }),
       Placeholder.configure({ placeholder }),
@@ -1807,7 +1990,7 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
           <button
             type="button"
             className={`${styles.bubbleBtn} ${editor.isActive("codeBlock") ? styles.bubbleBtnActive : ""}`}
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            onClick={() => setSingleCodeBlockFromSelection(editor)}
           >
             {"{ }"}
           </button>
