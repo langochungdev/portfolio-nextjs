@@ -6,11 +6,13 @@ import { useSyncExternalStore, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { useTheme } from "@/app/[lang]/_shared/useTheme";
+import { useBlogData } from "@/app/[lang]/blog/_lib/BlogDataProvider";
 import {
   toggleRelated,
   subscribeRelated,
   getRelatedSnapshot,
   getRelatedServerSnapshot,
+  getDetailCollectorForSlug,
 } from "@/app/[lang]/_shared/blogDetailStore";
 import styles from "@/app/style/home/NavBar.module.css";
 
@@ -79,6 +81,7 @@ export function NavBar() {
   const { dictionary: dict, locale } = useDictionary();
   const pathname = usePathname();
   const router = useRouter();
+  const { posts } = useBlogData();
   const isBlogDetail = BLOG_DETAIL_RE.test(pathname);
   const showRelated = useSyncExternalStore(
     subscribeRelated,
@@ -109,6 +112,53 @@ export function NavBar() {
   const loader = pendingPath && mounted
     ? createPortal(<div className={styles.topLoader} />, document.body)
     : null;
+
+  const detailSlug = isBlogDetail ? pathname.split("/").pop() ?? "" : "";
+  const buildDetailFallbackHref = (slug: string): string => {
+    const mappedCategory = getDetailCollectorForSlug(slug);
+    const postCategory = slug ? posts.find((post) => post.slug === slug)?.collectionIds[0] ?? "" : "";
+    const fallbackCategory = mappedCategory || postCategory;
+
+    return fallbackCategory
+      ? `/${locale}/blog?cat=${fallbackCategory}`
+      : `/${locale}/blog`;
+  };
+
+  const shouldFallbackToCollector = () => {
+    if (typeof window === "undefined") return true;
+
+    const referrer = document.referrer;
+    if (!referrer) return true;
+
+    try {
+      const refUrl = new URL(referrer);
+      const sameOrigin = refUrl.origin === window.location.origin;
+      if (!sameOrigin) return true;
+
+      const blogBasePath = `/${locale}/blog`;
+      const refPath = refUrl.pathname;
+      const fromBlogSection = refPath === blogBasePath || refPath.startsWith(`${blogBasePath}/`);
+
+      return !fromBlogSection;
+    } catch {
+      return true;
+    }
+  };
+
+  const handleDetailBack = () => {
+    if (typeof window === "undefined") return;
+    const detailFallbackHref = buildDetailFallbackHref(detailSlug);
+
+    if (shouldFallbackToCollector()) {
+      router.replace(detailFallbackHref);
+      return;
+    }
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.replace(detailFallbackHref);
+  };
 
   const handleNav = (e: React.MouseEvent, href: string) => {
     if (href === pathname) { e.preventDefault(); return; }
@@ -161,7 +211,7 @@ export function NavBar() {
         >
           <button
             className={`${styles.dockItem} ${styles.blogDetailBtn}`}
-            onClick={() => router.back()}
+            onClick={handleDetailBack}
             aria-label={dict.blog.backToBlog}
           >
             <span className={styles.dockIcon}>{BackIcon}</span>

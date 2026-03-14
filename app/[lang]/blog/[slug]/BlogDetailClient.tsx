@@ -8,6 +8,8 @@ import {
   subscribeRelated,
   getRelatedSnapshot,
   getRelatedServerSnapshot,
+  setDetailCollectorForSlug,
+  clearDetailCollectorForSlug,
 } from "@/app/[lang]/_shared/blogDetailStore";
 import { useVisitor } from "@/lib/visitor/VisitorProvider";
 import { useBlogData } from "@/app/[lang]/blog/_lib/BlogDataProvider";
@@ -268,6 +270,17 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
   useEffect(() => {
     return () => closeRelated();
   }, []);
+
+  useEffect(() => {
+    if (!post?.slug) return;
+    const primaryCollectionId = post.collectionIds[0] ?? "";
+    if (!primaryCollectionId) return;
+
+    setDetailCollectorForSlug(post.slug, primaryCollectionId);
+    return () => {
+      clearDetailCollectorForSlug(post.slug);
+    };
+  }, [post?.slug, post?.collectionIds]);
 
   useEffect(() => {
     if (!post?.id) return;
