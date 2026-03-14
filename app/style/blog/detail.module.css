@@ -287,20 +287,29 @@
     right: 10px;
     transform: none;
     z-index: 2;
-    border: 1px solid rgba(28, 28, 26, 0.20);
-    background: rgba(255, 255, 255, 0.9);
-    color: #7A7A72;
+    border: 1px solid rgba(28, 28, 26, 0.10);
+    background: rgba(255, 255, 255, 0.5);
+    color: rgba(122, 122, 114, 0.72);
+    opacity: 0.24;
     border-radius: 6px;
     font-size: 0.6875rem;
     font-weight: 700;
     line-height: 1;
     padding: 5px 8px;
     cursor: pointer;
-    transition: color 0.12s, border-color 0.12s, background 0.12s;
+    transition: color 0.12s, border-color 0.12s, background 0.12s, opacity 0.12s;
+}
+
+.content :global(.code-copy-btn):focus-visible {
+    opacity: 1;
+    border-color: rgba(28, 28, 26, 0.36);
+    color: #1C1C1A;
+    background: #fff;
 }
 
 @media (hover: hover) {
     .content :global(.code-copy-btn):hover {
+        opacity: 1;
         border-color: rgba(28, 28, 26, 0.34);
         color: #1C1C1A;
         background: #fff;
@@ -663,9 +672,17 @@
 }
 
 :global([data-theme="dark"]) .content :global(.code-copy-btn) {
-    border-color: rgba(232, 232, 227, 0.24);
-    background: rgba(26, 26, 24, 0.9);
-    color: #9a9a92;
+    border-color: rgba(232, 232, 227, 0.16);
+    background: rgba(26, 26, 24, 0.46);
+    color: rgba(154, 154, 146, 0.78);
+    opacity: 0.26;
+}
+
+:global([data-theme="dark"]) .content :global(.code-copy-btn):focus-visible {
+    opacity: 1;
+    border-color: rgba(232, 232, 227, 0.42);
+    color: #E8E8E3;
+    background: rgba(26, 26, 24, 0.98);
 }
 
 :global([data-theme="dark"]) .content code {

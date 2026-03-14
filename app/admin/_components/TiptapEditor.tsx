@@ -30,7 +30,6 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import Cropper, { type ReactCropperElement } from "react-cropper";
 import { common, createLowlight } from "lowlight";
 import styles from "@/app/style/admin/editor.module.css";
 
@@ -118,7 +117,15 @@ function ImageModal({ onInsert, onClose }: { onInsert: (payload: ImageInsertPayl
   const [sourceType, setSourceType] = useState<"local" | "url" | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const cropperRef = useRef<ReactCropperElement>(null);
+
+  const getImageNaturalSize = (src: string): Promise<{ width: number; height: number }> => {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+      image.onerror = () => reject(new Error("image-load-failed"));
+      image.src = src;
+    });
+  };
 
   const readFileAsDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -172,19 +179,13 @@ function ImageModal({ onInsert, onClose }: { onInsert: (payload: ImageInsertPayl
     if (sourceType === "local" && localPreview) {
       setSubmitting(true);
       try {
-        const cropper = cropperRef.current?.cropper;
-        if (!cropper) return;
-        const croppedCanvas = cropper.getCroppedCanvas({ imageSmoothingEnabled: true, imageSmoothingQuality: "high" });
-        if (!croppedCanvas) return;
-        const croppedSrc = croppedCanvas.toDataURL("image/webp", 0.92);
-        if (!croppedSrc) return;
-        const imageData = cropper.getImageData();
-        const cropBoxData = cropper.getCropBoxData();
+        const naturalSize = await getImageNaturalSize(localPreview);
+        const insertWidth = Math.max(220, Math.min(1200, Math.round(naturalSize.width || 300)));
 
         onInsert({
-          src: croppedSrc,
+          src: localPreview,
           alt: alt.trim(),
-          width: Math.max(220, Math.round(cropBoxData.width || 300)),
+          width: insertWidth,
           sourceType: "local",
           cropMode: false,
           cropX: 50,
@@ -192,8 +193,8 @@ function ImageModal({ onInsert, onClose }: { onInsert: (payload: ImageInsertPayl
           cropScale: 1,
           cropHeight: null,
           radius: 10,
-          naturalWidth: imageData.naturalWidth ? Math.round(imageData.naturalWidth) : null,
-          naturalHeight: imageData.naturalHeight ? Math.round(imageData.naturalHeight) : null,
+          naturalWidth: naturalSize.width ? Math.round(naturalSize.width) : null,
+          naturalHeight: naturalSize.height ? Math.round(naturalSize.height) : null,
         });
       } finally {
         setSubmitting(false);
@@ -257,32 +258,10 @@ function ImageModal({ onInsert, onClose }: { onInsert: (payload: ImageInsertPayl
 
           {sourceType === "local" && localPreview && (
             <>
-              <div className={styles.imageCropHeader}>Cắt ảnh local: kéo ảnh, zoom và kéo góc khung</div>
-              <div className={styles.imageCropperWrap}>
-                <Cropper
-                  src={localPreview}
-                  ref={cropperRef}
-                  style={{ height: 320, width: "100%" }}
-                  viewMode={1}
-                  dragMode="move"
-                  guides
-                  background={false}
-                  responsive
-                  autoCropArea={0.85}
-                  cropBoxMovable={false}
-                  cropBoxResizable
-                  minCropBoxWidth={140}
-                  minCropBoxHeight={120}
-                  zoomOnWheel
-                  zoomOnTouch
-                  movable
-                  rotatable={false}
-                  scalable={false}
-                  toggleDragModeOnDblclick={false}
-                  checkCrossOrigin={false}
-                />
+              <div className={styles.imageModalPreview}>
+                <img src={localPreview} alt="Local preview" />
               </div>
-              <div className={styles.imageHintText}>Khung crop cố định vị trí, bạn kéo ảnh hoặc zoom để chọn vùng; có thể kéo góc khung để đổi kích thước.</div>
+              <div className={styles.imageHintText}>Ảnh từ máy sẽ được chèn nguyên bản, không crop mặc định.</div>
             </>
           )}
 
@@ -1829,6 +1808,22 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
     immediatelyRender: false,
     parseOptions: {
       preserveWhitespace: "full",
+    },
+    editorProps: {
+      handleTextInput: (view, from, to, text) => {
+        if (text !== " ") return false;
+
+        const resolved = view.state.doc.resolve(from);
+        const blockStart = resolved.start();
+        const before = view.state.doc.textBetween(blockStart, from, "\n", "\0");
+
+        if (/^\s*[-+*]$/.test(before)) {
+          view.dispatch(view.state.tr.insertText(" ", from, to));
+          return true;
+        }
+
+        return false;
+      },
     },
     extensions: [
       StarterKit.configure({ codeBlock: false }),
