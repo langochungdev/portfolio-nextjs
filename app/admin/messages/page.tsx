@@ -7,6 +7,7 @@ import {
   subscribeMessages,
   sendMessage,
   markAsRead,
+  updateTypingState,
   deleteConversation,
   updateConversationUserName,
   updateConversationNote,
@@ -37,6 +38,9 @@ const MoreIcon = (
 type FilterMode = "all" | "named" | "unnamed" | "recent" | "mostVisits";
 
 type RangeSortMode = "newest" | "oldest";
+
+const TYPING_ACTIVE_WINDOW = 8_000;
+const TYPING_IDLE_DELAY = 1_800;
 
 function formatTime(iso: string): string {
   if (!iso) return "";
@@ -98,6 +102,13 @@ function isOnline(conv: ConversationDoc): boolean {
   return Date.now() - new Date(conv.presence.lastActive).getTime() < 60_000;
 }
 
+function isTypingActive(isTyping: boolean, updatedAt: string): boolean {
+  if (!isTyping || !updatedAt) return false;
+  const ts = new Date(updatedAt).getTime();
+  if (Number.isNaN(ts)) return false;
+  return Date.now() - ts < TYPING_ACTIVE_WINDOW;
+}
+
 export default function AdminMessagesPage() {
   const { dictionary: dict } = useDictionary();
   const t = dict.admin.messages;
@@ -130,7 +141,30 @@ export default function AdminMessagesPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listEditRef = useRef<HTMLInputElement>(null);
   const chatAreaRef = useRef<HTMLDivElement>(null);
+  const adminTypingRef = useRef(false);
+  const typingTimerRef = useRef<number | null>(null);
   const activeConv = conversations.find((c) => c.id === activeId);
+  const userTypingActive = isTypingActive(
+    activeConv?.typing.user ?? false,
+    activeConv?.typing.userUpdatedAt ?? "",
+  );
+
+  const setAdminTypingState = useCallback((isTyping: boolean) => {
+    if (!activeId) return;
+    if (adminTypingRef.current === isTyping) return;
+    adminTypingRef.current = isTyping;
+    updateTypingState(activeId, "admin", isTyping).catch(() => {});
+  }, [activeId]);
+
+  const bumpTypingIdleTimer = useCallback(() => {
+    if (typingTimerRef.current !== null) {
+      window.clearTimeout(typingTimerRef.current);
+    }
+    typingTimerRef.current = window.setTimeout(() => {
+      setAdminTypingState(false);
+      typingTimerRef.current = null;
+    }, TYPING_IDLE_DELAY);
+  }, [setAdminTypingState]);
 
   useEffect(() => {
     const vv = window.visualViewport;
@@ -162,8 +196,20 @@ export default function AdminMessagesPage() {
   useEffect(() => {
     if (!activeId) { setMessages([]); return; }
     const unsub = subscribeMessages(activeId, setMessages);
-    markAsRead(activeId).catch(() => {});
+    markAsRead(activeId, "admin").catch(() => {});
     return unsub;
+  }, [activeId]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current !== null) {
+        window.clearTimeout(typingTimerRef.current);
+      }
+      if (activeId && adminTypingRef.current) {
+        updateTypingState(activeId, "admin", false).catch(() => {});
+        adminTypingRef.current = false;
+      }
+    };
   }, [activeId]);
 
   useEffect(() => {
@@ -173,6 +219,14 @@ export default function AdminMessagesPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
+
+  useEffect(() => {
+    if (!userTypingActive) return;
+    const raf = requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [userTypingActive]);
 
   useEffect(() => {
     if (activeId) inputRef.current?.focus();
@@ -207,6 +261,11 @@ export default function AdminMessagesPage() {
   const handleSend = useCallback(async () => {
     const text = reply.trim();
     if (!text || !activeId || sending) return;
+    setAdminTypingState(false);
+    if (typingTimerRef.current !== null) {
+      window.clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
     setSending(true);
     setReply("");
     try {
@@ -216,7 +275,7 @@ export default function AdminMessagesPage() {
     } finally {
       setSending(false);
     }
-  }, [reply, activeId, sending]);
+  }, [reply, activeId, sending, setAdminTypingState]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -411,9 +470,9 @@ export default function AdminMessagesPage() {
   const hiddenUnreadCount = (() => {
     switch (filterMode) {
       case "named":
-        return conversations.filter((c) => c.status === "unread" && !c.userName).length;
+        return conversations.filter((c) => c.unreadCount.admin > 0 && !c.userName).length;
       case "unnamed":
-        return conversations.filter((c) => c.status === "unread" && !!c.userName).length;
+        return conversations.filter((c) => c.unreadCount.admin > 0 && !!c.userName).length;
       default:
         return 0;
     }
@@ -513,6 +572,12 @@ export default function AdminMessagesPage() {
         )}
         {filtered.map((conv) => {
           const online = isOnline(conv);
+          const unreadAdminCount = conv.unreadCount.admin;
+          const unreadAdminBadge = unreadAdminCount > 99 ? "99+" : String(unreadAdminCount);
+          const userTypingInList = isTypingActive(
+            conv.typing.user,
+            conv.typing.userUpdatedAt,
+          );
           return (
             <div
               key={conv.id}
@@ -553,7 +618,13 @@ export default function AdminMessagesPage() {
                 )}
                 <div className={styles.convMeta}>
                   <span className={online ? styles.convOnlineText : styles.convLastMsg}>
-                    {online
+                    {userTypingInList ? (
+                      <span className={styles.typingDots} aria-label={t.userTyping}>
+                        <span className={styles.typingDot} />
+                        <span className={styles.typingDot} />
+                        <span className={styles.typingDot} />
+                      </span>
+                    ) : online
                       ? formatPageLabel(conv.presence.currentPage)
                       : getLastActiveIso(conv)
                         ? formatRelativeTime(getLastActiveIso(conv))
@@ -567,7 +638,11 @@ export default function AdminMessagesPage() {
                   </span>
                 </div>
               </div>
-              {conv.status === "unread" && <div className={styles.convBadge} />}
+              {unreadAdminCount > 0 && (
+                <span className={styles.convBadge} aria-label={`${unreadAdminBadge} ${t.unread}`}>
+                  {unreadAdminBadge}
+                </span>
+              )}
               <div className={styles.itemMenu} onClick={(e) => e.stopPropagation()}>
                 <button
                   className={styles.itemMenuBtn}
@@ -770,6 +845,13 @@ export default function AdminMessagesPage() {
                   </div>
                 </div>
               ))}
+              {userTypingActive && (
+                <div className={styles.msgRowUser}>
+                  <div className={`${styles.msgUser} ${styles.typingHint}`}>
+                    {t.userTyping}
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
             <div className={styles.chatInput}>
@@ -779,7 +861,27 @@ export default function AdminMessagesPage() {
                 type="text"
                 placeholder={t.typeReply}
                 value={reply}
-                onChange={(e) => setReply(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setReply(next);
+                  if (!next.trim()) {
+                    setAdminTypingState(false);
+                    if (typingTimerRef.current !== null) {
+                      window.clearTimeout(typingTimerRef.current);
+                      typingTimerRef.current = null;
+                    }
+                    return;
+                  }
+                  setAdminTypingState(true);
+                  bumpTypingIdleTimer();
+                }}
+                onBlur={() => {
+                  setAdminTypingState(false);
+                  if (typingTimerRef.current !== null) {
+                    window.clearTimeout(typingTimerRef.current);
+                    typingTimerRef.current = null;
+                  }
+                }}
                 onKeyDown={handleKeyDown}
               />
               <button

@@ -55,6 +55,9 @@
     "greetMorningName": "Chào buổi sáng {name} ☀️",
     "greetAfternoonName": "Chào buổi chiều {name} 🌤️",
     "greetEveningName": "Chào buổi tối {name} 🌙",
+    "onlineStatus": "Đang online",
+    "adminTyping": "Đang nhập...",
+    "unreadBadge": "Tin nhắn chưa đọc: {count}",
     "enableNotifications": "Bật thông báo",
     "notificationsEnabled": "Đã bật thông báo",
     "notificationsDenied": "Thông báo bị chặn"
@@ -127,7 +130,8 @@
       "unread": "Chưa đọc",
       "replied": "Đã trả lời",
       "typeReply": "Nhập phản hồi...",
-      "send": "Gửi"
+      "send": "Gửi",
+      "userTyping": "Người dùng đang nhập..."
     },
     "notifications": {
       "title": "Thông báo",

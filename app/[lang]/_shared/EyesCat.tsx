@@ -10,8 +10,12 @@ import { useVisitor } from "@/lib/visitor/VisitorProvider";
 import {
   sendMessage,
   subscribeMessages,
+  subscribeConversation,
+  markAsRead,
+  updateTypingState,
   fetchConversationUserName,
   updateConversationUserName,
+  type ConversationDoc,
   type MessageDoc,
 } from "@/lib/firebase/conversations";
 import { i18nConfig } from "@/lib/i18n/config";
@@ -132,6 +136,8 @@ interface EyeMove {
 const P = MAX_PUPIL;
 const CENTER: PupilOffset = { x: 0, y: 0 };
 const USER_NAME_CACHE_PREFIX = "conversation_user_name:";
+const TYPING_ACTIVE_WINDOW = 8_000;
+const TYPING_IDLE_DELAY = 1_800;
 
 function rnd(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -193,6 +199,13 @@ function easeInOut(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
+function isTypingActive(isTyping: boolean, updatedAt: string): boolean {
+  if (!isTyping || !updatedAt) return false;
+  const ts = new Date(updatedAt).getTime();
+  if (Number.isNaN(ts)) return false;
+  return Date.now() - ts < TYPING_ACTIVE_WINDOW;
+}
+
 function getCachedUserName(visitorId: string): string {
   try {
     return (localStorage.getItem(`${USER_NAME_CACHE_PREFIX}${visitorId}`) ?? "").trim();
@@ -226,10 +239,48 @@ export function EyesCat() {
   const [greeting, setGreeting] = useState<string | null>(null);
   const { visitorId, loading: visitorLoading, notificationStatus, requestNotificationPermission } = useVisitor();
   const [messages, setMessages] = useState<MessageDoc[]>([]);
+  const [conversation, setConversation] = useState<ConversationDoc | null>(null);
   const prevMsgCountRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const userTypingRef = useRef(false);
+  const typingTimerRef = useRef<number | null>(null);
   useVirtualKeyboard(overlayRef, open);
+
+  const unreadForUser = conversation?.unreadCount.user ?? 0;
+  const unreadBadgeText = unreadForUser > 99 ? "99+" : String(unreadForUser);
+  const userTypingNow = message.trim().length > 0;
+  const adminTypingActive = isTypingActive(
+    conversation?.typing.admin ?? false,
+    conversation?.typing.adminUpdatedAt ?? "",
+  );
+  const showAdminTypingIndicator = adminTypingActive && !userTypingNow;
+  const showFloatingTyping = !open && showAdminTypingIndicator;
+
+  const setUserTypingState = useCallback(
+    (isTyping: boolean) => {
+      if (!visitorId) return;
+      if (userTypingRef.current === isTyping) return;
+      userTypingRef.current = isTyping;
+      updateTypingState(visitorId, "user", isTyping).catch(() => {});
+    },
+    [visitorId],
+  );
+
+  const bumpTypingIdleTimer = useCallback(() => {
+    if (typingTimerRef.current !== null) {
+      window.clearTimeout(typingTimerRef.current);
+    }
+    typingTimerRef.current = window.setTimeout(() => {
+      setUserTypingState(false);
+      typingTimerRef.current = null;
+    }, TYPING_IDLE_DELAY);
+  }, [setUserTypingState]);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    setUserTypingState(false);
+  }, [setUserTypingState]);
 
   useEffect(() => {
     if (!open) return;
@@ -398,8 +449,42 @@ export function EyesCat() {
   }, [visitorId]);
 
   useEffect(() => {
+    if (!visitorId) {
+      setConversation(null);
+      return;
+    }
+    return subscribeConversation(visitorId, setConversation);
+  }, [visitorId]);
+
+  useEffect(() => {
+    if (!open || !visitorId) return;
+    if (unreadForUser <= 0) return;
+    markAsRead(visitorId, "user").catch(() => {});
+  }, [open, unreadForUser, visitorId]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current !== null) {
+        window.clearTimeout(typingTimerRef.current);
+      }
+      if (visitorId && userTypingRef.current) {
+        updateTypingState(visitorId, "user", false).catch(() => {});
+        userTypingRef.current = false;
+      }
+    };
+  }, [visitorId]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, open]);
+
+  useEffect(() => {
+    if (!open || !showAdminTypingIndicator) return;
+    const raf = requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [open, showAdminTypingIndicator]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -409,6 +494,11 @@ export function EyesCat() {
     }
     const text = message.trim();
     if (!text || !visitorId || sending) return;
+    setUserTypingState(false);
+    if (typingTimerRef.current !== null) {
+      window.clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
     setSending(true);
     try {
       await sendMessage(visitorId, text, "user");
@@ -430,10 +520,24 @@ export function EyesCat() {
         role="button"
         aria-label={dict.eyesCat.title}
       >
-        {greeting && (
+        {(greeting || showFloatingTyping) && (
           <div className={styles.speechBalloon}>
-            {greeting}
+            {showFloatingTyping ? (
+              <span className={styles.typingDots} aria-label={dict.eyesCat.adminTyping}>
+                <span className={styles.typingDot} />
+                <span className={styles.typingDot} />
+                <span className={styles.typingDot} />
+              </span>
+            ) : greeting}
           </div>
+        )}
+        {!open && unreadForUser > 0 && (
+          <span
+            className={styles.unreadBadge}
+            aria-label={dict.eyesCat.unreadBadge.replace("{count}", unreadBadgeText)}
+          >
+            {unreadBadgeText}
+          </span>
         )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -464,8 +568,15 @@ export function EyesCat() {
             ref={overlayRef}
             className={styles.overlay}
           >
-            <div className={styles.backdrop} onClick={() => setOpen(false)} />
-            <div className={styles.chatPanel}>
+            <div
+              className={styles.backdrop}
+              onPointerDown={(e) => {
+                if (e.target === e.currentTarget) {
+                  handleClose();
+                }
+              }}
+            />
+            <div className={styles.chatPanel} role="dialog" aria-modal="true" aria-labelledby="eyes-cat-title">
               <div className={styles.chatHeader}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -501,7 +612,9 @@ export function EyesCat() {
                       }
                     }}
                   />
-                  <span className={styles.chatStatus}>Online</span>
+                  <span className={styles.chatStatus}>
+                    {showAdminTypingIndicator ? dict.eyesCat.adminTyping : dict.eyesCat.onlineStatus}
+                  </span>
                 </div>
                 <div className={styles.settingsRow}>
                   <button
@@ -555,7 +668,7 @@ export function EyesCat() {
                 <button
                   type="button"
                   className={styles.closeBtn}
-                  onClick={() => setOpen(false)}
+                  onClick={handleClose}
                   aria-label="Close"
                 >
                   ✕
@@ -567,7 +680,7 @@ export function EyesCat() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/img/cat-icon.png" alt="cat" className={styles.msgAvatar} draggable={false} />
                   <div className={styles.msgBubbleReceived}>
-                    {dict.eyesCat.formTitle}
+                    <span id="eyes-cat-title">{dict.eyesCat.formTitle}</span>
                   </div>
                 </div>
 
@@ -586,6 +699,20 @@ export function EyesCat() {
                   </div>
                 ))}
 
+                {showAdminTypingIndicator && (
+                  <div className={styles.msgRow}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/img/cat-icon.png" alt="cat" className={styles.msgAvatar} draggable={false} />
+                    <div className={`${styles.msgBubbleReceived} ${styles.typingBubble}`}>
+                      <span className={styles.typingDots} aria-label={dict.eyesCat.adminTyping}>
+                        <span className={styles.typingDot} />
+                        <span className={styles.typingDot} />
+                        <span className={styles.typingDot} />
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div ref={messagesEndRef} />
               </div>
 
@@ -596,7 +723,27 @@ export function EyesCat() {
                     className={styles.chatTextarea}
                     placeholder={dict.eyesCat.placeholder}
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setMessage(next);
+                      if (!next.trim()) {
+                        setUserTypingState(false);
+                        if (typingTimerRef.current !== null) {
+                          window.clearTimeout(typingTimerRef.current);
+                          typingTimerRef.current = null;
+                        }
+                        return;
+                      }
+                      setUserTypingState(true);
+                      bumpTypingIdleTimer();
+                    }}
+                    onBlur={() => {
+                      setUserTypingState(false);
+                      if (typingTimerRef.current !== null) {
+                        window.clearTimeout(typingTimerRef.current);
+                        typingTimerRef.current = null;
+                      }
+                    }}
                     rows={1}
                     maxLength={500}
                     onKeyDown={(e) => {

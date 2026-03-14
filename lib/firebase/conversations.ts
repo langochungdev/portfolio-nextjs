@@ -3,10 +3,12 @@ import {
   doc,
   addDoc,
   setDoc,
+  getDoc,
   getDocs,
   deleteDoc,
   query,
   orderBy,
+  increment,
   serverTimestamp,
   onSnapshot,
   type Unsubscribe,
@@ -45,6 +47,16 @@ export interface ConversationDoc {
     lastIp: string;
     lastReferrer: string;
   };
+  typing: {
+    user: boolean;
+    admin: boolean;
+    userUpdatedAt: string;
+    adminUpdatedAt: string;
+  };
+  unreadCount: {
+    user: number;
+    admin: number;
+  };
 }
 
 function tsToStr(ts: unknown): string {
@@ -55,42 +67,76 @@ function tsToStr(ts: unknown): string {
   return "";
 }
 
+function toRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function toStringValue(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function toNumberValue(value: unknown): number {
+  return typeof value === "number" ? value : 0;
+}
+
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function mapConversationData(
+  id: string,
+  data: Record<string, unknown>,
+): ConversationDoc {
+  const typingData = toRecord(data.typing);
+  const unreadData = toRecord(data.unreadCount);
+  const presenceData = toRecord(data.presence);
+  const metadataData = toRecord(data.metadata);
+  const status = data.status === "replied" ? "replied" : "unread";
+
+  return {
+    id,
+    userName: toStringValue(data.userName),
+    note: toStringValue(data.note),
+    lastMessage: toStringValue(data.lastMessage),
+    status,
+    updatedAt: tsToStr(data.updatedAt),
+    fingerprint: toStringValue(data.fingerprint),
+    visitCount: toNumberValue(data.visitCount),
+    viewedPostIds: toStringArray(data.viewedPostIds),
+    viewedPostSlugs: toStringArray(data.viewedPostSlugs),
+    presence: {
+      online: Boolean(presenceData.online),
+      lastActive: tsToStr(presenceData.lastActive),
+      currentPage: toStringValue(presenceData.currentPage),
+    },
+    metadata: {
+      os: toStringValue(metadataData.os),
+      browser: toStringValue(metadataData.browser),
+      device: toStringValue(metadataData.device),
+      lastIp: toStringValue(metadataData.lastIp),
+      lastReferrer: toStringValue(metadataData.lastReferrer),
+    },
+    typing: {
+      user: Boolean(typingData.user),
+      admin: Boolean(typingData.admin),
+      userUpdatedAt: tsToStr(typingData.userUpdatedAt),
+      adminUpdatedAt: tsToStr(typingData.adminUpdatedAt),
+    },
+    unreadCount: {
+      user: typeof unreadData.user === "number" ? unreadData.user : 0,
+      admin: typeof unreadData.admin === "number" ? unreadData.admin : 0,
+    },
+  };
+}
+
 function mapConversation(
   d: import("firebase/firestore").QueryDocumentSnapshot,
 ): ConversationDoc {
-  const data = d.data();
-  return {
-    id: d.id,
-    userName: data.userName ?? "",
-    note: data.note ?? "",
-    lastMessage: data.lastMessage ?? "",
-    status: data.status ?? "unread",
-    updatedAt: tsToStr(data.updatedAt),
-    fingerprint: data.fingerprint ?? "",
-    visitCount: data.visitCount ?? 0,
-    viewedPostIds: Array.isArray(data.viewedPostIds)
-      ? data.viewedPostIds.filter(
-          (value): value is string => typeof value === "string",
-        )
-      : [],
-    viewedPostSlugs: Array.isArray(data.viewedPostSlugs)
-      ? data.viewedPostSlugs.filter(
-          (value): value is string => typeof value === "string",
-        )
-      : [],
-    presence: {
-      online: data.presence?.online ?? false,
-      lastActive: tsToStr(data.presence?.lastActive),
-      currentPage: data.presence?.currentPage ?? "",
-    },
-    metadata: data.metadata ?? {
-      os: "",
-      browser: "",
-      device: "",
-      lastIp: "",
-      lastReferrer: "",
-    },
-  };
+  return mapConversationData(d.id, d.data());
 }
 
 export async function fetchConversations(): Promise<ConversationDoc[]> {
@@ -111,6 +157,19 @@ export function subscribeConversations(
   );
   return onSnapshot(q, (snap) => {
     cb(snap.docs.map(mapConversation));
+  });
+}
+
+export function subscribeConversation(
+  visitorId: string,
+  cb: (conv: ConversationDoc | null) => void,
+): Unsubscribe {
+  return onSnapshot(doc(db, "conversations", visitorId), (snap) => {
+    if (!snap.exists()) {
+      cb(null);
+      return;
+    }
+    cb(mapConversationData(snap.id, snap.data() as Record<string, unknown>));
   });
 }
 
@@ -169,16 +228,45 @@ export async function sendMessage(
       lastMessage: text,
       status: sender === "admin" ? "replied" : "unread",
       updatedAt: serverTimestamp(),
+      unreadCount:
+        sender === "admin" ? { user: increment(1) } : { admin: increment(1) },
+      typing:
+        sender === "admin"
+          ? { admin: false, adminUpdatedAt: serverTimestamp() }
+          : { user: false, userUpdatedAt: serverTimestamp() },
     },
     { merge: true },
   );
   return msgRef.id;
 }
 
-export async function markAsRead(visitorId: string): Promise<void> {
+export async function markAsRead(
+  visitorId: string,
+  reader: "user" | "admin" = "admin",
+): Promise<void> {
   await setDoc(
     doc(db, "conversations", visitorId),
-    { status: "replied" },
+    {
+      ...(reader === "admin" ? { status: "replied" } : {}),
+      unreadCount: { [reader]: 0 },
+    },
+    { merge: true },
+  );
+}
+
+export async function updateTypingState(
+  visitorId: string,
+  sender: "user" | "admin",
+  isTyping: boolean,
+): Promise<void> {
+  await setDoc(
+    doc(db, "conversations", visitorId),
+    {
+      typing:
+        sender === "admin"
+          ? { admin: isTyping, adminUpdatedAt: serverTimestamp() }
+          : { user: isTyping, userUpdatedAt: serverTimestamp() },
+    },
     { merge: true },
   );
 }
@@ -186,7 +274,6 @@ export async function markAsRead(visitorId: string): Promise<void> {
 export async function fetchConversationUserName(
   visitorId: string,
 ): Promise<string> {
-  const { getDoc } = await import("firebase/firestore");
   const snap = await getDoc(doc(db, "conversations", visitorId));
   return snap.exists() ? (snap.data().userName ?? "") : "";
 }

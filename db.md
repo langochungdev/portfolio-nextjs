@@ -76,10 +76,19 @@ Firestore Root
 │       ├── visitCount: number
 │       ├── note: string
 │       ├── viewedPostIds: string[]
+│       ├── viewedPostSlugs: string[]
 │       ├── presence (map)
 │       │   ├── online: boolean
 │       │   ├── lastActive: timestamp
 │       │   └── currentPage: string
+│       ├── typing (map)
+│       │   ├── user: boolean
+│       │   ├── admin: boolean
+│       │   ├── userUpdatedAt: timestamp
+│       │   └── adminUpdatedAt: timestamp
+│       ├── unreadCount (map)
+│       │   ├── user: number
+│       │   └── admin: number
 │       ├── metadata (map)
 │       │   ├── os: string
 │       │   ├── browser: string

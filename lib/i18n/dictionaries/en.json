@@ -55,6 +55,9 @@
     "greetMorningName": "Good morning, {name} ☀️",
     "greetAfternoonName": "Good afternoon, {name} 🌤️",
     "greetEveningName": "Good evening, {name} 🌙",
+    "onlineStatus": "Online",
+    "adminTyping": "Typing...",
+    "unreadBadge": "Unread messages: {count}",
     "enableNotifications": "Enable notifications",
     "notificationsEnabled": "Notifications enabled",
     "notificationsDenied": "Notifications blocked"
@@ -127,7 +130,8 @@
       "unread": "Unread",
       "replied": "Replied",
       "typeReply": "Type a reply...",
-      "send": "Send"
+      "send": "Send",
+      "userTyping": "User is typing..."
     },
     "notifications": {
       "title": "Notifications",

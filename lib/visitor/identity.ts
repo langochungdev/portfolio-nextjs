@@ -131,6 +131,16 @@ async function ensureConversationDoc(
         updatedAt: serverTimestamp(),
         fingerprint,
         metadata: meta,
+        typing: {
+          user: false,
+          admin: false,
+          userUpdatedAt: serverTimestamp(),
+          adminUpdatedAt: serverTimestamp(),
+        },
+        unreadCount: {
+          user: 0,
+          admin: 0,
+        },
       });
     } else {
       const data = snap.data();

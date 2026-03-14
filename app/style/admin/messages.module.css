@@ -247,6 +247,30 @@
     text-overflow: ellipsis;
 }
 
+.typingDots {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.16rem;
+    color: #3b82f6;
+}
+
+.typingDot {
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.35;
+    animation: typingPulse 1s infinite ease-in-out;
+}
+
+.typingDot:nth-child(2) {
+    animation-delay: 0.14s;
+}
+
+.typingDot:nth-child(3) {
+    animation-delay: 0.28s;
+}
+
 .convStatsText {
     font-size: 0.6875rem;
     color: var(--color-text-muted);
@@ -331,10 +355,18 @@
 }
 
 .convBadge {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #3b82f6;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
 }
 
@@ -442,6 +474,25 @@
     line-height: 1.5;
     background: #3b82f6;
     color: #ffffff;
+}
+
+.typingHint {
+    opacity: 0.8;
+    font-style: italic;
+}
+
+@keyframes typingPulse {
+
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: translateY(-1px);
+        opacity: 1;
+    }
 }
 
 .msgTime {

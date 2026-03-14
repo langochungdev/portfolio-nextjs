@@ -10,6 +10,26 @@
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.unreadBadge {
+    position: absolute;
+    top: -0.3rem;
+    right: -0.2rem;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--color-card-bg, #ffffff);
+    pointer-events: none;
+}
+
 .speechBalloon {
     position: absolute;
     bottom: calc(100% + 10px);
@@ -26,6 +46,30 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     animation: balloonIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
+}
+
+.typingDots {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.18rem;
+    min-width: 1.1rem;
+}
+
+.typingDot {
+    width: 0.28rem;
+    height: 0.28rem;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.35;
+    animation: typingPulse 1s infinite ease-in-out;
+}
+
+.typingDot:nth-child(2) {
+    animation-delay: 0.14s;
+}
+
+.typingDot:nth-child(3) {
+    animation-delay: 0.28s;
 }
 
 .speechBalloon::after {
@@ -50,6 +94,20 @@
     100% {
         opacity: 1;
         transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes typingPulse {
+
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: translateY(-1px);
+        opacity: 1;
     }
 }
 
@@ -395,6 +453,10 @@
     font-size: 0.85rem;
     line-height: 1.45;
     word-break: break-word;
+}
+
+.typingBubble {
+    opacity: 0.85;
 }
 
 .msgSenderName {
