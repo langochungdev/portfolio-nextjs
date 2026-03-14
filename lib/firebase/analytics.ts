@@ -98,7 +98,7 @@ export function trackPageView(page: PageKey): void {
   ]).catch(() => {});
 }
 
-export function trackPostView(postId: string): void {
+export function trackPostView(postId: string, visitorId?: string | null): void {
   if (!postId || wasPostRecentlyTracked(postId)) return;
 
   markPostTracked(postId);
@@ -106,6 +106,9 @@ export function trackPostView(postId: string): void {
   fetch("/api/posts/view", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ postId }),
+    body: JSON.stringify({
+      postId,
+      visitorId: visitorId || undefined,
+    }),
   }).catch(() => {});
 }

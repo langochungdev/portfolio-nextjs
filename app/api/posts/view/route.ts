@@ -4,11 +4,12 @@ import { getAdminDb } from "@/lib/firebase/admin";
 
 interface TrackPostViewPayload {
   postId: string;
+  visitorId?: string;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { postId } = (await req.json()) as TrackPostViewPayload;
+    const { postId, visitorId } = (await req.json()) as TrackPostViewPayload;
 
     if (!postId || typeof postId !== "string") {
       return NextResponse.json(
@@ -33,6 +34,16 @@ export async function POST(req: NextRequest) {
         { merge: true },
       ),
     ]);
+
+    if (visitorId && typeof visitorId === "string") {
+      const conversationRef = db.collection("conversations").doc(visitorId);
+      await conversationRef.set(
+        {
+          viewedPostIds: FieldValue.arrayUnion(postId),
+        },
+        { merge: true },
+      );
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

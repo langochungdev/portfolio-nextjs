@@ -25,11 +25,14 @@ export interface MessageDoc {
 export interface ConversationDoc {
   id: string;
   userName: string;
+  note: string;
   lastMessage: string;
   status: "unread" | "replied";
   updatedAt: string;
   fingerprint: string;
   visitCount: number;
+  viewedPostIds: string[];
+  viewedPostSlugs: string[];
   presence: {
     online: boolean;
     lastActive: string;
@@ -59,11 +62,22 @@ function mapConversation(
   return {
     id: d.id,
     userName: data.userName ?? "",
+    note: data.note ?? "",
     lastMessage: data.lastMessage ?? "",
     status: data.status ?? "unread",
     updatedAt: tsToStr(data.updatedAt),
     fingerprint: data.fingerprint ?? "",
     visitCount: data.visitCount ?? 0,
+    viewedPostIds: Array.isArray(data.viewedPostIds)
+      ? data.viewedPostIds.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : [],
+    viewedPostSlugs: Array.isArray(data.viewedPostSlugs)
+      ? data.viewedPostSlugs.filter(
+          (value): value is string => typeof value === "string",
+        )
+      : [],
     presence: {
       online: data.presence?.online ?? false,
       lastActive: tsToStr(data.presence?.lastActive),
@@ -186,6 +200,13 @@ export async function updateConversationUserName(
     { userName },
     { merge: true },
   );
+}
+
+export async function updateConversationNote(
+  visitorId: string,
+  note: string,
+): Promise<void> {
+  await setDoc(doc(db, "conversations", visitorId), { note }, { merge: true });
 }
 
 export async function deleteConversation(visitorId: string): Promise<void> {

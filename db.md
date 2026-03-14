@@ -74,6 +74,8 @@ Firestore Root
 │       ├── updatedAt: timestamp
 │       ├── fingerprint: string
 │       ├── visitCount: number
+│       ├── note: string
+│       ├── viewedPostIds: string[]
 │       ├── presence (map)
 │       │   ├── online: boolean
 │       │   ├── lastActive: timestamp

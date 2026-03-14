@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import {
   subscribeConversations,
@@ -9,9 +9,14 @@ import {
   markAsRead,
   deleteConversation,
   updateConversationUserName,
+  updateConversationNote,
   type ConversationDoc,
   type MessageDoc,
 } from "@/lib/firebase/conversations";
+import {
+  fetchPostSummaries,
+  type PostSummaryDoc,
+} from "@/lib/firebase/posts";
 import styles from "@/app/style/admin/messages.module.css";
 
 const BackIcon = (
@@ -77,9 +82,14 @@ function formatPageLabel(page: string): string {
   if (page === "home") return "Home";
   if (page === "blog") return "Blog";
   if (page === "certificates") return "Certificates";
-  if (page.startsWith("/")) return page;
-  if (page.includes("/")) return `/${page}`;
-  return `/blog/${page}`;
+
+  const normalized = page.replace(/^\/+/, "");
+  const localeBlogMatch = normalized.match(/^[a-z]{2}\/blog\/(.+)$/);
+  if (localeBlogMatch?.[1]) return localeBlogMatch[1];
+  if (normalized.startsWith("blog/")) return normalized.slice(5);
+  if (normalized.includes("/")) return `/${normalized}`;
+
+  return normalized;
 }
 
 function isOnline(conv: ConversationDoc): boolean {
@@ -100,6 +110,8 @@ export default function AdminMessagesPage() {
   const [showInfo, setShowInfo] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState("");
+  const [noteValue, setNoteValue] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [listEditId, setListEditId] = useState<string | null>(null);
@@ -110,10 +122,15 @@ export default function AdminMessagesPage() {
   const [rangeFromDate, setRangeFromDate] = useState("");
   const [rangeToDate, setRangeToDate] = useState("");
   const [rangeSortMode, setRangeSortMode] = useState<RangeSortMode>("newest");
+  const [postSummaryById, setPostSummaryById] = useState<
+    Record<string, PostSummaryDoc>
+  >({});
+  const [postSummaryLoaded, setPostSummaryLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listEditRef = useRef<HTMLInputElement>(null);
   const chatAreaRef = useRef<HTMLDivElement>(null);
+  const activeConv = conversations.find((c) => c.id === activeId);
 
   useEffect(() => {
     const vv = window.visualViewport;
@@ -148,6 +165,10 @@ export default function AdminMessagesPage() {
     markAsRead(activeId).catch(() => {});
     return unsub;
   }, [activeId]);
+
+  useEffect(() => {
+    setNoteValue(activeConv?.note ?? "");
+  }, [activeConv?.id, activeConv?.note]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -246,7 +267,79 @@ export default function AdminMessagesPage() {
     setListEditId(null);
   }, [listEditValue]);
 
-  const activeConv = conversations.find((c) => c.id === activeId);
+  const handleSaveNote = useCallback(async () => {
+    if (!activeId || noteSaving) return;
+    const nextNote = noteValue.trim();
+    if (nextNote === (activeConv?.note ?? "")) return;
+
+    setNoteSaving(true);
+    try {
+      await updateConversationNote(activeId, nextNote);
+    } catch (err) {
+      console.error("Update note failed:", err);
+    } finally {
+      setNoteSaving(false);
+    }
+  }, [activeId, noteSaving, noteValue, activeConv?.note]);
+
+  useEffect(() => {
+    if (!showInfo || !activeConv) return;
+    const hasViewedPosts =
+      activeConv.viewedPostIds.length > 0 || activeConv.viewedPostSlugs.length > 0;
+    if (!hasViewedPosts || postSummaryLoaded) return;
+
+    let cancelled = false;
+    fetchPostSummaries({ includeNonPublic: true })
+      .then((summaries) => {
+        if (cancelled) return;
+        const map: Record<string, PostSummaryDoc> = {};
+        for (const summary of summaries) {
+          map[summary.id] = summary;
+        }
+        setPostSummaryById(map);
+        setPostSummaryLoaded(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPostSummaryLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showInfo, activeConv, postSummaryLoaded]);
+
+  const viewedPosts = useMemo(() => {
+    if (!activeConv) return [] as Array<{ id: string; title: string }>;
+
+    const dedupe = new Set<string>();
+    const slugLookup: Record<string, PostSummaryDoc> = {};
+    for (const summary of Object.values(postSummaryById)) {
+      slugLookup[summary.slug] = summary;
+    }
+
+    const items: Array<{ id: string; title: string }> = [];
+
+    for (const postId of activeConv.viewedPostIds) {
+      if (dedupe.has(postId)) continue;
+      dedupe.add(postId);
+      const summary = postSummaryById[postId];
+      if (summary) {
+        items.push({ id: postId, title: summary.title });
+      } else {
+        items.push({ id: postId, title: postId });
+      }
+    }
+
+    for (const slug of activeConv.viewedPostSlugs) {
+      const summary = slugLookup[slug];
+      if (!summary || dedupe.has(summary.id)) continue;
+      dedupe.add(summary.id);
+      items.push({ id: summary.id, title: summary.title });
+    }
+
+    return items;
+  }, [activeConv, postSummaryById]);
 
   const displayName = (conv: ConversationDoc) =>
     conv.userName || `${conv.metadata.browser} / ${conv.metadata.os}` || conv.id.slice(0, 8);
@@ -616,6 +709,43 @@ export default function AdminMessagesPage() {
                 <div className={styles.infoRow}>
                   <span className={styles.infoLabel}>Messages</span>
                   <span className={styles.infoValue}>{messages.length}</span>
+                </div>
+                <div className={styles.infoRowNote}>
+                  <span className={styles.infoLabel}>Note</span>
+                  <div className={styles.noteEditorWrap}>
+                    <textarea
+                      className={styles.noteEditor}
+                      value={noteValue}
+                      onChange={(e) => setNoteValue(e.target.value)}
+                      placeholder="Ghi chu cho user nay"
+                      maxLength={500}
+                    />
+                    <div className={styles.noteEditorFooter}>
+                      <span className={styles.noteHint}>{noteValue.length}/500</span>
+                      <button
+                        className={styles.noteSaveBtn}
+                        onClick={handleSaveNote}
+                        disabled={noteSaving || noteValue.trim() === (activeConv.note || "")}
+                      >
+                        {noteSaving ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoLabel}>Viewed posts</span>
+                  {viewedPosts.length > 0 ? (
+                    <ul className={styles.infoList}>
+                      {viewedPosts.map((post) => (
+                        <li key={post.id} className={styles.infoListItem}>
+                          <span>{post.title}</span>
+                          <span className={styles.infoListMeta}>#{post.id}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className={styles.infoValue}>—</span>
+                  )}
                 </div>
               </div>
             )}

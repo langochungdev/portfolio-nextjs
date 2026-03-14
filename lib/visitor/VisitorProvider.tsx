@@ -15,7 +15,13 @@ import {
   getStoredVisitorId,
   type VisitorIdentity,
 } from "@/lib/visitor/identity";
-import { doc, setDoc, serverTimestamp, increment } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  serverTimestamp,
+  increment,
+  onSnapshot,
+} from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/config";
 import { requestFcmToken } from "@/lib/firebase/messaging";
 import { saveFcmToken } from "@/lib/firebase/notifications";
@@ -25,6 +31,8 @@ type NotificationStatus = "unsupported" | "default" | "denied" | "granted";
 interface VisitorContextValue {
   visitorId: string | null;
   fingerprint: string | null;
+  viewedPostIds: string[];
+  viewedPostSlugs: string[];
   loading: boolean;
   isRecovered: boolean;
   notificationStatus: NotificationStatus;
@@ -34,6 +42,8 @@ interface VisitorContextValue {
 const VisitorContext = createContext<VisitorContextValue>({
   visitorId: null,
   fingerprint: null,
+  viewedPostIds: [],
+  viewedPostSlugs: [],
   loading: true,
   isRecovered: false,
   notificationStatus: "unsupported",
@@ -106,6 +116,8 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
     isRecovered: false,
   });
   const [notiStatus, setNotiStatus] = useState<NotificationStatus>("unsupported");
+  const [viewedPostIds, setViewedPostIds] = useState<string[]>([]);
+  const [viewedPostSlugs, setViewedPostSlugs] = useState<string[]>([]);
   const pathname = usePathname();
   const visitCounted = useRef(false);
 
@@ -157,6 +169,42 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
     ).catch(() => {});
   }, [identity.visitorId, identity.loading]);
 
+  useEffect(() => {
+    if (!identity.visitorId || identity.loading) {
+      setViewedPostIds([]);
+      setViewedPostSlugs([]);
+      return;
+    }
+
+    const db = getFirebaseDb();
+    const ref = doc(db, "conversations", identity.visitorId);
+
+    return onSnapshot(
+      ref,
+      (snap) => {
+        const data = snap.data();
+        setViewedPostIds(
+          Array.isArray(data?.viewedPostIds)
+            ? data.viewedPostIds.filter(
+                (value): value is string => typeof value === "string" && value.trim().length > 0,
+              )
+            : [],
+        );
+        setViewedPostSlugs(
+          Array.isArray(data?.viewedPostSlugs)
+            ? data.viewedPostSlugs.filter(
+                (value): value is string => typeof value === "string" && value.trim().length > 0,
+              )
+            : [],
+        );
+      },
+      () => {
+        setViewedPostIds([]);
+        setViewedPostSlugs([]);
+      },
+    );
+  }, [identity.visitorId, identity.loading]);
+
   const requestNotificationPermission = useCallback(async () => {
     if (!identity.visitorId) return;
     if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
@@ -204,6 +252,8 @@ export function VisitorProvider({ children }: { children: ReactNode }) {
 
   const ctx: VisitorContextValue = {
     ...identity,
+    viewedPostIds,
+    viewedPostSlugs,
     notificationStatus: notiStatus,
     requestNotificationPermission,
   };

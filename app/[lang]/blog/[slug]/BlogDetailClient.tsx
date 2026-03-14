@@ -9,6 +9,7 @@ import {
   getRelatedSnapshot,
   getRelatedServerSnapshot,
 } from "@/app/[lang]/_shared/blogDetailStore";
+import { useVisitor } from "@/lib/visitor/VisitorProvider";
 import { useBlogData } from "@/app/[lang]/blog/_lib/BlogDataProvider";
 import type { PostDoc } from "@/app/[lang]/blog/_lib/types";
 import TipsFeed from "@/app/[lang]/blog/_components/TipsFeed";
@@ -235,6 +236,7 @@ function processContent(html: string): string {
 
 export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc | null }) {
   const { locale, dictionary: dict } = useDictionary();
+  const { visitorId, viewedPostIds, viewedPostSlugs } = useVisitor();
   const { collections, topics, posts } = useBlogData();
   const post = initialPost;
   const [showTips, setShowTips] = useState(false);
@@ -269,8 +271,8 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
 
   useEffect(() => {
     if (!post?.id) return;
-    trackPostView(post.id);
-  }, [post?.id]);
+    trackPostView(post.id, visitorId);
+  }, [post?.id, visitorId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -382,6 +384,9 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
 
   const postColLabel = collection?.name ?? "";
   const color = collection?.color ?? "#1C1C1A";
+  const viewedText = locale === "vi" ? "Đã xem" : "Viewed";
+  const isViewed =
+    viewedPostIds.includes(post.id) || viewedPostSlugs.includes(post.slug);
 
   const currentTopicId = post.topicIds[0] || undefined;
 
@@ -441,6 +446,7 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
         <article className={styles.article}>
           <div className={styles.articleTop}>
             <span className={styles.tag}>{postColLabel}</span>
+            {isViewed && <span className={styles.viewedPost}>{viewedText}</span>}
             <span className={styles.dot} style={{ background: color }} />
             <time className={styles.date}>{post.createdAt}</time>
             <span className={styles.readTime}>· {post.readTime} min read</span>
