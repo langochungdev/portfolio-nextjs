@@ -13,6 +13,7 @@ import { useBlogData } from "@/app/[lang]/blog/_lib/BlogDataProvider";
 import type { PostDoc } from "@/app/[lang]/blog/_lib/types";
 import TipsFeed from "@/app/[lang]/blog/_components/TipsFeed";
 import { fetchHintsCount } from "@/lib/firebase/hints";
+import { trackPostView } from "@/lib/firebase/analytics";
 import styles from "@/app/style/blog/detail.module.css";
 import tipsStyles from "@/app/style/blog/tips.module.css";
 import { useMemo, useState, useSyncExternalStore, useEffect, useRef } from "react";
@@ -265,6 +266,11 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
   useEffect(() => {
     return () => closeRelated();
   }, []);
+
+  useEffect(() => {
+    if (!post?.id) return;
+    trackPostView(post.id);
+  }, [post?.id]);
 
   useEffect(() => {
     let cancelled = false;

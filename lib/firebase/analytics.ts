@@ -6,6 +6,7 @@ const db = getFirebaseDb();
 export type PageKey = "home" | "blog" | "certification";
 
 const TRACKED_KEY = "tracked_pages";
+const TRACKED_POSTS_KEY = "tracked_post_views";
 const SESSION_TTL = 30 * 60 * 1000;
 
 function getSessionTracker(): Record<string, number> {
@@ -31,6 +32,33 @@ function markTracked(page: PageKey): void {
 function wasRecentlyTracked(page: PageKey): boolean {
   const tracker = getSessionTracker();
   const ts = tracker[page];
+  if (!ts) return false;
+  return Date.now() - ts < SESSION_TTL;
+}
+
+function getTrackedPostsSession(): Record<string, number> {
+  try {
+    const raw = sessionStorage.getItem(TRACKED_POSTS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
+function markPostTracked(postId: string): void {
+  try {
+    const tracker = getTrackedPostsSession();
+    tracker[postId] = Date.now();
+    sessionStorage.setItem(TRACKED_POSTS_KEY, JSON.stringify(tracker));
+  } catch {
+    /* sessionStorage may be blocked */
+  }
+}
+
+function wasPostRecentlyTracked(postId: string): boolean {
+  const tracker = getTrackedPostsSession();
+  const ts = tracker[postId];
   if (!ts) return false;
   return Date.now() - ts < SESSION_TTL;
 }
@@ -68,4 +96,16 @@ export function trackPageView(page: PageKey): void {
       { merge: true },
     ),
   ]).catch(() => {});
+}
+
+export function trackPostView(postId: string): void {
+  if (!postId || wasPostRecentlyTracked(postId)) return;
+
+  markPostTracked(postId);
+
+  fetch("/api/posts/view", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ postId }),
+  }).catch(() => {});
 }

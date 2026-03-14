@@ -4,6 +4,7 @@ import {
   cert,
   type ServiceAccount,
 } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 
 function getAdminApp() {
@@ -20,4 +21,8 @@ function getAdminApp() {
 
 export function getAdminMessaging() {
   return getMessaging(getAdminApp());
+}
+
+export function getAdminDb() {
+  return getFirestore(getAdminApp());
 }
