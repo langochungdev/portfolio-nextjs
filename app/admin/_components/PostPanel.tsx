@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useDictionary } from "@/app/[lang]/_shared/DictionaryProvider";
 import { HintList, type HintItem } from "@/app/admin/_components/HintList";
 import { TagSelector } from "@/app/admin/_components/TagSelector";
@@ -96,6 +96,111 @@ const CopyIcon = () => (
 const generateSlug = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim();
 
+const POST_EDITOR_DRAFT_PREFIX = "admin-post-editor-draft-v1";
+const POST_EDITOR_AUTOSAVE_MS = 900;
+
+interface PostEditorFormState {
+  title: string;
+  slug: string;
+  summary: string;
+  thumbnail: string;
+  content: string;
+  collectionIds: string[];
+  topicIds: string[];
+  isPinned: boolean;
+  visibility: VisibilityStatus;
+}
+
+interface PostEditorDraftState extends PostEditorFormState {
+  savedAt: number;
+}
+
+function toSortedUniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values)).sort();
+}
+
+function areStringArraysEqualAsSet(left: string[], right: string[]): boolean {
+  const leftSorted = toSortedUniqueStrings(left);
+  const rightSorted = toSortedUniqueStrings(right);
+  if (leftSorted.length !== rightSorted.length) return false;
+  return leftSorted.every((item, index) => item === rightSorted[index]);
+}
+
+function buildPostEditorInitialState(post: PostItem): PostEditorFormState {
+  return {
+    title: post.title,
+    slug: post.slug,
+    summary: post.summary ?? "",
+    thumbnail: post.thumbnail,
+    content: post.content,
+    collectionIds: post.collectionIds,
+    topicIds: post.topicIds,
+    isPinned: post.isPinned,
+    visibility: post.visibility ?? "public",
+  };
+}
+
+function isVisibilityStatus(value: unknown): value is VisibilityStatus {
+  return value === "public" || value === "hidden" || value === "draft";
+}
+
+function parsePostEditorDraft(raw: string): PostEditorDraftState | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+
+    const data = parsed as Record<string, unknown>;
+    const collectionIds = data.collectionIds;
+    const topicIds = data.topicIds;
+
+    if (typeof data.title !== "string") return null;
+    if (typeof data.slug !== "string") return null;
+    if (typeof data.summary !== "string") return null;
+    if (typeof data.thumbnail !== "string") return null;
+    if (typeof data.content !== "string") return null;
+    if (!Array.isArray(collectionIds) || !collectionIds.every((item) => typeof item === "string")) return null;
+    if (!Array.isArray(topicIds) || !topicIds.every((item) => typeof item === "string")) return null;
+    if (typeof data.isPinned !== "boolean") return null;
+    if (!isVisibilityStatus(data.visibility)) return null;
+
+    return {
+      title: data.title,
+      slug: data.slug,
+      summary: data.summary,
+      thumbnail: data.thumbnail,
+      content: data.content,
+      collectionIds,
+      topicIds,
+      isPinned: data.isPinned,
+      visibility: data.visibility,
+      savedAt: typeof data.savedAt === "number" ? data.savedAt : Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getPostEditorDraftKey(post: PostItem): string {
+  return `${POST_EDITOR_DRAFT_PREFIX}:${post.id || "new"}`;
+}
+
+function sanitizeThumbnailForDraft(thumbnail: string): string {
+  return thumbnail.startsWith("blob:") ? "" : thumbnail;
+}
+
+function arePostEditorStatesEqual(left: PostEditorFormState, right: PostEditorFormState): boolean {
+  if (left.title !== right.title) return false;
+  if (left.slug !== right.slug) return false;
+  if (left.summary !== right.summary) return false;
+  if (left.thumbnail !== right.thumbnail) return false;
+  if (left.content !== right.content) return false;
+  if (left.isPinned !== right.isPinned) return false;
+  if (left.visibility !== right.visibility) return false;
+  if (!areStringArraysEqualAsSet(left.collectionIds, right.collectionIds)) return false;
+  if (!areStringArraysEqualAsSet(left.topicIds, right.topicIds)) return false;
+  return true;
+}
+
 export function PostPanel({
   posts, hints, editingPost, editingHint, isNewHint,
   collections, topics, saving, onNew, onEdit, onSave, onDelete, onCancel, onCreateTopic,
@@ -110,6 +215,70 @@ export function PostPanel({
   const dragIdx = useRef<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [localDraftFlags, setLocalDraftFlags] = useState<Record<string, true>>({});
+
+  const refreshLocalDraftFlags = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const nextFlags: Record<string, true> = {};
+    try {
+      for (let index = 0; index < window.localStorage.length; index += 1) {
+        const key = window.localStorage.key(index);
+        if (!key || !key.startsWith(`${POST_EDITOR_DRAFT_PREFIX}:`)) continue;
+
+        const draftId = key.slice(`${POST_EDITOR_DRAFT_PREFIX}:`.length);
+        if (!draftId || draftId === "new") continue;
+
+        const rawDraft = window.localStorage.getItem(key);
+        if (!rawDraft) continue;
+
+        const parsedDraft = parsePostEditorDraft(rawDraft);
+        if (!parsedDraft) {
+          window.localStorage.removeItem(key);
+          continue;
+        }
+
+        nextFlags[draftId] = true;
+      }
+    } catch (error) {
+      console.error("Failed to read local draft flags:", error);
+    }
+
+    setLocalDraftFlags(nextFlags);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    refreshLocalDraftFlags();
+
+    const handleStorage = (event: StorageEvent) => {
+      if (!event.key || event.key.startsWith(`${POST_EDITOR_DRAFT_PREFIX}:`)) {
+        refreshLocalDraftFlags();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refreshLocalDraftFlags();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", refreshLocalDraftFlags);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", refreshLocalDraftFlags);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [refreshLocalDraftFlags]);
+
+  useEffect(() => {
+    if (editingPost) return;
+    refreshLocalDraftFlags();
+  }, [editingPost, refreshLocalDraftFlags]);
 
   const copyPostLink = (slug: string, id: string) => {
     const url = `${window.location.origin}/vi/blog/${slug}`;
@@ -122,6 +291,7 @@ export function PostPanel({
   if (editingPost) {
     return (
       <PostEditor
+        key={editingPost.id || "new"}
         post={editingPost}
         collections={collections}
         topics={topics}
@@ -211,6 +381,9 @@ export function PostPanel({
                     <span className={`${styles.statusBadge} ${styles[`status${post.visibility.charAt(0).toUpperCase()}${post.visibility.slice(1)}`]}`}>
                       {post.visibility}
                     </span>
+                    {localDraftFlags[post.id] && (
+                      <span className={styles.localDraftBadge}>Lưu tạm</span>
+                    )}
                     {post.title}
                   </div>
                   <div className={styles.postItemMeta}>
@@ -283,18 +456,188 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
   const { dictionary: dict } = useDictionary();
   const t = dict.admin.posts;
 
-  const [title, setTitle] = useState(post.title);
-  const [slug, setSlug] = useState(post.slug);
-  const [summary, setSummary] = useState(post.summary ?? "");
+  const initialState = useMemo(() => buildPostEditorInitialState(post), [post]);
+  const draftKey = useMemo(() => getPostEditorDraftKey(post), [post]);
+
+  const [title, setTitle] = useState(initialState.title);
+  const [slug, setSlug] = useState(initialState.slug);
+  const [summary, setSummary] = useState(initialState.summary);
   const [showFields, setShowFields] = useState(false);
-  const [thumbnail, setThumbnail] = useState(post.thumbnail);
+  const [thumbnail, setThumbnail] = useState(initialState.thumbnail);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  const [content, setContent] = useState(post.content);
-  const [collectionIds, setCollectionIds] = useState(post.collectionIds);
-  const [topicIds, setTopicIds] = useState(post.topicIds);
-  const [isPinned, setIsPinned] = useState(post.isPinned);
-  const [visibility, setVisibility] = useState<VisibilityStatus>(post.visibility ?? "public");
+  const [content, setContent] = useState(initialState.content);
+  const [collectionIds, setCollectionIds] = useState(initialState.collectionIds);
+  const [topicIds, setTopicIds] = useState(initialState.topicIds);
+  const [isPinned, setIsPinned] = useState(initialState.isPinned);
+  const [visibility, setVisibility] = useState<VisibilityStatus>(initialState.visibility);
+  const [editorRenderKey, setEditorRenderKey] = useState(0);
+  const [saveSource, setSaveSource] = useState<"firestore" | "local">("firestore");
+  const [autoSavePending, setAutoSavePending] = useState(false);
+  const [lastLocalSavedAt, setLastLocalSavedAt] = useState<number | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasLoadedDraftRef = useRef(false);
+
+  const clearAutoSaveTimer = useCallback(() => {
+    if (!autoSaveTimerRef.current) return;
+    clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearAutoSaveTimer();
+    };
+  }, [clearAutoSaveTimer]);
+
+  useEffect(() => {
+    if (hasLoadedDraftRef.current) return;
+    hasLoadedDraftRef.current = true;
+    if (typeof window === "undefined") return;
+
+    const rawDraft = window.localStorage.getItem(draftKey);
+    if (!rawDraft) return;
+
+    const parsedDraft = parsePostEditorDraft(rawDraft);
+    if (!parsedDraft) {
+      window.localStorage.removeItem(draftKey);
+      return;
+    }
+
+    setTitle(parsedDraft.title);
+    setSlug(parsedDraft.slug);
+    setSummary(parsedDraft.summary);
+    setThumbnail(parsedDraft.thumbnail);
+    setContent(parsedDraft.content);
+    setCollectionIds(parsedDraft.collectionIds);
+    setTopicIds(parsedDraft.topicIds);
+    setIsPinned(parsedDraft.isPinned);
+    setVisibility(parsedDraft.visibility);
+    setSaveSource("local");
+    setLastLocalSavedAt(parsedDraft.savedAt);
+    setEditorRenderKey((value) => value + 1);
+  }, [draftKey]);
+
+  const topicCollectionIds = useMemo(
+    () => topics
+      .filter((topic) => topicIds.includes(topic.id))
+      .map((topic) => topic.collectionId)
+      .filter((collectionId) => !!collectionId),
+    [topics, topicIds],
+  );
+
+  const finalCollectionIds = useMemo(
+    () => Array.from(new Set([...collectionIds, ...topicCollectionIds])),
+    [collectionIds, topicCollectionIds],
+  );
+
+  const currentState = useMemo<PostEditorFormState>(() => ({
+    title,
+    slug,
+    summary,
+    thumbnail,
+    content,
+    collectionIds,
+    topicIds,
+    isPinned,
+    visibility,
+  }), [title, slug, summary, thumbnail, content, collectionIds, topicIds, isPinned, visibility]);
+
+  const hasChanges = useMemo(
+    () => !arePostEditorStatesEqual(currentState, initialState) || Boolean(thumbnailFile),
+    [currentState, initialState, thumbnailFile],
+  );
+
+  const canSave = Boolean(title.trim()) && hasChanges && finalCollectionIds.length > 0 && !saving;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    clearAutoSaveTimer();
+
+    if (!hasChanges) {
+      try {
+        window.localStorage.removeItem(draftKey);
+      } catch (error) {
+        console.error("Failed to clear local draft:", error);
+      }
+      setAutoSavePending(false);
+      setLastLocalSavedAt(null);
+      setSaveSource("firestore");
+      return;
+    }
+
+    setSaveSource("local");
+    setAutoSavePending(true);
+    autoSaveTimerRef.current = setTimeout(() => {
+      const payload: PostEditorDraftState = {
+        ...currentState,
+        thumbnail: sanitizeThumbnailForDraft(currentState.thumbnail),
+        savedAt: Date.now(),
+      };
+
+      try {
+        window.localStorage.setItem(draftKey, JSON.stringify(payload));
+        setLastLocalSavedAt(payload.savedAt);
+      } catch (error) {
+        console.error("Failed to save local draft:", error);
+      } finally {
+        setAutoSavePending(false);
+      }
+    }, POST_EDITOR_AUTOSAVE_MS);
+
+    return () => {
+      clearAutoSaveTimer();
+    };
+  }, [currentState, hasChanges, draftKey, clearAutoSaveTimer]);
+
+  const handleDiscardTemporaryChanges = useCallback(() => {
+    clearAutoSaveTimer();
+    setTitle(initialState.title);
+    setSlug(initialState.slug);
+    setSummary(initialState.summary);
+    setThumbnail(initialState.thumbnail);
+    setThumbnailFile(null);
+    setContent(initialState.content);
+    setCollectionIds(initialState.collectionIds);
+    setTopicIds(initialState.topicIds);
+    setIsPinned(initialState.isPinned);
+    setVisibility(initialState.visibility);
+    setSaveSource("firestore");
+    setAutoSavePending(false);
+    setLastLocalSavedAt(null);
+    setEditorRenderKey((value) => value + 1);
+
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.removeItem(draftKey);
+    } catch (error) {
+      console.error("Failed to remove local draft:", error);
+    }
+  }, [clearAutoSaveTimer, initialState, draftKey]);
+
+  const localSavedTimeText = useMemo(() => {
+    if (!lastLocalSavedAt) return "";
+    return new Date(lastLocalSavedAt).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }, [lastLocalSavedAt]);
+
+  const saveBadgeText = useMemo(() => {
+    if (saveSource === "firestore") {
+      return "Đã đồng bộ Firestore";
+    }
+    if (autoSavePending) {
+      return "Đang lưu tạm local";
+    }
+    if (localSavedTimeText) {
+      return `Đã lưu tạm local lúc ${localSavedTimeText}`;
+    }
+    return "Đã lưu tạm local";
+  }, [saveSource, autoSavePending, localSavedTimeText]);
+
+  const showDiscardBtn = hasChanges || saveSource === "local";
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
@@ -315,18 +658,19 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
   };
 
   const handleSave = useCallback(() => {
-    if (!title.trim()) return;
+    if (!canSave) return;
 
-    const topicCollectionIds = topics
-      .filter((topic) => topicIds.includes(topic.id))
-      .map((topic) => topic.collectionId)
-      .filter((collectionId) => !!collectionId);
-
-    const finalCollectionIds = Array.from(
-      new Set([...collectionIds, ...topicCollectionIds]),
-    );
-
-    if (finalCollectionIds.length === 0) return;
+    clearAutoSaveTimer();
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(draftKey);
+      } catch (error) {
+        console.error("Failed to clear local draft before save:", error);
+      }
+    }
+    setSaveSource("firestore");
+    setAutoSavePending(false);
+    setLastLocalSavedAt(null);
 
     onSave({
       ...post,
@@ -341,7 +685,7 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
       visibility,
       updatedAt: new Date().toISOString().split("T")[0],
     }, thumbnailFile ?? undefined);
-  }, [title, slug, summary, thumbnail, content, collectionIds, topicIds, isPinned, visibility, post, thumbnailFile, onSave, topics]);
+  }, [canSave, clearAutoSaveTimer, draftKey, post, title, slug, summary, thumbnail, content, finalCollectionIds, topicIds, isPinned, visibility, thumbnailFile, onSave]);
 
   const handleCancel = useCallback(() => {
     onCancel();
@@ -356,8 +700,19 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
           </svg>
         </button>
         <div className={styles.editorToolbarRight}>
+          <span
+            className={`${styles.editorSaveStateBadge} ${saveSource === "firestore" ? styles.editorSaveStateBadgeRemote : styles.editorSaveStateBadgeLocal}`}
+            aria-live="polite"
+          >
+            {saveBadgeText}
+          </span>
+          {showDiscardBtn && (
+            <button type="button" className={styles.discardDraftBtn} onClick={handleDiscardTemporaryChanges} disabled={saving}>
+              Hủy lưu tạm
+            </button>
+          )}
           <button type="button" className={styles.cancelBtn} onClick={handleCancel} disabled={saving}>{t.cancel}</button>
-          <button type="button" className={styles.saveBtn} onClick={handleSave} disabled={saving}>{saving ? "Saving..." : t.save}</button>
+          <button type="button" className={styles.saveBtn} onClick={handleSave} disabled={!canSave}>{saving ? "Saving..." : t.save}</button>
         </div>
       </div>
       <button
@@ -447,7 +802,7 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
       </div>}
       <div className={styles.editorContent}>
         <div className={styles.editorContentInner}>
-          <TiptapEditor content={content} onChange={setContent} />
+          <TiptapEditor key={editorRenderKey} content={content} onChange={setContent} />
         </div>
       </div>
     </div>
