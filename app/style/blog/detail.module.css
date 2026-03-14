@@ -466,6 +466,10 @@
     max-width: 500px;
 }
 
+.content :global(.detail-float-wrap) {
+    max-width: 100%;
+}
+
 .content :global(.file-preview) {
     display: flex;
     justify-content: center;
@@ -814,6 +818,56 @@
 
     .title {
         font-size: 1.5rem;
+    }
+
+    .content p,
+    .content li,
+    .content blockquote,
+    .content figcaption,
+    .content h1,
+    .content h2,
+    .content h3,
+    .content h4,
+    .content h5,
+    .content h6 {
+        white-space: pre-line;
+        tab-size: 1;
+    }
+
+    .content :global(.detail-float-wrap) {
+        float: none !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        clear: both !important;
+        margin: 0.75rem 0 !important;
+    }
+
+    .content :global(.detail-float-wrap > figure) {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .content :global(.detail-float-wrap > img) {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    .content :global(.detail-float-wrap > a[data-file-src]) {
+        width: 100% !important;
+        justify-content: center;
+    }
+
+    .content :global(.iframe-wrapper) iframe,
+    .content :global(.file-preview) iframe,
+    .content div[data-youtube-video] iframe {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .content :global(.file-preview) iframe {
+        min-height: 260px;
     }
 
     .relatedOverlay {

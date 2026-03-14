@@ -345,11 +345,13 @@ function EmbedModal({ title, placeholder: ph, onInsert, onClose }: {
   );
 }
 
-function HtmlCodeModal({ onInsert, onClose }: {
+function HtmlCodeModal({ onInsert, onClose, initialCode = "", actionLabel = "Chèn" }: {
   onInsert: (html: string) => void;
   onClose: () => void;
+  initialCode?: string;
+  actionLabel?: string;
 }) {
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(initialCode);
 
   return (
     <div className={styles.imageModalOverlay} onClick={onClose}>
@@ -378,7 +380,7 @@ function HtmlCodeModal({ onInsert, onClose }: {
             onClick={() => { if (code.trim()) onInsert(code.trim()); }}
             disabled={!code.trim()}
           >
-            Chèn
+            {actionLabel}
           </button>
         </div>
       </div>
@@ -857,6 +859,7 @@ function ResizableIframe({ node, updateAttributes, selected }: NodeViewProps) {
     textAlign: Align;
   };
   const wrapRef = useRef<HTMLDivElement>(null);
+  const [showHtmlEditor, setShowHtmlEditor] = useState(false);
 
   const onPointerDown = useCallback((pos: "right" | "bottom" | "corner") => (e: React.PointerEvent<HTMLDivElement>) => {
     const startWidth = wrapRef.current?.offsetWidth ?? width ?? 560;
@@ -887,6 +890,19 @@ function ResizableIframe({ node, updateAttributes, selected }: NodeViewProps) {
         >
           <iframe srcDoc={htmlContent} className={styles.iframeNodeFrame} sandbox="allow-scripts allow-same-origin" />
           {selected && (
+            <button
+              type="button"
+              className={styles.iframeEditBtn}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setShowHtmlEditor(true);
+              }}
+            >
+              HTML
+            </button>
+          )}
+          {selected && (
             <>
               <div className={`${styles.resizeHandle} ${styles.resizeHandleRight}`} onPointerDown={onPointerDown("right")} />
               <div className={`${styles.resizeHandle} ${styles.resizeHandleBottom}`} onPointerDown={onPointerDown("bottom")} />
@@ -895,6 +911,17 @@ function ResizableIframe({ node, updateAttributes, selected }: NodeViewProps) {
           )}
           {!selected && <div className={styles.iframeOverlay} />}
         </div>
+        {showHtmlEditor && (
+          <HtmlCodeModal
+            initialCode={htmlContent}
+            actionLabel="Lưu"
+            onInsert={(nextHtml) => {
+              updateAttributes({ htmlContent: nextHtml });
+              setShowHtmlEditor(false);
+            }}
+            onClose={() => setShowHtmlEditor(false)}
+          />
+        )}
       </div>
     </NodeViewWrapper>
   );

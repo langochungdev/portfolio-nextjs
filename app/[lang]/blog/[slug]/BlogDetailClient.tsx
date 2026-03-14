@@ -166,9 +166,9 @@ function processContent(html: string): string {
         if (alt || width) {
           const figStyle = getInnerWidthStyle(width);
           const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
-          return `<div style="${alignStyle}"><figure${figStyle}><img ${attrs}${cropClass}${imgStyle}>${figcaption}</figure></div>`;
+          return `<div class="detail-float-wrap" style="${alignStyle}"><figure${figStyle}><img ${attrs}${cropClass}${imgStyle}>${figcaption}</figure></div>`;
         }
-        return `<div style="${alignStyle}"><img ${attrs}${cropClass}${imgStyle}></div>`;
+        return `<div class="detail-float-wrap" style="${alignStyle}"><img ${attrs}${cropClass}${imgStyle}></div>`;
       }
     )
     .replace(
@@ -181,7 +181,7 @@ function processContent(html: string): string {
         const wrapStyle = getFloatWrapStyle(align, width);
         const figStyle = getInnerWidthStyle(width);
         const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
-        return `<div style="${wrapStyle}"><figure class="media-figure"${figStyle}><video ${attrs}></video>${figcaption}</figure></div>`;
+        return `<div class="detail-float-wrap" style="${wrapStyle}"><figure class="media-figure"${figStyle}><video ${attrs}></video>${figcaption}</figure></div>`;
       }
     )
     .replace(
@@ -192,7 +192,7 @@ function processContent(html: string): string {
         const altMatch = attrs.match(/alt="([^"]*)"/);
         const alt = altMatch?.[1];
         const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
-        return `<div style="${wrapStyle}"><figure class="media-figure audio-figure"><audio ${attrs}></audio>${figcaption}</figure></div>`;
+        return `<div class="detail-float-wrap" style="${wrapStyle}"><figure class="media-figure audio-figure"><audio ${attrs}></audio>${figcaption}</figure></div>`;
       }
     )
     .replace(
@@ -201,7 +201,7 @@ function processContent(html: string): string {
         const align = getAlign(attrs);
         const width = getWidth(attrs);
         const wrapStyle = getFloatWrapStyle(align, width);
-        return `<div class="iframe-wrapper" style="${wrapStyle}"><iframe ${attrs}></iframe></div>`;
+        return `<div class="iframe-wrapper detail-float-wrap" style="${wrapStyle}"><iframe ${attrs}></iframe></div>`;
       }
     )
     .replace(
@@ -210,7 +210,7 @@ function processContent(html: string): string {
         const align = getAlign(attrs);
         const width = getWidth(attrs);
         const wrapStyle = getFloatWrapStyle(align, width);
-        return `<div class="file-preview" style="${wrapStyle}"><iframe ${attrs}></iframe></div>`;
+        return `<div class="file-preview detail-float-wrap" style="${wrapStyle}"><iframe ${attrs}></iframe></div>`;
       }
     )
     .replace(
@@ -218,7 +218,7 @@ function processContent(html: string): string {
       (_match, attrs: string, inner: string) => {
         const align = getAlign(attrs);
         const wrapStyle = getFloatWrapStyle(align, null);
-        return `<div style="${wrapStyle}"><a ${attrs}>${inner}</a></div>`;
+        return `<div class="detail-float-wrap" style="${wrapStyle}"><a ${attrs}>${inner}</a></div>`;
       }
     )
     .replace(
