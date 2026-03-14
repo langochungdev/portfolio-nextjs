@@ -207,7 +207,7 @@ function HintEditor({ hint, posts, topics, saving, onSave, onCancel }: {
   const [topicId, setTopicId] = useState(hint.topicId ?? "");
   const [postId, setPostId] = useState(hint.postId ?? "");
   const [visibility, setVisibility] = useState<VisibilityStatus>(hint.visibility ?? "public");
-  const [showFields, setShowFields] = useState(true);
+  const [showFields, setShowFields] = useState(false);
 
   const postsForTopic = useMemo(
     () => (topicId ? posts.filter((post) => post.topicIds.includes(topicId)) : posts),

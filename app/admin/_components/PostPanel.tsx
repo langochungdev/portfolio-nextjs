@@ -286,7 +286,7 @@ function PostEditor({ post, collections, topics, saving, onSave, onCancel, onCre
   const [title, setTitle] = useState(post.title);
   const [slug, setSlug] = useState(post.slug);
   const [summary, setSummary] = useState(post.summary ?? "");
-  const [showFields, setShowFields] = useState(true);
+  const [showFields, setShowFields] = useState(false);
   const [thumbnail, setThumbnail] = useState(post.thumbnail);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);

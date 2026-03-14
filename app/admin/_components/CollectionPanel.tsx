@@ -71,12 +71,14 @@ export function CollectionPanel({ items, selectedId, counts, onSelect, onAdd, on
           const color = collectionColors[col.id] ?? "var(--color-text-muted)";
           const isSelected = selectedId === col.id;
           const isEditing = editingId === col.id;
+          const collectionPostCount = counts[col.id] ?? 0;
 
           return (
             <div
               key={col.id}
-              className={`${styles.panelItem} ${isSelected ? styles.panelItemActive : ""}`}
+              className={`${styles.panelItem} ${styles.collectionItem} ${isSelected ? styles.panelItemActive : ""}`}
               onClick={() => !isEditing && onSelect(col.id)}
+              title={isEditing ? undefined : col.name}
             >
               <span className={styles.panelDot} style={{ background: color }} />
               {isEditing ? (
@@ -93,15 +95,20 @@ export function CollectionPanel({ items, selectedId, counts, onSelect, onAdd, on
                 />
               ) : (
                 <>
-                  <span className={styles.panelItemName}>{col.name}</span>
-                  <span className={styles.panelCount}>{counts[col.id] ?? 0}</span>
-                  <div className={styles.panelItemActions}>
-                    <button type="button" className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); setEditingId(col.id); setEditName(col.name); }}>
-                      <PencilIcon />
-                    </button>
-                    <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={(e) => { e.stopPropagation(); onDelete(col.id); }}>
-                      <TrashIcon />
-                    </button>
+                  <div className={styles.panelItemMain}>
+                    <span className={styles.collectionTitleWithCount} title={col.name}>
+                      {collectionPostCount} • {col.name}
+                    </span>
+                  </div>
+                  <div className={styles.collectionRowMeta}>
+                    <div className={styles.panelItemActions}>
+                      <button type="button" className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); setEditingId(col.id); setEditName(col.name); }} title="Rename collection">
+                        <PencilIcon />
+                      </button>
+                      <button type="button" className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={(e) => { e.stopPropagation(); onDelete(col.id); }} title="Delete collection">
+                        <TrashIcon />
+                      </button>
+                    </div>
                   </div>
                 </>
               )}

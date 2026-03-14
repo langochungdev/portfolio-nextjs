@@ -31,6 +31,13 @@ function processContent(html: string): string {
     return match?.[1] ?? null;
   };
 
+  const getNumberAttr = (attrs: string, name: string, fallback: number): number => {
+    const pattern = new RegExp(`${name}="([\\d.]+)"`);
+    const match = attrs.match(pattern);
+    const value = match?.[1] ? Number(match[1]) : NaN;
+    return Number.isFinite(value) ? value : fallback;
+  };
+
   const getFloatWrapStyle = (align: "left" | "right" | "center", width?: string | null): string => {
     if (align === "left") {
       return `display:block;float:left;margin-right:1rem;margin-bottom:0.5rem;${width ? `width:min(100%,${width}px);` : "max-width:100%;"}`;
@@ -55,13 +62,23 @@ function processContent(html: string): string {
         const altMatch = attrs.match(/alt="([^"]*)"/);
         const alt = altMatch?.[1];
         const alignStyle = getFloatWrapStyle(align, width);
+        const radius = getNumberAttr(attrs, "data-radius", 8);
+        const cropMode = /data-crop-mode="true"/.test(attrs);
+        const cropX = getNumberAttr(attrs, "data-crop-x", 50);
+        const cropY = getNumberAttr(attrs, "data-crop-y", 50);
+        const cropScale = getNumberAttr(attrs, "data-crop-scale", 1);
+        const cropHeight = getNumberAttr(attrs, "data-crop-height", 220);
+        const imgStyle = cropMode
+          ? ` style="display:block;width:100%;height:${cropHeight}px;object-fit:cover;object-position:${cropX}% ${cropY}%;transform:scale(${cropScale});transform-origin:${cropX}% ${cropY}%;border-radius:${radius}px;"`
+          : ` style="border-radius:${radius}px;"`;
+        const cropClass = cropMode ? ` class="cropped-media-image"` : "";
 
         if (alt || width) {
           const figStyle = getInnerWidthStyle(width);
           const figcaption = alt ? `<figcaption>${alt}</figcaption>` : "";
-          return `<div style="${alignStyle}"><figure${figStyle}><img ${attrs}>${figcaption}</figure></div>`;
+          return `<div style="${alignStyle}"><figure${figStyle}><img ${attrs}${cropClass}${imgStyle}>${figcaption}</figure></div>`;
         }
-        return `<div style="${alignStyle}"><img ${attrs}></div>`;
+        return `<div style="${alignStyle}"><img ${attrs}${cropClass}${imgStyle}></div>`;
       }
     )
     .replace(
@@ -114,6 +131,12 @@ function processContent(html: string): string {
         return `<div style="${wrapStyle}"><a ${attrs}>${inner}</a></div>`;
       }
     )
+    .replace(
+      /<pre\b([^>]*)>([\s\S]*?)<\/pre>/g,
+      (_match, attrs: string, inner: string) => {
+        return `<div class="code-block-wrap"><button type="button" class="code-copy-btn" data-copy-code>Copy</button><pre${attrs}>${inner}</pre></div>`;
+      }
+    )
     .replace(/<p><\/p>/g, "<p><br></p>");
 }
 
@@ -129,6 +152,7 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
     getRelatedServerSnapshot
   );
   const overlayRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const collection = post
     ? collections.find((c) => post.collectionIds.includes(c.id))
@@ -183,6 +207,48 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [showRelated]);
+
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root) return;
+
+    const handleCopyClick = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      const button = target?.closest("[data-copy-code]") as HTMLButtonElement | null;
+      if (!button) return;
+
+      const codeEl = button.parentElement?.querySelector("pre code");
+      const text = codeEl?.textContent ?? "";
+      if (!text.trim()) return;
+      if (!navigator.clipboard?.writeText) {
+        button.textContent = "Unsupported";
+        window.setTimeout(() => {
+          button.textContent = "Copy";
+        }, 1200);
+        return;
+      }
+
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          const old = button.textContent;
+          button.textContent = "Copied";
+          window.setTimeout(() => {
+            button.textContent = old;
+          }, 1200);
+        })
+        .catch(() => {
+          button.textContent = "Failed";
+          window.setTimeout(() => {
+            button.textContent = "Copy";
+          }, 1200);
+        });
+    };
+
+    root.addEventListener("click", handleCopyClick);
+    return () => {
+      root.removeEventListener("click", handleCopyClick);
+    };
+  }, [post?.id]);
 
   if (!post) {
     return (
@@ -263,7 +329,7 @@ export default function BlogDetailClient({ initialPost }: { initialPost: PostDoc
 
           <h1 className={styles.title}>{post.title}</h1>
 
-          <div className={styles.content} dangerouslySetInnerHTML={{ __html: processContent(post.content) }} />
+          <div ref={contentRef} className={styles.content} dangerouslySetInnerHTML={{ __html: processContent(post.content) }} />
         </article>
         </main>
       )}

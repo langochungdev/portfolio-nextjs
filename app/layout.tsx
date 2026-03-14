@@ -1,4 +1,5 @@
 import "@/app/style/globals.css";
+import "cropperjs/dist/cropper.css";
 import type { Metadata, Viewport } from "next";
 
 export const viewport: Viewport = {

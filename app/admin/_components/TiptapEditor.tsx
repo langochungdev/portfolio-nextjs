@@ -5,12 +5,16 @@ import {
   EditorContent,
   ReactRenderer,
   NodeViewWrapper,
+  NodeViewContent,
   type NodeViewProps,
 } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlock from "@tiptap/extension-code-block";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
+import { Details, DetailsSummary, DetailsContent } from "@tiptap/extension-details";
 import ImageExt from "@tiptap/extension-image";
 import LinkExt from "@tiptap/extension-link";
 import Youtube from "@tiptap/extension-youtube";
@@ -26,6 +30,7 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
+import Cropper, { type ReactCropperElement } from "react-cropper";
 import styles from "@/app/style/admin/editor.module.css";
 
 interface TiptapEditorProps {
@@ -41,32 +46,131 @@ interface CommandItem {
   command: (props: { editor: ReturnType<typeof useEditor>; range: { from: number; to: number } }) => void;
 }
 
-function ImageModal({ onInsert, onClose }: { onInsert: (src: string, alt: string) => void; onClose: () => void }) {
+interface ImageInsertPayload {
+  src: string;
+  alt: string;
+  width?: number;
+  sourceType?: "local" | "url";
+  cropMode?: boolean;
+  cropX?: number;
+  cropY?: number;
+  cropScale?: number;
+  cropHeight?: number | null;
+  radius?: number;
+  naturalWidth?: number | null;
+  naturalHeight?: number | null;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function ImageModal({ onInsert, onClose }: { onInsert: (payload: ImageInsertPayload) => void; onClose: () => void }) {
   const [url, setUrl] = useState("");
   const [alt, setAlt] = useState("");
-  const [preview, setPreview] = useState<string | null>(null);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [sourceType, setSourceType] = useState<"local" | "url" | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cropperRef = useRef<ReactCropperElement>(null);
+
+  const readFileAsDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result === "string") {
+          resolve(result);
+          return;
+        }
+        reject(new Error("invalid-image-result"));
+      };
+      reader.onerror = () => reject(reader.error ?? new Error("read-image-failed"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleLocalFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setLocalPreview(dataUrl);
+      setUrl("");
+      setSourceType("local");
+    } catch {
+      setLocalPreview(null);
+      setSourceType(null);
+    }
+  };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      setPreview(result);
-      setUrl("");
-    };
-    reader.readAsDataURL(file);
+    void handleLocalFile(file);
+  };
+
+  const handleFileDrop = (e: React.DragEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    void handleLocalFile(file);
   };
 
   const handleUrlChange = (val: string) => {
     setUrl(val);
-    setPreview(null);
+    setLocalPreview(null);
+    setSourceType(val.trim() ? "url" : null);
   };
 
-  const handleInsert = () => {
-    const src = preview ?? url.trim();
-    if (src) onInsert(src, alt.trim());
+  const handleInsert = async () => {
+    if (sourceType === "local" && localPreview) {
+      setSubmitting(true);
+      try {
+        const cropper = cropperRef.current?.cropper;
+        if (!cropper) return;
+        const croppedCanvas = cropper.getCroppedCanvas({ imageSmoothingEnabled: true, imageSmoothingQuality: "high" });
+        if (!croppedCanvas) return;
+        const croppedSrc = croppedCanvas.toDataURL("image/webp", 0.92);
+        if (!croppedSrc) return;
+        const imageData = cropper.getImageData();
+        const cropBoxData = cropper.getCropBoxData();
+
+        onInsert({
+          src: croppedSrc,
+          alt: alt.trim(),
+          width: Math.max(220, Math.round(cropBoxData.width || 300)),
+          sourceType: "local",
+          cropMode: false,
+          cropX: 50,
+          cropY: 50,
+          cropScale: 1,
+          cropHeight: null,
+          radius: 10,
+          naturalWidth: imageData.naturalWidth ? Math.round(imageData.naturalWidth) : null,
+          naturalHeight: imageData.naturalHeight ? Math.round(imageData.naturalHeight) : null,
+        });
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    const src = url.trim();
+    if (!src) return;
+    onInsert({
+      src,
+      alt: alt.trim(),
+      width: 300,
+      sourceType: "url",
+      cropMode: true,
+      cropX: 50,
+      cropY: 50,
+      cropScale: 1,
+      cropHeight: 220,
+      radius: 10,
+      naturalWidth: null,
+      naturalHeight: null,
+    });
   };
 
   return (
@@ -96,6 +200,8 @@ function ImageModal({ onInsert, onClose }: { onInsert: (src: string, alt: string
             type="button"
             className={styles.imageModalUploadBtn}
             onClick={() => fileRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleFileDrop}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M8 3v7M5 6l3-3 3 3M3 11v1.5A1.5 1.5 0 004.5 14h7a1.5 1.5 0 001.5-1.5V11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -103,9 +209,46 @@ function ImageModal({ onInsert, onClose }: { onInsert: (src: string, alt: string
             Tải ảnh từ máy
           </button>
 
-          {(preview ?? (url.trim() && url.startsWith("http"))) && (
+          {sourceType === "local" && localPreview && (
+            <>
+              <div className={styles.imageCropHeader}>Cắt ảnh local: kéo ảnh, zoom và kéo góc khung</div>
+              <div className={styles.imageCropperWrap}>
+                <Cropper
+                  src={localPreview}
+                  ref={cropperRef}
+                  style={{ height: 320, width: "100%" }}
+                  viewMode={1}
+                  dragMode="move"
+                  guides
+                  background={false}
+                  responsive
+                  autoCropArea={0.85}
+                  cropBoxMovable={false}
+                  cropBoxResizable
+                  minCropBoxWidth={140}
+                  minCropBoxHeight={120}
+                  zoomOnWheel
+                  zoomOnTouch
+                  movable
+                  rotatable={false}
+                  scalable={false}
+                  toggleDragModeOnDblclick={false}
+                  checkCrossOrigin={false}
+                />
+              </div>
+              <div className={styles.imageHintText}>Khung crop cố định vị trí, bạn kéo ảnh hoặc zoom để chọn vùng; có thể kéo góc khung để đổi kích thước.</div>
+            </>
+          )}
+
+          {sourceType === "url" && url.trim() && (
             <div className={styles.imageModalPreview}>
-              <img src={preview ?? url} alt="Preview" />
+              <img src={url} alt="Preview" />
+            </div>
+          )}
+
+          {sourceType === "url" && (
+            <div className={styles.imageHintText}>
+              Ảnh URL sẽ dùng fake crop trong editor: kéo để set vùng hiển thị, không cắt file gốc.
             </div>
           )}
 
@@ -124,10 +267,10 @@ function ImageModal({ onInsert, onClose }: { onInsert: (src: string, alt: string
           <button
             type="button"
             className={styles.saveBtn}
-            onClick={handleInsert}
-            disabled={!preview && !url.trim()}
+            onClick={() => void handleInsert()}
+            disabled={submitting || (!localPreview && !url.trim())}
           >
-            Chèn
+            {submitting ? "Đang cắt..." : "Chèn"}
           </button>
         </div>
       </div>
@@ -430,20 +573,77 @@ function beginPointerResize(
 }
 
 function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
-  const { src, alt, width, textAlign } = node.attrs as { src: string; alt: string; width: number; textAlign: Align };
+  const {
+    src,
+    alt,
+    width,
+    textAlign,
+    sourceType,
+    cropMode,
+    cropX,
+    cropY,
+    cropScale,
+    cropHeight,
+    radius,
+  } = node.attrs as {
+    src: string;
+    alt: string;
+    width: number | null;
+    textAlign: Align;
+    sourceType: "local" | "url";
+    cropMode: boolean;
+    cropX: number;
+    cropY: number;
+    cropScale: number;
+    cropHeight: number | null;
+    radius: number;
+  };
   const imgRef = useRef<HTMLImageElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [altValue, setAltValue] = useState(alt ?? "");
 
+  const resolvedCropMode = Boolean(cropMode);
+  const resolvedCropX = typeof cropX === "number" ? cropX : 50;
+  const resolvedCropY = typeof cropY === "number" ? cropY : 50;
+  const resolvedCropScale = typeof cropScale === "number" ? cropScale : 1;
+  const resolvedRadius = typeof radius === "number" ? radius : 10;
+  const resolvedCropHeight = typeof cropHeight === "number" ? cropHeight : 220;
+
   const onPointerDown = useCallback((pos: "right" | "bottom-right" | "bottom") => (e: React.PointerEvent<HTMLDivElement>) => {
     const startWidth = wrapRef.current?.offsetWidth ?? width ?? 400;
-    beginPointerResize(e, (dx) => {
+    const startHeight = resolvedCropHeight;
+    beginPointerResize(e, (dx, dy) => {
+      const updates: Record<string, number> = {};
       if (pos === "right" || pos === "bottom-right") {
         const newWidth = Math.max(80, startWidth + dx);
-        updateAttributes({ width: newWidth });
+        updates.width = newWidth;
+      }
+      if (pos === "bottom" && resolvedCropMode) {
+        updates.cropHeight = Math.max(120, startHeight + dy);
+      }
+      if (Object.keys(updates).length > 0) {
+        updateAttributes(updates);
       }
     });
-  }, [width, updateAttributes]);
+  }, [width, resolvedCropHeight, resolvedCropMode, updateAttributes]);
+
+  const onCropDragStart = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!selected || !resolvedCropMode) return;
+    const target = e.target as HTMLElement;
+    if (target.closest(`.${styles.resizeHandle}`) || target.closest(`.${styles.mediaCaptionInput}`) || target.closest(`.${styles.imageControlRow}`)) {
+      return;
+    }
+    const frameWidth = wrapRef.current?.offsetWidth ?? width ?? 300;
+    const frameHeight = resolvedCropHeight;
+    const startX = resolvedCropX;
+    const startY = resolvedCropY;
+
+    beginPointerResize(e, (dx, dy) => {
+      const nextX = clamp(startX - (dx / Math.max(frameWidth, 1)) * 100, 0, 100);
+      const nextY = clamp(startY - (dy / Math.max(frameHeight, 1)) * 100, 0, 100);
+      updateAttributes({ cropX: nextX, cropY: nextY });
+    });
+  }, [selected, resolvedCropMode, width, resolvedCropHeight, resolvedCropX, resolvedCropY, updateAttributes]);
 
   const setAlign = (a: Align) => updateAttributes({ textAlign: a });
 
@@ -454,10 +654,56 @@ function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
     >
       <div ref={wrapRef} className={styles.imgNodeOuter} style={{ width: width ? `${width}px` : "100%" }}>
         {selected && <AlignToolbar current={textAlign} onChange={setAlign} />}
+        {selected && (
+          <div className={styles.imageControlRow}>
+            <label className={styles.imageControlLabel}>
+              Bo góc
+              <input
+                className={styles.imageControlRange}
+                type="range"
+                min={0}
+                max={32}
+                step={1}
+                value={resolvedRadius}
+                onChange={(e) => updateAttributes({ radius: Number(e.target.value) })}
+              />
+            </label>
+            {resolvedCropMode && (
+              <label className={styles.imageControlLabel}>
+                Zoom
+                <input
+                  className={styles.imageControlRange}
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.01}
+                  value={resolvedCropScale}
+                  onChange={(e) => updateAttributes({ cropScale: Number(e.target.value) })}
+                />
+              </label>
+            )}
+          </div>
+        )}
         <div
-          className={`${styles.imgNodeInner} ${selected ? styles.imgNodeSelected : ""}`}
+          className={`${styles.imgNodeInner} ${selected ? styles.imgNodeSelected : ""} ${resolvedCropMode ? styles.imgNodeInnerCrop : ""}`}
+          style={resolvedCropMode ? { height: `${resolvedCropHeight}px`, borderRadius: `${resolvedRadius}px` } : { borderRadius: `${resolvedRadius}px` }}
+          onPointerDown={onCropDragStart}
         >
-          <img ref={imgRef} src={src} alt={alt ?? ""} draggable={false} className={styles.imgNodeImg} />
+          <img
+            ref={imgRef}
+            src={src}
+            alt={alt ?? ""}
+            draggable={false}
+            className={`${styles.imgNodeImg} ${resolvedCropMode ? styles.imgNodeImgCrop : ""}`}
+            style={resolvedCropMode
+              ? {
+                borderRadius: `${resolvedRadius}px`,
+                objectPosition: `${resolvedCropX}% ${resolvedCropY}%`,
+                transform: `scale(${resolvedCropScale})`,
+                transformOrigin: `${resolvedCropX}% ${resolvedCropY}%`,
+              }
+              : { borderRadius: `${resolvedRadius}px` }}
+          />
         </div>
         {selected ? (
           <input
@@ -476,8 +722,12 @@ function ResizableImage({ node, updateAttributes, selected }: NodeViewProps) {
         {selected && (
           <>
             <div className={`${styles.resizeHandle} ${styles.resizeHandleRight}`} onPointerDown={onPointerDown("right")} />
+            {resolvedCropMode && <div className={`${styles.resizeHandle} ${styles.resizeHandleBottom}`} onPointerDown={onPointerDown("bottom")} />}
             <div className={`${styles.resizeHandle} ${styles.resizeHandleBottomRight}`} onPointerDown={onPointerDown("bottom-right")} />
           </>
+        )}
+        {selected && resolvedCropMode && (
+          <div className={styles.imageCropHint}>{sourceType === "url" ? "Kéo ảnh để set vùng hiển thị (fake crop)" : "Kéo ảnh để canh vùng hiển thị"}</div>
         )}
       </div>
     </NodeViewWrapper>
@@ -501,15 +751,71 @@ const CustomImage = ImageExt.extend({
         parseHTML: (el) => el.getAttribute("data-align") || "center",
         renderHTML: (attrs) => ({ "data-align": attrs.textAlign }),
       },
-      "data-natural-width": {
+      naturalWidth: {
         default: null,
-        parseHTML: (el) => el.getAttribute("data-natural-width"),
-        renderHTML: (attrs) => (attrs["data-natural-width"] ? { "data-natural-width": attrs["data-natural-width"] } : {}),
+        parseHTML: (el) => {
+          const value = el.getAttribute("data-natural-width");
+          return value ? Number(value) : null;
+        },
+        renderHTML: (attrs) => (attrs.naturalWidth ? { "data-natural-width": attrs.naturalWidth } : {}),
       },
-      "data-natural-height": {
+      naturalHeight: {
         default: null,
-        parseHTML: (el) => el.getAttribute("data-natural-height"),
-        renderHTML: (attrs) => (attrs["data-natural-height"] ? { "data-natural-height": attrs["data-natural-height"] } : {}),
+        parseHTML: (el) => {
+          const value = el.getAttribute("data-natural-height");
+          return value ? Number(value) : null;
+        },
+        renderHTML: (attrs) => (attrs.naturalHeight ? { "data-natural-height": attrs.naturalHeight } : {}),
+      },
+      sourceType: {
+        default: "url",
+        parseHTML: (el) => (el.getAttribute("data-source-type") as "local" | "url" | null) || "url",
+        renderHTML: (attrs) => ({ "data-source-type": attrs.sourceType }),
+      },
+      cropMode: {
+        default: false,
+        parseHTML: (el) => el.getAttribute("data-crop-mode") === "true",
+        renderHTML: (attrs) => (attrs.cropMode ? { "data-crop-mode": "true" } : {}),
+      },
+      cropX: {
+        default: 50,
+        parseHTML: (el) => {
+          const value = el.getAttribute("data-crop-x");
+          return value ? Number(value) : 50;
+        },
+        renderHTML: (attrs) => ({ "data-crop-x": attrs.cropX ?? 50 }),
+      },
+      cropY: {
+        default: 50,
+        parseHTML: (el) => {
+          const value = el.getAttribute("data-crop-y");
+          return value ? Number(value) : 50;
+        },
+        renderHTML: (attrs) => ({ "data-crop-y": attrs.cropY ?? 50 }),
+      },
+      cropScale: {
+        default: 1,
+        parseHTML: (el) => {
+          const value = el.getAttribute("data-crop-scale");
+          return value ? Number(value) : 1;
+        },
+        renderHTML: (attrs) => ({ "data-crop-scale": attrs.cropScale ?? 1 }),
+      },
+      cropHeight: {
+        default: null,
+        parseHTML: (el) => {
+          const value = el.getAttribute("data-crop-height");
+          return value ? Number(value) : null;
+        },
+        renderHTML: (attrs) => (attrs.cropHeight ? { "data-crop-height": attrs.cropHeight } : {}),
+      },
+      radius: {
+        default: 10,
+        parseHTML: (el) => {
+          const value = el.getAttribute("data-radius");
+          return value ? Number(value) : 10;
+        },
+        renderHTML: (attrs) => ({ "data-radius": attrs.radius ?? 10 }),
       },
     };
   },
@@ -893,6 +1199,41 @@ function ResizableFilePreview({ node, updateAttributes, selected }: NodeViewProp
   );
 }
 
+function CopyableCodeBlock({ node }: NodeViewProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(node.textContent);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      setCopied(false);
+    }
+  }, [node.textContent]);
+
+  return (
+    <NodeViewWrapper className={styles.codeBlockWrap}>
+      <button
+        type="button"
+        className={`${styles.codeBlockCopyBtn} ${copied ? styles.codeBlockCopyBtnDone : ""}`}
+        onClick={handleCopy}
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
+      <pre className={styles.codeBlockPre}>
+        <NodeViewContent className={styles.codeBlockContent} />
+      </pre>
+    </NodeViewWrapper>
+  );
+}
+
+const CustomCodeBlock = CodeBlock.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CopyableCodeBlock);
+  },
+});
+
 const CustomFilePreview = Node.create({
   name: "customFilePreview",
   group: "block",
@@ -953,11 +1294,17 @@ const Indent = Extension.create({
         if (editor.isActive("listItem")) {
           return editor.chain().focus().sinkListItem("listItem").run();
         }
+        if (editor.isActive("taskItem")) {
+          return editor.chain().focus().sinkListItem("taskItem").run();
+        }
         return editor.chain().focus().insertContent("\t").run();
       },
       "Shift-Tab": ({ editor }) => {
         if (editor.isActive("listItem")) {
           return editor.chain().focus().liftListItem("listItem").run();
+        }
+        if (editor.isActive("taskItem")) {
+          return editor.chain().focus().liftListItem("taskItem").run();
         }
         return false;
       },
@@ -1025,6 +1372,27 @@ const COMMANDS: CommandItem[] = [
     icon: "1.",
     command: ({ editor, range }) => {
       editor?.chain().focus().deleteRange(range).toggleOrderedList().run();
+    },
+  },
+  {
+    title: "Checklist",
+    description: "Danh sách checkbox",
+    icon: "[]",
+    command: ({ editor, range }) => {
+      editor?.chain().focus().deleteRange(range).toggleTaskList().run();
+    },
+  },
+  {
+    title: "Toggle",
+    description: "Khối ẩn/hiện",
+    icon: "▸",
+    command: ({ editor, range }) => {
+      if (!editor) return;
+      if (editor.isActive("details")) {
+        editor.chain().focus().deleteRange(range).unsetDetails().run();
+      } else {
+        editor.chain().focus().deleteRange(range).setDetails().run();
+      }
     },
   },
   {
@@ -1282,7 +1650,12 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
     extensions: [
       StarterKit.configure({ codeBlock: false }),
       Placeholder.configure({ placeholder }),
-      CodeBlock,
+      CustomCodeBlock,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Details.configure({ persist: true }),
+      DetailsSummary,
+      DetailsContent,
       CustomImage.configure({ inline: false }),
       LinkExt.configure({ openOnClick: false, HTMLAttributes: { rel: "noopener noreferrer nofollow", target: "_blank" } }),
       Youtube.configure({ inline: false, width: 640, height: 360, nocookie: true }),
@@ -1302,9 +1675,25 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
     },
   });
 
-  const handleInsertImage = (src: string, alt: string) => {
+  const handleInsertImage = (payload: ImageInsertPayload) => {
     if (!editor) return;
-    editor.chain().focus().setImage({ src, alt, width: 250 }).run();
+    editor.chain().focus().insertContent({
+      type: "image",
+      attrs: {
+        src: payload.src,
+        alt: payload.alt,
+        width: payload.width ?? 300,
+        sourceType: payload.sourceType ?? "url",
+        cropMode: payload.cropMode ?? false,
+        cropX: payload.cropX ?? 50,
+        cropY: payload.cropY ?? 50,
+        cropScale: payload.cropScale ?? 1,
+        cropHeight: payload.cropHeight ?? null,
+        radius: payload.radius ?? 10,
+        naturalWidth: payload.naturalWidth ?? null,
+        naturalHeight: payload.naturalHeight ?? null,
+      },
+    }).run();
     setModal(null);
   };
 
@@ -1359,6 +1748,70 @@ export function TiptapEditor({ content, onChange, placeholder = "Nhập / để 
             return true;
           }}
         >
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive("heading", { level: 1 }) ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          >
+            H1
+          </button>
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive("heading", { level: 2 }) ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          >
+            H2
+          </button>
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive("heading", { level: 3 }) ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          >
+            H3
+          </button>
+          <div className={styles.bubbleDivider} />
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive("bulletList") ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+          >
+            •
+          </button>
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive("orderedList") ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          >
+            1.
+          </button>
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive("taskList") ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().toggleTaskList().run()}
+          >
+            ☑
+          </button>
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive("details") ? styles.bubbleBtnActive : ""}`}
+            onClick={() => {
+              if (editor.isActive("details")) {
+                editor.chain().focus().unsetDetails().run();
+              } else {
+                editor.chain().focus().setDetails().run();
+              }
+            }}
+          >
+            ▸
+          </button>
+          <button
+            type="button"
+            className={`${styles.bubbleBtn} ${editor.isActive("codeBlock") ? styles.bubbleBtnActive : ""}`}
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          >
+            {"{ }"}
+          </button>
+          <div className={styles.bubbleDivider} />
           <button
             type="button"
             className={`${styles.bubbleBtn} ${editor.isActive("bold") ? styles.bubbleBtnActive : ""}`}

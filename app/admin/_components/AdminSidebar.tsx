@@ -35,6 +35,14 @@ const NotificationsIcon = (
   </svg>
 );
 
+const ExternalLinkIcon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 3h7v7" />
+    <path d="M10 14 21 3" />
+    <path d="M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6" />
+  </svg>
+);
+
 const LogoutIcon = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -88,6 +96,15 @@ export function AdminSidebar({ dict }: AdminSidebarProps) {
           <div className={styles.avatar}>{user.email?.[0]?.toUpperCase() ?? "A"}</div>
           <span className={styles.userName}>{user.email?.split("@")[0]}</span>
         </div>
+        <a
+          className={`${styles.logoutBtn} ${styles.siteBtn}`}
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {ExternalLinkIcon}
+          <span className={styles.navLabel}>Trang chinh</span>
+        </a>
         <button className={styles.logoutBtn} onClick={logout}>
           {LogoutIcon}
           <span className={styles.navLabel}>{t.logout}</span>

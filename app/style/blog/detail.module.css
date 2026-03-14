@@ -228,6 +228,81 @@
 .content p {
     margin: 0;
     color: #3a3a38;
+    white-space: pre-wrap;
+    tab-size: 4;
+}
+
+.content li {
+    white-space: pre-wrap;
+    tab-size: 4;
+}
+
+.content pre {
+    background: rgba(28, 28, 26, 0.08);
+    border-radius: 8px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    font-family: var(--font-vt323), "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin: 0.75rem 0;
+    tab-size: 4;
+}
+
+.content :global(.code-block-wrap) {
+    position: relative;
+    margin: 0.75rem 0;
+}
+
+.content :global(.code-block-wrap) pre {
+    margin: 0;
+    padding-top: 2.25rem;
+}
+
+.content :global(.code-copy-btn) {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    border: 1px solid rgba(28, 28, 26, 0.20);
+    background: rgba(255, 255, 255, 0.9);
+    color: #7A7A72;
+    border-radius: 6px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 5px 8px;
+    cursor: pointer;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+@media (hover: hover) {
+    .content :global(.code-copy-btn):hover {
+        border-color: rgba(28, 28, 26, 0.34);
+        color: #1C1C1A;
+        background: #fff;
+    }
+}
+
+.content code {
+    background: rgba(28, 28, 26, 0.08);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: var(--font-vt323), "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.9375rem;
+}
+
+.content pre code {
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    font-size: inherit;
+}
+
+.content a {
+    color: #1d4ed8;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    word-break: break-word;
 }
 
 
@@ -237,6 +312,11 @@
     height: auto;
     border-radius: 8px;
     display: block;
+}
+
+.content :global(img.cropped-media-image) {
+    display: block;
+    width: 100%;
 }
 
 .content img[data-align="center"],
@@ -355,6 +435,45 @@
 .content div[data-youtube-video] iframe {
     border-radius: 8px;
     max-width: 100%;
+}
+
+.content :global(ul[data-type="taskList"]) {
+    list-style: none;
+    padding-left: 0;
+}
+
+.content :global(li[data-type="taskItem"]) {
+    list-style: none;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0.25rem 0;
+}
+
+.content :global(li[data-type="taskItem"] > label) {
+    margin-top: 0.2rem;
+}
+
+.content :global(li[data-type="taskItem"] > div) {
+    flex: 1;
+    min-width: 0;
+}
+
+.content :global(li[data-type="taskItem"] input[type="checkbox"]) {
+    accent-color: #1d4ed8;
+}
+
+.content :global(details) {
+    border: 1px solid rgba(28, 28, 26, 0.14);
+    border-radius: 10px;
+    margin: 0.75rem 0;
+    padding: 8px 10px;
+}
+
+.content :global(details > summary) {
+    cursor: pointer;
+    font-weight: 600;
+    color: #1C1C1A;
 }
 
 .skeleton {
@@ -478,6 +597,40 @@
 
 :global([data-theme="dark"]) .content p {
     color: #c8c8c3;
+}
+
+:global([data-theme="dark"]) .content pre {
+    background: rgba(232, 232, 227, 0.10);
+}
+
+:global([data-theme="dark"]) .content :global(.code-copy-btn) {
+    border-color: rgba(232, 232, 227, 0.24);
+    background: rgba(26, 26, 24, 0.9);
+    color: #9a9a92;
+}
+
+:global([data-theme="dark"]) .content code {
+    background: rgba(232, 232, 227, 0.12);
+}
+
+:global([data-theme="dark"]) .content pre code {
+    background: transparent;
+}
+
+:global([data-theme="dark"]) .content a {
+    color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .content :global(li[data-type="taskItem"] input[type="checkbox"]) {
+    accent-color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .content :global(details) {
+    border-color: rgba(232, 232, 227, 0.14);
+}
+
+:global([data-theme="dark"]) .content :global(details > summary) {
+    color: #E8E8E3;
 }
 
 :global([data-theme="dark"]) .content figcaption {

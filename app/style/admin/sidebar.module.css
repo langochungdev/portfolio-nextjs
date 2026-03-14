@@ -102,6 +102,10 @@
     transition: background 0.15s, color 0.15s;
 }
 
+.siteBtn {
+    text-decoration: none;
+}
+
 .header {
     display: flex;
     align-items: center;
@@ -153,6 +157,11 @@
         color: var(--color-accent);
     }
 
+    .siteBtn:hover {
+        background: var(--color-border);
+        color: var(--color-text);
+    }
+
     .headerBtn:hover {
         border-color: var(--color-border-hover);
         color: var(--color-text);
@@ -193,7 +202,16 @@
         padding: 12px;
     }
 
+    .siteBtn {
+        justify-content: center;
+        padding: 12px;
+    }
+
     .logoutBtn .navLabel {
+        display: none;
+    }
+
+    .siteBtn .navLabel {
         display: none;
     }
 
