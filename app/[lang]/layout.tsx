@@ -8,6 +8,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { cookies } from "next/headers";
 import { VT323, Lexend, JetBrains_Mono } from "next/font/google";
 import { JsonLd, personSchema, webSiteSchema } from "@/lib/seo/schemas";
+import { DevAgentation } from "@/app/_shared/DevAgentation";
 
 const vt323 = VT323({
   weight: "400",
@@ -64,6 +65,7 @@ export default async function LocaleLayout({
       <body>
         <LazyAnimatedFavicon />
         <StableVh />
+        {process.env.NODE_ENV === "development" ? <DevAgentation /> : null}
         <LazyVisitorProvider>
           <DictionaryProvider dictionary={dictionary} locale={locale} serverTheme={serverTheme}>
             {children}

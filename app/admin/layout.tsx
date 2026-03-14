@@ -1,6 +1,7 @@
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { AdminShell } from "./_components/AdminShell";
 import { JetBrains_Mono, Lexend } from "next/font/google";
+import { DevAgentation } from "@/app/_shared/DevAgentation";
 import "@/app/style/admin/globals.css";
 
 const lexend = Lexend({
@@ -26,6 +27,7 @@ export default async function AdminLayout({
     <html lang="vi" data-theme="dark" data-admin="true" suppressHydrationWarning>
       <head />
       <body className={`${lexend.variable} ${jetbrainsMono.variable}`}>
+        {process.env.NODE_ENV === "development" ? <DevAgentation /> : null}
         <AdminShell locale="vi" dictionary={dictionary}>
           {children}
         </AdminShell>
